@@ -30,41 +30,35 @@ class MonitorEditView extends StatelessWidget {
         MonitorFormShell(
           initial: initial,
           footerBuilder: (context, read) {
-            final isWide = MediaQuery.of(context).size.width >= 640;
-            final deleteBtn = DangerButton(
-              labelKey: 'monitor.edit.delete',
-              icon: Icons.delete_outline_rounded,
-              onTap: () => _confirmDelete(monitorId),
-            );
-            final cancelBtn = SecondaryButton(
-              labelKey: 'monitor.edit.cancel',
-              onTap: () => MagicRoute.to('/monitors/$monitorId'),
-            );
-            final submitBtn = PrimaryButton(
-              labelKey: 'monitor.edit.submit',
-              icon: Icons.check_rounded,
-              onTap: () {
-                read();
-                Magic.toast(trans('monitor.edit.toast_saved'));
-                MagicRoute.to('/monitors/$monitorId');
-              },
-            );
-            if (isWide) {
-              return WDiv(
-                className: '''
-                  w-full flex flex-row items-center gap-3 pt-2
-                  flex-wrap justify-end
-                ''',
-                children: [
-                  WDiv(className: 'mr-auto', child: deleteBtn),
-                  cancelBtn,
-                  submitBtn,
-                ],
-              );
-            }
             return WDiv(
-              className: 'w-full flex flex-col items-stretch gap-3 pt-2',
-              children: [submitBtn, cancelBtn, deleteBtn],
+              className: '''
+                w-full pt-2 gap-3
+                flex flex-col-reverse items-stretch
+                sm:flex-row sm:flex-wrap sm:items-center sm:justify-end
+              ''',
+              children: [
+                WDiv(
+                  className: 'sm:mr-auto',
+                  child: DangerButton(
+                    labelKey: 'monitor.edit.delete',
+                    icon: Icons.delete_outline_rounded,
+                    onTap: () => _confirmDelete(monitorId),
+                  ),
+                ),
+                SecondaryButton(
+                  labelKey: 'monitor.edit.cancel',
+                  onTap: () => MagicRoute.to('/monitors/$monitorId'),
+                ),
+                PrimaryButton(
+                  labelKey: 'monitor.edit.submit',
+                  icon: Icons.check_rounded,
+                  onTap: () {
+                    read();
+                    Magic.toast(trans('monitor.edit.toast_saved'));
+                    MagicRoute.to('/monitors/$monitorId');
+                  },
+                ),
+              ],
             );
           },
         ),

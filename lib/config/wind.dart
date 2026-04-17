@@ -13,6 +13,7 @@ import 'package:magic/magic.dart';
 /// - degraded : monitor is responding but breaching thresholds (amber)
 /// - paused   : monitor is manually paused or awaiting first check (slate)
 WindThemeData get windTheme => WindThemeData(
+  screens: const {'tablet': 760},
   colors: {
     'primary': const MaterialColor(0xFF009E60, <int, Color>{
       50: Color(0xFFE0F4ED),

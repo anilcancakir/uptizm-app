@@ -17,21 +17,14 @@ class LogoUploadZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width >= 640;
     return WDiv(
-      className: isWide
-          ? '''
-            rounded-lg p-4
-            bg-gray-50 dark:bg-gray-900
-            border border-dashed border-gray-300 dark:border-gray-700
-            flex flex-row items-center gap-4
-          '''
-          : '''
-            rounded-lg p-4
-            bg-gray-50 dark:bg-gray-900
-            border border-dashed border-gray-300 dark:border-gray-700
-            flex flex-col items-stretch gap-3
-          ''',
+      className: '''
+        rounded-lg p-4
+        bg-gray-50 dark:bg-gray-900
+        border border-dashed border-gray-300 dark:border-gray-700
+        flex flex-col items-stretch gap-3
+        sm:flex-row sm:items-center sm:gap-4
+      ''',
       children: [
         WDiv(
           className: '''
@@ -43,19 +36,15 @@ class LogoUploadZone extends StatelessWidget {
           child: logoPath == null
               ? WIcon(
                   Icons.image_outlined,
-                  className:
-                      'text-xl text-gray-400 dark:text-gray-500',
+                  className: 'text-xl text-gray-400 dark:text-gray-500',
                 )
               : WIcon(
                   Icons.check_rounded,
-                  className:
-                      'text-xl text-up-600 dark:text-up-400',
+                  className: 'text-xl text-up-600 dark:text-up-400',
                 ),
         ),
         WDiv(
-          className: isWide
-              ? 'flex-1 flex flex-col gap-1 min-w-0'
-              : 'w-full flex flex-col gap-1 min-w-0',
+          className: 'w-full sm:flex-1 flex flex-col gap-1 min-w-0',
           children: [
             WText(
               trans(

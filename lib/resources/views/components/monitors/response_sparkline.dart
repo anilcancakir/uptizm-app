@@ -35,7 +35,8 @@ class ResponseSparkline extends StatelessWidget {
   Widget build(BuildContext context) {
     if (samples.isEmpty) {
       return WDiv(
-        className: '''
+        className:
+            '''
           flex items-center justify-center rounded-lg
           h-[${heightPx.toInt()}px]
           bg-gray-50 dark:bg-gray-900
@@ -113,6 +114,7 @@ class ResponseSparkline extends StatelessWidget {
                     showTitles: true,
                     reservedSize: 44,
                     interval: yInterval,
+                    // native: required by fl_chart axis title callback
                     getTitlesWidget: (value, _) => Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: Text(
@@ -127,6 +129,7 @@ class ResponseSparkline extends StatelessWidget {
                     showTitles: true,
                     reservedSize: 24,
                     interval: xInterval,
+                    // native: required by fl_chart axis title callback
                     getTitlesWidget: (value, _) {
                       final i = value.toInt();
                       if (i < 0 || i >= samples.length) {
@@ -159,7 +162,8 @@ class ResponseSparkline extends StatelessWidget {
                     getDotPainter: (spot, _, _, index) {
                       return FlDotCirclePainter(
                         radius: 3,
-                        color: _dotColor(context, samples[index].status) ??
+                        color:
+                            _dotColor(context, samples[index].status) ??
                             primary,
                         strokeWidth: 1.5,
                         strokeColor: dotStroke,
@@ -207,10 +211,7 @@ class ResponseSparkline extends StatelessWidget {
                         children: [
                           TextSpan(
                             text: time,
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 11,
-                            ),
+                            style: TextStyle(color: textColor, fontSize: 11),
                           ),
                         ],
                       );

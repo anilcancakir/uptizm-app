@@ -79,24 +79,18 @@ class StatusPageCard extends StatelessWidget {
   }
 
   Widget _logo() {
-    return Container(
-      width: 48,
-      height: 48,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: HexSwatch.parse(page.primaryColor),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: WText(
-        page.initials,
-        className: 'text-sm font-bold text-white',
-      ),
+    return HexSwatch(
+      hex: page.primaryColor,
+      dimension: 48,
+      radius: 8,
+      child: WText(page.initials, className: 'text-sm font-bold text-white'),
     );
   }
 
   Widget _pill({required String label, required String toneClass}) {
     return WDiv(
-      className: '''
+      className:
+          '''
         px-2 py-0.5 rounded-full
         $toneClass
       ''',

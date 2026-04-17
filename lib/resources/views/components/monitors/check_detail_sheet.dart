@@ -45,11 +45,7 @@ class CheckDetailSheet extends StatelessWidget {
               children: [
                 WDiv(
                   className: 'p-4 flex flex-col gap-4',
-                  children: [
-                    _timingCard(),
-                    _requestCard(),
-                    _responseCard(),
-                  ],
+                  children: [_timingCard(), _requestCard(), _responseCard()],
                 ),
               ],
             ),
@@ -169,12 +165,19 @@ class CheckDetailSheet extends StatelessWidget {
   Widget _timingCard() {
     final t = check.timing;
     final total = t.totalMs == 0 ? 1 : t.totalMs;
+    const segmentClass = '''
+      dns:bg-info-300 dark:dns:bg-info-400
+      connect:bg-info-400 dark:connect:bg-info-500
+      tls:bg-primary-300 dark:tls:bg-primary-400
+      ttfb:bg-primary-500 dark:ttfb:bg-primary-600
+      download:bg-primary-700 dark:download:bg-primary-500
+    ''';
     final segments = <(String, int, String)>[
-      ('monitor.check_detail.timing.dns', t.dnsMs, 'bg-info-300 dark:bg-info-400'),
-      ('monitor.check_detail.timing.connect', t.connectMs, 'bg-info-400 dark:bg-info-500'),
-      ('monitor.check_detail.timing.tls', t.tlsMs, 'bg-primary-300 dark:bg-primary-400'),
-      ('monitor.check_detail.timing.ttfb', t.ttfbMs, 'bg-primary-500 dark:bg-primary-600'),
-      ('monitor.check_detail.timing.download', t.downloadMs, 'bg-primary-700 dark:bg-primary-500'),
+      ('monitor.check_detail.timing.dns', t.dnsMs, 'dns'),
+      ('monitor.check_detail.timing.connect', t.connectMs, 'connect'),
+      ('monitor.check_detail.timing.tls', t.tlsMs, 'tls'),
+      ('monitor.check_detail.timing.ttfb', t.ttfbMs, 'ttfb'),
+      ('monitor.check_detail.timing.download', t.downloadMs, 'download'),
     ];
 
     return _card(
@@ -192,9 +195,10 @@ class CheckDetailSheet extends StatelessWidget {
             children: [
               for (final s in segments)
                 if (s.$2 > 0)
-                  Expanded(
-                    flex: ((s.$2 / total) * 1000).round().clamp(1, 1000),
-                    child: WDiv(className: s.$3),
+                  WDiv(
+                    states: {s.$3},
+                    className:
+                        'flex-${((s.$2 / total) * 1000).round().clamp(1, 1000)} $segmentClass',
                   ),
             ],
           ),
@@ -205,7 +209,10 @@ class CheckDetailSheet extends StatelessWidget {
                 WDiv(
                   className: 'flex flex-row items-center gap-1.5',
                   children: [
-                    WDiv(className: 'w-2 h-2 rounded-full ${s.$3}'),
+                    WDiv(
+                      states: {s.$3},
+                      className: 'w-2 h-2 rounded-full $segmentClass',
+                    ),
                     WText(
                       trans(s.$1),
                       className: 'text-xs text-gray-600 dark:text-gray-300',
@@ -250,10 +257,12 @@ class CheckDetailSheet extends StatelessWidget {
         className: 'flex flex-col gap-2',
         children: [
           _kv('Status', '${check.statusCode ?? '--'}'),
-          if (check.responseMs != null) _kv('Duration', '${check.responseMs} ms'),
+          if (check.responseMs != null)
+            _kv('Duration', '${check.responseMs} ms'),
           if (check.responseHeaders.isNotEmpty)
             _headerBlock(check.responseHeaders),
-          if (check.responseBodyPreview != null) _bodyBlock(check.responseBodyPreview!),
+          if (check.responseBodyPreview != null)
+            _bodyBlock(check.responseBodyPreview!),
         ],
       ),
     );
@@ -330,10 +339,7 @@ class CheckDetailSheet extends StatelessWidget {
         bg-gray-900 dark:bg-black
         flex flex-col
       ''',
-      child: WText(
-        body,
-        className: 'text-xs font-mono text-gray-100',
-      ),
+      child: WText(body, className: 'text-xs font-mono text-gray-100'),
     );
   }
 
@@ -357,10 +363,7 @@ class CheckDetailSheet extends StatelessWidget {
             flex flex-row items-center gap-2
           ''',
           children: [
-            WIcon(
-              icon,
-              className: 'text-sm text-gray-500 dark:text-gray-400',
-            ),
+            WIcon(icon, className: 'text-sm text-gray-500 dark:text-gray-400'),
             WText(
               trans(titleKey),
               className: '''

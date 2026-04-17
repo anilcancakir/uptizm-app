@@ -28,7 +28,8 @@ class IncidentCreateSheet extends StatefulWidget {
     String description,
     String? metricKey,
     bool notifyTeam,
-  )? onSubmit;
+  )?
+  onSubmit;
 
   static Future<void> show(
     BuildContext context, {
@@ -41,7 +42,8 @@ class IncidentCreateSheet extends StatefulWidget {
       String description,
       String? metricKey,
       bool notifyTeam,
-    )? onSubmit,
+    )?
+    onSubmit,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -209,32 +211,18 @@ class _IncidentCreateSheetState extends State<IncidentCreateSheet> {
           labelKey: 'incident.create.fields.description',
           hintKey: 'incident.create.fields.description_hint',
         ),
-        WDiv(
+        WInput(
+          controller: _description,
+          type: InputType.multiline,
+          minLines: 3,
+          maxLines: 6,
+          placeholder: trans('incident.create.fields.description_placeholder'),
+          placeholderClassName: 'text-sm text-gray-400 dark:text-gray-500',
           className: '''
-            rounded-lg
+            rounded-lg px-3 py-2.5 text-sm
             bg-white dark:bg-gray-900
             border border-gray-200 dark:border-gray-700
           ''',
-          child: TextField(
-            controller: _description,
-            minLines: 3,
-            maxLines: 6,
-            style: const TextStyle(fontSize: 14),
-            decoration: InputDecoration(
-              hintText: trans(
-                'incident.create.fields.description_placeholder',
-              ),
-              hintStyle: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF9CA3AF),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              border: InputBorder.none,
-            ),
-          ),
         ),
       ],
     );

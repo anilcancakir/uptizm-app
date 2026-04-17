@@ -21,7 +21,6 @@ class StatusPageShowView extends StatelessWidget {
     final monitors = StatusPageMonitorOption.mockAll()
         .where((m) => page.monitorIds.contains(m.id))
         .toList();
-    final isWide = MediaQuery.of(context).size.width >= 640;
 
     return WDiv(
       className: 'p-4 lg:p-6 flex flex-col gap-6',
@@ -30,13 +29,11 @@ class StatusPageShowView extends StatelessWidget {
           leading: const AppBackButton(fallbackPath: '/status-pages'),
           title: page.title,
           subtitle: page.subdomain,
-          inlineActions: isWide,
           actions: [
             SecondaryButton(
               labelKey: 'status_page.show.open',
               icon: Icons.open_in_new_rounded,
-              onTap: () =>
-                  Magic.toast('https://${page.subdomain}'),
+              onTap: () => Magic.toast('https://${page.subdomain}'),
             ),
             SecondaryButton(
               labelKey: 'status_page.show.edit',
@@ -45,46 +42,34 @@ class StatusPageShowView extends StatelessWidget {
             ),
           ],
         ),
-        _hero(page, monitors.length, isWide),
+        _hero(page, monitors.length),
         _componentsSection(monitors),
         _incidentsSection(),
       ],
     );
   }
 
-  Widget _hero(StatusPage page, int monitorCount, bool isWide) {
+  Widget _hero(StatusPage page, int monitorCount) {
     return WDiv(
-      className: isWide
-          ? '''
-            rounded-xl p-5
-            bg-white dark:bg-gray-800
-            border border-gray-200 dark:border-gray-700
-            flex flex-row gap-5 items-center
-          '''
-          : '''
-            rounded-xl p-5
-            bg-white dark:bg-gray-800
-            border border-gray-200 dark:border-gray-700
-            flex flex-col gap-5 items-start
-          ''',
+      className: '''
+        rounded-xl p-5
+        bg-white dark:bg-gray-800
+        border border-gray-200 dark:border-gray-700
+        flex flex-col gap-5 items-start
+        sm:flex-row sm:items-center
+      ''',
       children: [
-        Container(
-          width: 64,
-          height: 64,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: HexSwatch.parse(page.primaryColor),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        HexSwatch(
+          hex: page.primaryColor,
+          dimension: 64,
+          radius: 12,
           child: WText(
             page.initials,
             className: 'text-lg font-bold text-white',
           ),
         ),
         WDiv(
-          className: isWide
-              ? 'flex-1 flex flex-col gap-2 min-w-0'
-              : 'w-full flex flex-col gap-2 min-w-0',
+          className: 'w-full sm:flex-1 flex flex-col gap-2 min-w-0',
           children: [
             WDiv(
               className: 'flex flex-row items-center gap-2 flex-wrap',
@@ -103,8 +88,9 @@ class StatusPageShowView extends StatelessWidget {
                   ''',
                 ),
                 WText(
-                  trans('status_page.list.monitor_count')
-                      .replaceAll(':count', '$monitorCount'),
+                  trans(
+                    'status_page.list.monitor_count',
+                  ).replaceAll(':count', '$monitorCount'),
                   className: '''
                     px-2 py-0.5 rounded-full
                     text-[10px] font-bold uppercase tracking-wide
@@ -149,9 +135,7 @@ class StatusPageShowView extends StatelessWidget {
             )
           : WDiv(
               className: 'flex flex-col gap-3',
-              children: [
-                for (final m in monitors) _componentRow(m),
-              ],
+              children: [for (final m in monitors) _componentRow(m)],
             ),
     );
   }
@@ -183,17 +167,15 @@ class StatusPageShowView extends StatelessWidget {
         ),
         WDiv(
           className: 'flex flex-row items-center gap-0.5',
-          children: [
-            for (var i = 0; i < 20; i++) _segment(i, m.statusTone),
-          ],
+          children: [for (var i = 0; i < 20; i++) _segment(i, m.statusTone)],
         ),
       ],
     );
   }
 
   Widget _segment(int index, String tone) {
-    final missing = (index == 6 && tone == 'degraded') ||
-        (index == 13 && tone == 'down');
+    final missing =
+        (index == 6 && tone == 'degraded') || (index == 13 && tone == 'down');
     return WDiv(
       states: {missing ? 'down' : tone},
       className: '''
@@ -235,9 +217,7 @@ class StatusPageShowView extends StatelessWidget {
         bg-gray-50 dark:bg-gray-900
       ''',
       children: [
-        WDiv(
-          className: 'w-2 h-2 rounded-full bg-up-500 dark:bg-up-400',
-        ),
+        WDiv(className: 'w-2 h-2 rounded-full bg-up-500 dark:bg-up-400'),
         WDiv(
           className: 'flex-1 min-w-0',
           child: WText(

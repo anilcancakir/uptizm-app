@@ -32,7 +32,6 @@ class _SettingsMetricsLibraryViewState
         .where((r) => _typeFilter == null || r.type == _typeFilter)
         .where((r) => _groupFilter == null || r.group == _groupFilter)
         .toList();
-    final isWide = MediaQuery.of(context).size.width >= 760;
 
     return WDiv(
       className: 'p-4 lg:p-6 flex flex-col gap-6',
@@ -41,10 +40,9 @@ class _SettingsMetricsLibraryViewState
           leading: const AppBackButton(fallbackPath: '/'),
           title: trans('settings.metrics_library.title'),
           subtitle: trans('settings.metrics_library.subtitle'),
-          inlineActions: MediaQuery.of(context).size.width >= 640,
         ),
         _filterBar(groups),
-        if (filtered.isEmpty) _empty() else _table(filtered, isWide),
+        if (filtered.isEmpty) _empty() else _table(filtered),
       ],
     );
   }
@@ -65,17 +63,15 @@ class _SettingsMetricsLibraryViewState
           _chip(
             label: trans(t.labelKey),
             active: _typeFilter == t,
-            onTap: () => setState(
-              () => _typeFilter = _typeFilter == t ? null : t,
-            ),
+            onTap: () =>
+                setState(() => _typeFilter = _typeFilter == t ? null : t),
           ),
         for (final g in groups)
           _chip(
             label: g,
             active: _groupFilter == g,
-            onTap: () => setState(
-              () => _groupFilter = _groupFilter == g ? null : g,
-            ),
+            onTap: () =>
+                setState(() => _groupFilter = _groupFilter == g ? null : g),
           ),
       ],
     );
@@ -110,26 +106,25 @@ class _SettingsMetricsLibraryViewState
     );
   }
 
-  Widget _table(List<_MetricRow> rows, bool isWide) {
+  Widget _table(List<_MetricRow> rows) {
+    final shellClass = '''
+      rounded-xl overflow-hidden
+      bg-white dark:bg-gray-800
+      border border-gray-200 dark:border-gray-700
+    ''';
     final inner = WDiv(
-      className: isWide ? 'flex flex-col w-full' : 'flex flex-col w-[760px]',
-      children: [
-        _header(),
-        for (final r in rows) _row(r),
-      ],
+      className: 'flex flex-col w-[760px] tablet:w-full',
+      children: [_header(), for (final r in rows) _row(r)],
     );
-    return WDiv(
-      className: '''
-        rounded-xl overflow-hidden
-        bg-white dark:bg-gray-800
-        border border-gray-200 dark:border-gray-700
-      ''',
-      child: isWide
-          ? inner
-          : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: inner,
-            ),
+    return WBreakpoint(
+      base: (_) => WDiv(
+        className: shellClass,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: inner,
+        ),
+      ),
+      custom: {'tablet': (_) => WDiv(className: shellClass, child: inner)},
     );
   }
 
@@ -142,10 +137,22 @@ class _SettingsMetricsLibraryViewState
         flex flex-row items-center gap-4
       ''',
       children: [
-        _headerCell('settings.metrics_library.columns.key', width: 'flex-1 min-w-[260px]'),
-        _headerCell('settings.metrics_library.columns.type', width: 'w-[140px]'),
-        _headerCell('settings.metrics_library.columns.group', width: 'w-[160px]'),
-        _headerCell('settings.metrics_library.columns.usage', width: 'w-[120px]'),
+        _headerCell(
+          'settings.metrics_library.columns.key',
+          width: 'flex-1 min-w-[260px]',
+        ),
+        _headerCell(
+          'settings.metrics_library.columns.type',
+          width: 'w-[140px]',
+        ),
+        _headerCell(
+          'settings.metrics_library.columns.group',
+          width: 'w-[160px]',
+        ),
+        _headerCell(
+          'settings.metrics_library.columns.usage',
+          width: 'w-[120px]',
+        ),
       ],
     );
   }
@@ -190,10 +197,7 @@ class _SettingsMetricsLibraryViewState
             ),
           ],
         ),
-        WDiv(
-          className: 'w-[140px]',
-          child: _typeBadge(r.type, r.unit),
-        ),
+        WDiv(className: 'w-[140px]', child: _typeBadge(r.type, r.unit)),
         WDiv(
           className: 'w-[160px]',
           child: WText(
@@ -207,10 +211,7 @@ class _SettingsMetricsLibraryViewState
         WDiv(
           className: 'w-[120px]',
           child: WText(
-            trans(
-              'settings.metrics_library.used_by',
-              {'count': '${r.usedBy}'},
-            ),
+            trans('settings.metrics_library.used_by', {'count': '${r.usedBy}'}),
             className: '''
               text-xs font-semibold
               text-gray-700 dark:text-gray-200

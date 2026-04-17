@@ -14,14 +14,12 @@ class StatusPageListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pages = StatusPage.mockAll();
-    final isWide = MediaQuery.of(context).size.width >= 640;
     return WDiv(
       className: 'p-4 lg:p-6 flex flex-col gap-6',
       children: [
         MagicStarterPageHeader(
           title: trans('status_page.list.title'),
           subtitle: trans('status_page.list.subtitle'),
-          inlineActions: isWide,
           actions: [
             PrimaryButton(
               labelKey: 'status_page.list.create',
@@ -37,9 +35,7 @@ class StatusPageListView extends StatelessWidget {
             className: '''
               grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4
             ''',
-            children: [
-              for (final p in pages) StatusPageCard(page: p),
-            ],
+            children: [for (final p in pages) StatusPageCard(page: p)],
           ),
       ],
     );

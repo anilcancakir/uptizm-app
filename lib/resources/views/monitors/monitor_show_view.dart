@@ -42,10 +42,16 @@ class _MonitorShowViewState extends State<MonitorShowView> {
   bool _initialTabApplied = false;
 
   static const _tabs = [
-    AppTabItem(labelKey: 'monitor.tab.overview', icon: Icons.space_dashboard_rounded),
+    AppTabItem(
+      labelKey: 'monitor.tab.overview',
+      icon: Icons.space_dashboard_rounded,
+    ),
     AppTabItem(labelKey: 'monitor.tab.metrics', icon: Icons.analytics_rounded),
     AppTabItem(labelKey: 'monitor.tab.checks', icon: Icons.history_rounded),
-    AppTabItem(labelKey: 'monitor.tab.incidents', icon: Icons.report_problem_rounded),
+    AppTabItem(
+      labelKey: 'monitor.tab.incidents',
+      icon: Icons.report_problem_rounded,
+    ),
   ];
 
   @override
@@ -74,11 +80,18 @@ class _MonitorShowViewState extends State<MonitorShowView> {
         _buildHeader(),
         if (_showWelcome) _buildWelcomeBanner(),
         _buildHeroMeta(),
-        AppTabBar(
-          items: _tabs,
-          selected: _tab,
-          onChanged: (i) => setState(() => _tab = i),
-          scrollable: MediaQuery.of(context).size.width < 1024,
+        WBreakpoint(
+          base: (_) => AppTabBar(
+            items: _tabs,
+            selected: _tab,
+            onChanged: (i) => setState(() => _tab = i),
+            scrollable: true,
+          ),
+          lg: (_) => AppTabBar(
+            items: _tabs,
+            selected: _tab,
+            onChanged: (i) => setState(() => _tab = i),
+          ),
         ),
         _buildTabBody(),
       ],
@@ -187,34 +200,37 @@ class _MonitorShowViewState extends State<MonitorShowView> {
   }
 
   Widget _buildOverview() {
-    final isWide = MediaQuery.of(context).size.width >= 1024;
-    final leftChildren = <Widget>[
-      _buildStatsGrid(),
-      _buildPerformanceCard(),
-      _buildUptimeCard(),
-    ];
-    final rightChildren = <Widget>[
-      const MonitorAiModeCard(workspaceDefault: AiMode.suggest),
-      _buildChecksCard(),
-    ];
-    if (isWide) {
-      return WDiv(
+    return WBreakpoint(
+      base: (_) => WDiv(
+        className: 'flex flex-col gap-6',
+        children: [
+          _buildStatsGrid(),
+          _buildPerformanceCard(),
+          _buildUptimeCard(),
+          const MonitorAiModeCard(workspaceDefault: AiMode.suggest),
+          _buildChecksCard(),
+        ],
+      ),
+      lg: (_) => WDiv(
         className: 'flex flex-row gap-6',
         children: [
           WDiv(
             className: 'flex-1 flex flex-col gap-6 min-w-0',
-            children: leftChildren,
+            children: [
+              _buildStatsGrid(),
+              _buildPerformanceCard(),
+              _buildUptimeCard(),
+            ],
           ),
           WDiv(
             className: 'flex-1 flex flex-col gap-6 min-w-0',
-            children: rightChildren,
+            children: [
+              const MonitorAiModeCard(workspaceDefault: AiMode.suggest),
+              _buildChecksCard(),
+            ],
           ),
         ],
-      );
-    }
-    return WDiv(
-      className: 'flex flex-col gap-6',
-      children: [...leftChildren, ...rightChildren],
+      ),
     );
   }
 
@@ -237,7 +253,6 @@ class _MonitorShowViewState extends State<MonitorShowView> {
   }
 
   Widget _buildHeroMeta() {
-    final isWide = MediaQuery.of(context).size.width >= 640;
     final cells = <Widget>[
       _metaCell(
         icon: Icons.bolt_rounded,
@@ -265,11 +280,10 @@ class _MonitorShowViewState extends State<MonitorShowView> {
         rounded-xl p-4
         bg-white dark:bg-gray-800
         border border-gray-200 dark:border-gray-700
-        ${isWide ? 'flex flex-row gap-8' : 'flex flex-col gap-4'}
+        flex flex-col gap-4
+        sm:flex-row sm:gap-8
       ''',
-      children: isWide
-          ? [for (final c in cells) WDiv(className: 'flex-1', child: c)]
-          : cells,
+      children: [for (final c in cells) WDiv(className: 'sm:flex-1', child: c)],
     );
   }
 
@@ -318,7 +332,7 @@ class _MonitorShowViewState extends State<MonitorShowView> {
   Widget _buildStatsGrid() {
     final stats = _mockBuiltInMetrics();
     return WDiv(
-      className: 'grid grid-cols-2 gap-3',
+      className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3',
       children: [
         for (final s in stats)
           StatCard(
@@ -346,9 +360,26 @@ class _MonitorShowViewState extends State<MonitorShowView> {
           trendLabel: '+0.02%',
           trendPositive: true,
           samples: const [
-            99.8, 99.82, 99.85, 99.87, 99.9, 99.91, 99.92, 99.93,
-            99.93, 99.94, 99.94, 99.94, 99.95, 99.95, 99.95, 99.95,
-            99.95, 99.95, 99.95, 99.95,
+            99.8,
+            99.82,
+            99.85,
+            99.87,
+            99.9,
+            99.91,
+            99.92,
+            99.93,
+            99.93,
+            99.94,
+            99.94,
+            99.94,
+            99.95,
+            99.95,
+            99.95,
+            99.95,
+            99.95,
+            99.95,
+            99.95,
+            99.95,
           ],
         ),
         '99.95%',
@@ -367,9 +398,26 @@ class _MonitorShowViewState extends State<MonitorShowView> {
           trendLabel: '-12 ms',
           trendPositive: true,
           samples: const [
-            257, 260, 255, 258, 253, 250, 252, 248,
-            249, 247, 246, 246, 245, 244, 245, 246,
-            245, 245, 245, 245,
+            257,
+            260,
+            255,
+            258,
+            253,
+            250,
+            252,
+            248,
+            249,
+            247,
+            246,
+            246,
+            245,
+            244,
+            245,
+            246,
+            245,
+            245,
+            245,
+            245,
           ],
         ),
         '245 ms',
@@ -387,9 +435,26 @@ class _MonitorShowViewState extends State<MonitorShowView> {
           trendLabel: '-1',
           trendPositive: true,
           samples: const [
-            3, 3, 3, 3, 3, 3, 2, 2,
-            2, 2, 2, 2, 2, 2, 2, 2,
-            2, 2, 2, 2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
           ],
         ),
         '2',
@@ -408,9 +473,26 @@ class _MonitorShowViewState extends State<MonitorShowView> {
           trendLabel: '-1.1 m',
           trendPositive: true,
           samples: const [
-            5.6, 5.4, 5.3, 5.2, 5.1, 5.0, 4.9, 4.8,
-            4.7, 4.6, 4.5, 4.4, 4.3, 4.3, 4.2, 4.2,
-            4.2, 4.2, 4.2, 4.2,
+            5.6,
+            5.4,
+            5.3,
+            5.2,
+            5.1,
+            5.0,
+            4.9,
+            4.8,
+            4.7,
+            4.6,
+            4.5,
+            4.4,
+            4.3,
+            4.3,
+            4.2,
+            4.2,
+            4.2,
+            4.2,
+            4.2,
+            4.2,
           ],
         ),
         '4.2 m',
@@ -425,10 +507,7 @@ class _MonitorShowViewState extends State<MonitorShowView> {
     return _section(
       titleKey: 'monitor.section.uptime',
       icon: Icons.timeline_rounded,
-      child: UptimeBar(
-        days: _mockUptimeDays(),
-        uptimePercent: 99.95,
-      ),
+      child: UptimeBar(days: _mockUptimeDays(), uptimePercent: 99.95),
     );
   }
 
@@ -449,10 +528,7 @@ class _MonitorShowViewState extends State<MonitorShowView> {
       titleKey: 'monitor.section.recent_checks',
       icon: Icons.history_rounded,
       padded: false,
-      child: WDiv(
-        className: 'flex flex-col',
-        children: _mockChecks(),
-      ),
+      child: WDiv(className: 'flex flex-col', children: _mockChecks()),
     );
   }
 
@@ -478,10 +554,7 @@ class _MonitorShowViewState extends State<MonitorShowView> {
             border-b border-gray-100 dark:border-gray-800
           ''',
           children: [
-            WIcon(
-              icon,
-              className: 'text-sm text-gray-500 dark:text-gray-400',
-            ),
+            WIcon(icon, className: 'text-sm text-gray-500 dark:text-gray-400'),
             WText(
               trans(titleKey),
               className: '''
@@ -493,10 +566,7 @@ class _MonitorShowViewState extends State<MonitorShowView> {
             ?trailing,
           ],
         ),
-        WDiv(
-          className: padded ? 'p-4' : '',
-          child: child,
-        ),
+        WDiv(className: padded ? 'p-4' : '', child: child),
       ],
     );
   }
@@ -522,18 +592,33 @@ class _MonitorShowViewState extends State<MonitorShowView> {
   List<ResponseSample> _mockSamples() {
     final now = DateTime.now();
     const values = [
-      245, 312, 198, 267, 1245, 356, 289, 234,
-      278, 301, 245, 267, 223, 198, 312, 289,
-      256, 234, 278, 245,
+      245,
+      312,
+      198,
+      267,
+      1245,
+      356,
+      289,
+      234,
+      278,
+      301,
+      245,
+      267,
+      223,
+      198,
+      312,
+      289,
+      256,
+      234,
+      278,
+      245,
     ];
     return [
       for (var i = 0; i < values.length; i++)
         ResponseSample(
           timestamp: now.subtract(Duration(minutes: (values.length - i) * 3)),
           responseMs: values[i],
-          status: values[i] > 1000
-              ? MonitorStatus.degraded
-              : MonitorStatus.up,
+          status: values[i] > 1000 ? MonitorStatus.degraded : MonitorStatus.up,
         ),
     ];
   }

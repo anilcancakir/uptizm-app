@@ -326,12 +326,11 @@ packages:
     source: sdk
     version: "0.0.0"
   fluttersdk_wind:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: fluttersdk_wind
-      sha256: c42a78e30b64eb868221463e18e95315bf098d7f3a4617dcf772a2442bfc44ca
-      url: "https://pub.dev"
-    source: hosted
+      path: "references/wind"
+      relative: true
+    source: path
     version: "1.0.0-alpha.6"
   glob:
     dependency: transitive
@@ -560,10 +559,9 @@ packages:
   magic_starter:
     dependency: "direct main"
     description:
-      name: magic_starter
-      sha256: c7077acc8834b4d77d5c4759070ff282426c07045a43fe284a688f00cb845c7b
-      url: "https://pub.dev"
-    source: hosted
+      path: "references/magic_starter"
+      relative: true
+    source: path
     version: "0.0.1-alpha.14"
   matcher:
     dependency: transitive

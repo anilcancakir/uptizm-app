@@ -48,9 +48,21 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
 
   static const _intents = [
     ('none', 'incident.note.intent.none', Icons.chat_bubble_outline_rounded),
-    ('acknowledge', 'incident.note.intent.acknowledge', Icons.visibility_rounded),
-    ('mitigated', 'incident.note.intent.mitigated', Icons.health_and_safety_outlined),
-    ('resolved', 'incident.note.intent.resolved', Icons.check_circle_outline_rounded),
+    (
+      'acknowledge',
+      'incident.note.intent.acknowledge',
+      Icons.visibility_rounded,
+    ),
+    (
+      'mitigated',
+      'incident.note.intent.mitigated',
+      Icons.health_and_safety_outlined,
+    ),
+    (
+      'resolved',
+      'incident.note.intent.resolved',
+      Icons.check_circle_outline_rounded,
+    ),
   ];
 
   @override
@@ -77,11 +89,7 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
               children: [
                 WDiv(
                   className: 'p-4 flex flex-col gap-4',
-                  children: [
-                    _intentRow(),
-                    _textField(),
-                    _hint(),
-                  ],
+                  children: [_intentRow(), _textField(), _hint()],
                 ),
               ],
             ),
@@ -144,9 +152,7 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
             bg-gray-100 dark:bg-gray-900
             border border-gray-200 dark:border-gray-700
           ''',
-          children: [
-            for (final i in _intents) _intentPill(i.$1, i.$2, i.$3),
-          ],
+          children: [for (final i in _intents) _intentPill(i.$1, i.$2, i.$3)],
         ),
       ],
     );
@@ -204,27 +210,18 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
             text-gray-500 dark:text-gray-400
           ''',
         ),
-        WDiv(
+        WInput(
+          controller: _controller,
+          type: InputType.multiline,
+          minLines: 4,
+          maxLines: 8,
+          placeholder: trans('incident.note.placeholder'),
+          placeholderClassName: 'text-sm text-gray-400 dark:text-gray-500',
           className: '''
-            rounded-lg
+            rounded-lg px-3 py-2.5 text-sm
             bg-white dark:bg-gray-900
             border border-gray-200 dark:border-gray-700
           ''',
-          child: TextField(
-            controller: _controller,
-            minLines: 4,
-            maxLines: 8,
-            style: const TextStyle(fontSize: 14),
-            decoration: InputDecoration(
-              hintText: trans('incident.note.placeholder'),
-              hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              border: InputBorder.none,
-            ),
-          ),
         ),
       ],
     );
@@ -293,10 +290,7 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
           child: WDiv(
             className: 'flex flex-row items-center gap-1.5',
             children: [
-              WIcon(
-                Icons.send_rounded,
-                className: 'text-sm text-white',
-              ),
+              WIcon(Icons.send_rounded, className: 'text-sm text-white'),
               WText(
                 trans('incident.note.submit'),
                 className: 'text-sm font-semibold text-white',

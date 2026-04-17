@@ -60,16 +60,13 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
   }
 
   Widget _toolbar() {
-    final isWide = MediaQuery.of(context).size.width >= 640;
     return WDiv(
-      className: isWide
-          ? 'flex flex-row items-center gap-3'
-          : 'flex flex-col items-stretch gap-3',
+      className: '''
+        flex flex-col items-stretch gap-3
+        sm:flex-row sm:items-center
+      ''',
       children: [
-        WDiv(
-          className: isWide ? 'flex-1' : 'w-full',
-          child: _statusTabs(),
-        ),
+        WDiv(className: 'w-full sm:flex-1', child: _statusTabs()),
         WButton(
           onTap: () => setState(() => _aiOnly = !_aiOnly),
           states: _aiOnly ? {'active'} : {},
@@ -146,10 +143,7 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
       className: 'flex flex-col',
       children: [
         for (final i in items)
-          IncidentListItem(
-            incident: i,
-            onTap: () => _openSheet(i),
-          ),
+          IncidentListItem(incident: i, onTap: () => _openSheet(i)),
       ],
     );
   }
@@ -176,10 +170,8 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
             MagicRoute.back();
             _resolve(incident);
           },
-          onAddNote: () => IncidentNoteComposer.show(
-            ctx,
-            incidentTitle: incident.title,
-          ),
+          onAddNote: () =>
+              IncidentNoteComposer.show(ctx, incidentTitle: incident.title),
         ),
       ),
     );
@@ -194,45 +186,28 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
   }
 
   Widget _statusTabs() {
-    final isWide = MediaQuery.of(context).size.width >= 640;
-    final buttons = [
-      for (final t in _IncidentTab.values)
-        WButton(
-          onTap: () => setState(() => _tab = t),
-          states: _tab == t ? {'active'} : {},
-          className: '''
-            ${isWide ? 'w-full' : ''} px-3 py-2 rounded-lg
-            hover:bg-gray-200/60 dark:hover:bg-gray-700/60
-            active:bg-white dark:active:bg-gray-900
-            active:shadow-sm
-            flex flex-row items-center justify-center gap-2
-          ''',
-          child: _statusTabChild(t),
-        ),
-    ];
-    if (!isWide) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: WDiv(
-          className: '''
-            rounded-xl p-1
-            bg-gray-100 dark:bg-gray-800
-            border border-gray-200 dark:border-gray-700
-            flex flex-row gap-1
-          ''',
-          children: buttons,
-        ),
-      );
-    }
     return WDiv(
       className: '''
         rounded-xl p-1
         bg-gray-100 dark:bg-gray-800
         border border-gray-200 dark:border-gray-700
         flex flex-row gap-1
+        overflow-x-auto sm:overflow-visible
       ''',
       children: [
-        for (final b in buttons) WDiv(className: 'flex-1', child: b),
+        for (final t in _IncidentTab.values)
+          WButton(
+            onTap: () => setState(() => _tab = t),
+            states: _tab == t ? {'active'} : {},
+            className: '''
+              sm:flex-1 px-3 py-2 rounded-lg
+              hover:bg-gray-200/60 dark:hover:bg-gray-700/60
+              active:bg-white dark:active:bg-gray-900
+              active:shadow-sm
+              flex flex-row items-center justify-center gap-2
+            ''',
+            child: _statusTabChild(t),
+          ),
       ],
     );
   }
@@ -420,7 +395,8 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
           evidence: const [
             AiEvidence(
               label: '1 of 4 regions down',
-              detail: 'eu-central-1 timing out; eu-west-1 / us-east-1 / ap-southeast-1 green',
+              detail:
+                  'eu-central-1 timing out; eu-west-1 / us-east-1 / ap-southeast-1 green',
             ),
             AiEvidence(
               label: 'Connection timeout',
