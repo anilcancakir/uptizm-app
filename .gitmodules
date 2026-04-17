@@ -1,0 +1,12 @@
+[submodule "references/magic"]
+	path = references/magic
+	url = https://github.com/fluttersdk/magic.git
+	branch = master
+[submodule "references/magic_starter"]
+	path = references/magic_starter
+	url = https://github.com/fluttersdk/magic_starter.git
+	branch = main
+[submodule "references/wind"]
+	path = references/wind
+	url = https://github.com/fluttersdk/wind.git
+	branch = v1
