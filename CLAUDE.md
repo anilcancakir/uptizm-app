@@ -56,6 +56,7 @@ Backend API lives in sibling repo `../uptizm-api`.
 - **Feedback/nav**: `MagicRoute.to()`, `Magic.snackbar()`, `Magic.toast()` (never BuildContext)
 - **i18n**: `trans('section.key')` from `assets/lang/en.json` (never hardcoded strings)
 - **Platforms**: web, Android, iOS (design responsive from the start)
+- **TDD**: red-green-refactor, no exceptions. Write a failing test first, make it pass with minimum code, then refactor. Every new controller, model, helper, and view ships with tests.
 
 ## Wind UI Rules
 
@@ -94,23 +95,6 @@ WDiv(
 | `wind-ui` | W-components, className tokens, states, responsive, theme |
 
 Via `fluttersdk` CC plugin. Full API refs + templates + anti-patterns. Defer to skills for details.
-
-## Agent Context
-
-IMPORTANT: Subagents inherit nothing. Inject into every Agent prompt:
-
-```
-Project rules:
-1. Load skills before coding: invoke skill "fluttersdk:magic-framework" for any framework/data/routing task, invoke skill "fluttersdk:wind-ui" for any UI/styling task. Read skill references for API details
-2. Wind UI only: WDiv/WText/WIcon/WSpacer/WAnchor/WButton + className. NEVER Row, Column, Container, Text, Icon
-3. className: triple-quoted ''', dark: pair on every color (bg-white dark:bg-gray-800), responsive sm:/md:/lg:/xl:
-4. Conditional styles: states param + prefixed classes (up:bg-green-500, states: {'up'}). NEVER interpolation
-5. State prefixes: hover:/focus:/disabled:/active:/loading:/error:/custom. Stack: dark:hover:bg-gray-700
-6. Magic facades: Http, MagicRoute, Auth, Config, Cache, Log, Vault. NEVER raw Dio, GoRouter, print()
-7. Singleton: static X get instance => Magic.findOrPut(X.new);
-8. i18n: trans('key'). Feedback: Magic.snackbar()/toast(). Nav: MagicRoute.to(). NEVER BuildContext
-9. Target platforms: web + Android + iOS — ensure responsive breakpoints and platform-safe APIs
-```
 
 ## Testing
 
