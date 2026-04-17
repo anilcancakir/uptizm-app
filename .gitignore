@@ -47,5 +47,5 @@ app.*.map.json
 # Environment
 .env
 
-# Claude Code local session state
-.claude/
+# Claude Code personal settings (shared settings.json is committed)
+.claude/settings.local.json
