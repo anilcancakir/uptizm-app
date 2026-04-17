@@ -52,40 +52,11 @@ Backend API lives in sibling repo `../uptizm-api`.
 - **State**: `ChangeNotifier` + `MagicStateMixin` (no Riverpod/Bloc/GetX)
 - **HTTP**: `Http` facade against uptizm-api (never raw Dio)
 - **Routing**: `MagicRoute.page()` / `.group()` (never raw GoRouter)
-- **UI**: Wind UI W-prefix + `className` (never native layout/text widgets)
+- **UI**: Wind UI W-prefix + `className` for all layout/styling. Every `bg-`/`text-`/`border-` needs a `dark:` pair. Conditional styling via `states` param + prefixed classes, never string interpolation. Multi-line `className` via triple quotes, one concern per line.
 - **Feedback/nav**: `MagicRoute.to()`, `Magic.snackbar()`, `Magic.toast()` (never BuildContext)
 - **i18n**: `trans('section.key')` from `assets/lang/en.json` (never hardcoded strings)
 - **Platforms**: web, Android, iOS (design responsive from the start)
 - **TDD**: red-green-refactor, no exceptions. Write a failing test first, make it pass with minimum code, then refactor. Every new controller, model, helper, and view ships with tests.
-
-## Wind UI Rules
-
-IMPORTANT: W-prefix components for ALL layout and styling. Banned natives:
-
-| Banned | Replacement |
-|--------|------------|
-| Row/Column/Wrap | `WDiv` + `flex flex-row`/`flex-col`/`flex-wrap` |
-| Container/SizedBox/Padding/Expanded | `WDiv` + className (`p-4`, `w-64`, `flex-1`) |
-| Text/Icon | `WText`/`WIcon` + className |
-| ElevatedButton/TextButton/GestureDetector | `WButton`/`WAnchor` |
-| TextFormField | `WFormInput` (MagicForm) or `WInput` |
-| String interpolation in className | `states` param + prefixed classes |
-
-Exceptions (keep native): `Scaffold`, `AppBar`, `Form`, `Center`, `SingleChildScrollView`, `CircularProgressIndicator`, `Navigator`.
-
-**className**: Triple-quoted `'''` for multi-line; single-line fine for simple cases. One concern per line. Every `bg-`/`text-`/`border-` needs `dark:` pair. Responsive via `sm:`/`md:`/`lg:`/`xl:`. States via `states` param (`hover:`, `focus:`, `disabled:`, `active:`, `loading:`, `error:`, custom). Modifiers stack: `dark:hover:bg-gray-700`.
-
-```dart
-WDiv(
-  className: '''
-    bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6
-    border border-gray-200 dark:border-gray-700
-    flex flex-col md:flex-row gap-4
-    up:border-green-500 down:border-red-500
-  ''',
-  states: monitor.isUp ? {'up'} : {'down'},
-)
-```
 
 ## Skills
 
