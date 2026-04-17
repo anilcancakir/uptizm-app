@@ -33,16 +33,38 @@ Built on **magic** + **magic_starter** framework (Laravel-inspired Flutter archi
 lib/
 ├── main.dart              # Magic.init() + configFactories + runApp(MagicApplication())
 ├── app/
-│   ├── models/            # Monitor, Check, Incident, Metric — extend Model + HasTimestamps + InteractsWithPersistence
-│   ├── providers/         # ServiceProvider (register = sync bindings, boot = async)
+│   ├── controllers/       # Magic controllers (one per domain action)
+│   ├── enums/             # MonitorStatus, IncidentSeverity, MetricType, SignalSource, AiTrigger, ...
+│   ├── events/            # Broadcast/app events
+│   ├── helpers/           # Pure-function utilities (no IO)
+│   ├── listeners/         # Event listeners
 │   ├── middleware/        # MagicMiddleware subclasses (auth guards, etc.)
+│   ├── models/            # user.dart, team.dart; mock/ holds design-mock models (Monitor, Incident, ...)
+│   ├── policies/          # Authorization gates
+│   ├── providers/         # ServiceProvider (register = sync bindings, boot = async)
 │   └── kernel.dart        # Kernel.registerAll() named middleware
-├── config/                # app, auth, network, cache, database, routing, view
+├── config/                # app, auth, broadcasting, cache, database, logging, magic_starter, network, routing, view, wind
+├── database/
+│   ├── factories/         # Model factories for tests/seeds
+│   ├── migrations/        # Schema migrations
+│   └── seeders/           # Seed data
 ├── resources/
-│   ├── views/             # Full-screen pages (dashboard, monitor detail, incidents)
-│   └── widgets/           # Reusable components (status badge, uptime chart, metric card)
+│   └── views/
+│       ├── dashboard_view.dart
+│       ├── monitors/      # Full-screen monitor pages (list, show, edit, tabs)
+│       ├── settings/      # Settings pages (ai, metrics library, appearance, ...)
+│       ├── status_pages/  # Status page management screens
+│       └── components/    # Reusable widgets grouped by domain
+│           ├── ai/        # ai_avatar, ai_mode_selector, ...
+│           ├── common/    # app_tab_bar, segmented_choice, color_swatch, ...
+│           ├── dashboard/ # recent_incidents_section, ...
+│           ├── incidents/ # incident_create_sheet, incident_timeline, ...
+│           ├── monitors/  # response_sparkline, check_detail_sheet, metric_*, ...
+│           ├── settings/
+│           └── status_pages/  # status_page_card, logo_upload_zone, color_chip_grid, ...
 ├── routes/app.dart        # MagicRoute.page() / .group() / .layout()
-└── assets/lang/en.json    # trans('key') i18n strings
+assets/
+└── lang/en.json           # trans('key') i18n strings
 ```
 
 Backend API lives in sibling repo `../uptizm-api`.
