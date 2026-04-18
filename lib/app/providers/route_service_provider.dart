@@ -10,12 +10,17 @@ import 'package:magic_starter/magic_starter.dart';
 class RouteServiceProvider extends ServiceProvider {
   RouteServiceProvider(super.app);
 
+  /// Registers the middleware kernel synchronously during bootstrap so
+  /// named middleware are resolvable before any route definition runs.
   @override
   void register() {
-    // Register middleware kernel; runs synchronously during bootstrap.
     registerKernel();
   }
 
+  /// Registers Magic Starter's auth / profile / team / notification route
+  /// groups and then the application's own routes. Order matters: starter
+  /// routes must exist first so their named paths can be referenced inside
+  /// `registerAppRoutes()`.
   @override
   Future<void> boot() async {
     // Register application route definitions.

@@ -17,6 +17,8 @@ class PolicyServiceProvider extends ServiceProvider {
   @override
   void register() {}
 
+  /// Binds domain policies on the global [Gate]. Deferred to `boot()` so
+  /// [Auth.user] is available by the time a policy callback fires.
   @override
   Future<void> boot() async {
     const MonitorPolicy().register();

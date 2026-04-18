@@ -12,6 +12,8 @@ import 'package:magic_starter/magic_starter.dart';
 /// );
 /// ```
 class EnsureAuthenticated extends MagicMiddleware {
+  /// Gates the protected route. Guests redirect to the login route without
+  /// invoking [next]; authenticated users fall through.
   @override
   Future<void> handle(void Function() next) async {
     if (!Auth.check()) {

@@ -12,27 +12,28 @@ import '../models/user.dart';
 class AppServiceProvider extends ServiceProvider {
   AppServiceProvider(super.app);
 
+  /// Synchronous bindings. Pre-instantiates metrics controllers so nested
+  /// tabs (MonitorMetricsTab, SettingsMetricsLibraryView) can resolve them
+  /// via `Magic.find<T>()` before their `initState` runs.
   @override
   void register() {
-    // Pre-register metrics controllers so MagicStatefulView can resolve them
-    // via Magic.find<T>() before any nested tab (MonitorMetricsTab,
-    // SettingsMetricsLibraryView) hits its initState.
     MonitorMetricController.instance;
     MetricsLibraryController.instance;
   }
 
+  /// Async bootstrap. Configures auth, navigation, brand theme, page header
+  /// theme, logout, locale, and team resolver in the Magic Starter plugin.
+  ///
+  /// 1. Auth: register the user factory so `Auth.user<User>()` and Magic
+  ///    Starter's session restoration hydrate the concrete model.
+  /// 2. Navigation: sidebar / mobile bottom bar / profile menu entries.
+  /// 3. Brand + page header theme: Uptizm wordmark and borderless header.
+  /// 4. Logout, locales, team resolver.
   @override
   Future<void> boot() async {
-    // Perform async bootstrap logic here.
-    //
-    // IMPORTANT: Call setUserFactory() so Auth.user<T>() returns your model:
-    //   Auth.manager.setUserFactory((data) => User.fromMap(data));
-    // Magic Starter: Register user factory for auth session restoration.
     Auth.manager.setUserFactory((data) => User.fromMap(data));
     MagicStarter.useUserModel((data) => User.fromMap(data));
 
-    // Magic Starter: Uptizm sidebar + mobile bottom bar navigation.
-    // Four top-level surfaces; team switcher lives in the starter header.
     MagicStarter.useNavigation(
       mainItems: [
         MagicStarterNavItem(

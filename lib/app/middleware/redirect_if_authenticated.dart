@@ -12,6 +12,8 @@ import 'package:magic_starter/magic_starter.dart';
 /// );
 /// ```
 class RedirectIfAuthenticated extends MagicMiddleware {
+  /// Redirects authenticated users to the home route and short-circuits
+  /// before [next] runs; guests fall through to the guest-only page.
   @override
   Future<void> handle(void Function() next) async {
     if (Auth.check()) {

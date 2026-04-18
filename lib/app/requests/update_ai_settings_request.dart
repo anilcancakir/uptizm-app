@@ -10,6 +10,9 @@ import '../enums/ai_mode.dart';
 class UpdateAiSettingsRequest extends FormRequest {
   const UpdateAiSettingsRequest();
 
+  /// Normalizes the incoming [data] before rule validation. Collapses
+  /// [AiMode] instances to their wire name so `rules()` only has to
+  /// whitelist a single representation.
   @override
   Map<String, dynamic> prepared(Map<String, dynamic> data) {
     final next = Map<String, dynamic>.from(data);
@@ -24,6 +27,7 @@ class UpdateAiSettingsRequest extends FormRequest {
     return next;
   }
 
+  /// Validation rules mirroring the server-side `UpdateAiSettingsRequest`.
   @override
   Map<String, List<Rule>> rules() => {
     'ai_mode': [Required(), InList<AiMode>(AiMode.values)],

@@ -10,6 +10,9 @@ import '../enums/incident_severity.dart';
 class StoreIncidentRequest extends FormRequest {
   const StoreIncidentRequest();
 
+  /// Normalizes the incoming [data] before rule validation. Collapses
+  /// severity enums to wire strings, trims the required title, and drops
+  /// optional blanks so absent and empty never both reach the server.
   @override
   Map<String, dynamic> prepared(Map<String, dynamic> data) {
     final next = Map<String, dynamic>.from(data);
@@ -41,6 +44,7 @@ class StoreIncidentRequest extends FormRequest {
     return next;
   }
 
+  /// Validation rules mirroring the server-side `StoreIncidentRequest`.
   @override
   Map<String, List<Rule>> rules() => {
     'monitor_id': [Required()],

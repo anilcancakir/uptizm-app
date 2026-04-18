@@ -8,6 +8,9 @@ import 'package:magic/magic.dart';
 class UpdateAppearanceRequest extends FormRequest {
   const UpdateAppearanceRequest();
 
+  /// Normalizes the incoming [data] before rule validation. Trims the hex
+  /// color and rewrites a blank logo path to an explicit null so the API
+  /// distinguishes "clear logo" from "not provided".
   @override
   Map<String, dynamic> prepared(Map<String, dynamic> data) {
     final next = Map<String, dynamic>.from(data);
@@ -23,6 +26,7 @@ class UpdateAppearanceRequest extends FormRequest {
     return next;
   }
 
+  /// Validation rules mirroring the server-side `UpdateAppearanceRequest`.
   @override
   Map<String, List<Rule>> rules() => {
     'appearance_primary_color': [Required()],

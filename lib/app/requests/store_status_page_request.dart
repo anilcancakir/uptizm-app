@@ -9,6 +9,9 @@ import 'package:magic/magic.dart';
 class StoreStatusPageRequest extends FormRequest {
   const StoreStatusPageRequest();
 
+  /// Normalizes the incoming [data] before rule validation. Trims the
+  /// required string fields and drops a blank logo path so the server
+  /// never persists an empty hero.
   @override
   Map<String, dynamic> prepared(Map<String, dynamic> data) {
     final next = Map<String, dynamic>.from(data);
@@ -29,6 +32,7 @@ class StoreStatusPageRequest extends FormRequest {
     return next;
   }
 
+  /// Validation rules mirroring the server-side `StoreStatusPageRequest`.
   @override
   Map<String, List<Rule>> rules() => {
     'title': [Required(), Max(120)],
