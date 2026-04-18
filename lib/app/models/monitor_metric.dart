@@ -38,7 +38,7 @@ class MonitorMetric extends Model with HasTimestamps, InteractsWithPersistence {
   ];
 
   @override
-  Map<String, String> get casts => {};
+  Map<String, dynamic> get casts => {'type': EnumCast(MetricType.values)};
 
   @override
   String get id => getAttribute('id')?.toString() ?? '';
@@ -51,14 +51,7 @@ class MonitorMetric extends Model with HasTimestamps, InteractsWithPersistence {
   String? get extractionPath => getAttribute('extraction_path') as String?;
   String? get unit => getAttribute('unit') as String?;
 
-  MetricType? get type {
-    final raw = getAttribute('type') as String?;
-    if (raw == null) return null;
-    return MetricType.values.firstWhere(
-      (t) => t.name == raw,
-      orElse: () => MetricType.numeric,
-    );
-  }
+  MetricType? get type => getAttribute('type') as MetricType?;
 
   MetricSource? get source {
     final raw = getAttribute('source') as String?;

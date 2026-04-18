@@ -42,7 +42,11 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
   ];
 
   @override
-  Map<String, String> get casts => {};
+  Map<String, dynamic> get casts => {
+    'type': EnumCast(MonitorType.values),
+    'status': EnumCast(MonitorStatus.values),
+    'last_status': EnumCast(MonitorStatus.values),
+  };
 
   @override
   String get id => getAttribute('id')?.toString() ?? '';
@@ -55,32 +59,10 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
   String? get url => getAttribute('url') as String?;
   set url(String? value) => setAttribute('url', value);
 
-  MonitorType? get type {
-    final raw = getAttribute('type') as String?;
-    if (raw == null) return null;
-    return MonitorType.values.firstWhere(
-      (v) => v.name == raw,
-      orElse: () => MonitorType.http,
-    );
-  }
-
-  MonitorStatus? get status {
-    final raw = getAttribute('status') as String?;
-    if (raw == null) return null;
-    return MonitorStatus.values.firstWhere(
-      (v) => v.name == raw,
-      orElse: () => MonitorStatus.up,
-    );
-  }
-
-  MonitorStatus? get lastStatus {
-    final raw = getAttribute('last_status') as String?;
-    if (raw == null) return null;
-    return MonitorStatus.values.firstWhere(
-      (v) => v.name == raw,
-      orElse: () => MonitorStatus.up,
-    );
-  }
+  MonitorType? get type => getAttribute('type') as MonitorType?;
+  MonitorStatus? get status => getAttribute('status') as MonitorStatus?;
+  MonitorStatus? get lastStatus =>
+      getAttribute('last_status') as MonitorStatus?;
 
   DateTime? get lastCheckedAt {
     final raw = getAttribute('last_checked_at');

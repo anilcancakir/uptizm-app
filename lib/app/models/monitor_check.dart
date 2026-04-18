@@ -19,7 +19,7 @@ class MonitorCheck extends Model {
   List<String> get fillable => const [];
 
   @override
-  Map<String, String> get casts => const {};
+  Map<String, dynamic> get casts => {'status': EnumCast(MonitorStatus.values)};
 
   @override
   String get id => getAttribute('id')?.toString() ?? '';
@@ -34,14 +34,7 @@ class MonitorCheck extends Model {
     return null;
   }
 
-  MonitorStatus? get status {
-    final raw = getAttribute('status') as String?;
-    if (raw == null) return null;
-    return MonitorStatus.values.firstWhere(
-      (v) => v.name == raw,
-      orElse: () => MonitorStatus.up,
-    );
-  }
+  MonitorStatus? get status => getAttribute('status') as MonitorStatus?;
 
   int? get statusCode => getAttribute('status_code') as int?;
   int? get responseMs => getAttribute('response_ms') as int?;
