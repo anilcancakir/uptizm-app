@@ -17,7 +17,7 @@ import '../../../resources/views/components/monitors/monitor_form_shell.dart';
 /// the load/store/update/destroy flows. The loaded [Monitor] lives in
 /// `rxState` so show and edit surfaces share one payload.
 class MonitorController extends MagicController
-    with MagicStateMixin<Monitor?>, ValidatesRequests {
+    with MagicStateMixin<Monitor?>, ValidatesRequests, ResourceController {
   static MonitorController get instance =>
       Magic.findOrPut(MonitorController.new);
 
@@ -34,9 +34,13 @@ class MonitorController extends MagicController
   bool get isSubmitting => _isSubmitting;
   bool get isDeleting => _isDeleting;
 
+  @override
   Widget index() => const MonitorListView();
+  @override
   Widget show(String id) => MonitorShowView(monitorId: id);
+  @override
   Widget create() => const MonitorCreateView();
+  @override
   Widget edit(String id) => MonitorEditView(monitorId: id);
 
   Future<void> load(String id) async {

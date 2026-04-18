@@ -1,65 +1,47 @@
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
+import '../app/controllers/ai/ai_agent_run_controller.dart';
+import '../app/controllers/ai/ai_settings_controller.dart';
+import '../app/controllers/dashboard/dashboard_controller.dart';
+import '../app/controllers/metrics/metrics_library_controller.dart';
 import '../app/controllers/monitors/monitor_controller.dart';
-import '../resources/views/dashboard_view.dart';
-import '../resources/views/settings/settings_ai_activity_view.dart';
-import '../resources/views/settings/settings_ai_view.dart';
-import '../resources/views/settings/settings_appearance_view.dart';
-import '../resources/views/settings/settings_hub_view.dart';
-import '../resources/views/settings/settings_metrics_library_view.dart';
-import '../resources/views/status_pages/status_page_create_view.dart';
-import '../resources/views/status_pages/status_page_list_view.dart';
-import '../resources/views/status_pages/status_page_show_view.dart';
+import '../app/controllers/settings/appearance_controller.dart';
+import '../app/controllers/settings/settings_controller.dart';
+import '../app/controllers/status_pages/status_pages_controller.dart';
 
 /// Application Route Definitions.
 ///
 /// Four top-level destinations: Dashboard, Monitors, Status Pages, Settings.
+/// Every route delegates to a resource controller so the controller stays
+/// the single entry point per domain (Laravel-style).
 void registerAppRoutes() {
   MagicRoute.group(
     layout: (child) => MagicStarter.view.makeLayout('layout.app', child: child),
     middleware: ['auth'],
     layoutId: 'app',
     routes: () {
-      MagicRoute.page('/', () => const DashboardView());
+      MagicRoute.page('/', () => DashboardController.instance.index());
 
-      MagicRoute.page('/monitors', () => MonitorController.instance.index());
-      MagicRoute.page(
-        '/monitors/create',
-        () => MonitorController.instance.create(),
-      );
-      MagicRoute.page(
-        '/monitors/:id/edit',
-        (id) => MonitorController.instance.edit(id),
-      );
-      MagicRoute.page(
-        '/monitors/:id',
-        (id) => MonitorController.instance.show(id),
-      );
+      MagicRoute.resource('monitors', MonitorController.instance);
+      MagicRoute.resource('status-pages', StatusPagesController.instance);
 
-      MagicRoute.page('/status-pages', () => const StatusPageListView());
+      MagicRoute.page('/settings', () => SettingsController.instance.hub());
       MagicRoute.page(
-        '/status-pages/create',
-        () => const StatusPageCreateView(),
+        '/settings/ai',
+        () => AiSettingsController.instance.index(),
       );
-      MagicRoute.page(
-        '/status-pages/sample',
-        () => const StatusPageShowView(statusPageId: 'sample'),
-      );
-
-      MagicRoute.page('/settings', () => const SettingsHubView());
-      MagicRoute.page('/settings/ai', () => const SettingsAiView());
       MagicRoute.page(
         '/settings/ai/activity',
-        () => const SettingsAiActivityView(),
+        () => AiAgentRunController.instance.index(),
       );
       MagicRoute.page(
         '/settings/metrics-library',
-        () => const SettingsMetricsLibraryView(),
+        () => MetricsLibraryController.instance.index(),
       );
       MagicRoute.page(
         '/settings/appearance',
-        () => const SettingsAppearanceView(),
+        () => AppearanceController.instance.index(),
       );
     },
   );

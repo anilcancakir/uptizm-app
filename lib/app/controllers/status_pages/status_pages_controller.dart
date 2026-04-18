@@ -1,5 +1,9 @@
+import 'package:flutter/widgets.dart';
 import 'package:magic/magic.dart';
 
+import '../../../resources/views/status_pages/status_page_create_view.dart';
+import '../../../resources/views/status_pages/status_page_list_view.dart';
+import '../../../resources/views/status_pages/status_page_show_view.dart';
 import '../../models/status_page.dart';
 
 /// Status page CRUD + publish controller.
@@ -8,14 +12,33 @@ import '../../models/status_page.dart';
 /// `_detail` so show/edit screens can read fresh data without disturbing
 /// the list feed.
 class StatusPagesController extends MagicController
-    with MagicStateMixin<List<StatusPage>>, ValidatesRequests {
+    with
+        MagicStateMixin<List<StatusPage>>,
+        ValidatesRequests,
+        ResourceController {
   static StatusPagesController get instance =>
       Magic.findOrPut(StatusPagesController.new);
 
+  /// Only `index`, `create`, and `show` are wired today; the edit screen
+  /// is not implemented yet.
+  @override
+  Set<String> get resourceMethods => const {'index', 'create', 'show'};
+
+  /// Route entry points. Kept alongside the data methods so the controller
+  /// stays the single entry point for the status-pages resource.
+  @override
+  Widget index() => const StatusPageListView();
+  @override
+  Widget create() => const StatusPageCreateView();
+  @override
+  Widget show(String id) => StatusPageShowView(statusPageId: id);
+
   StatusPage? _detail;
+  bool _isSubmitting = false;
 
   List<StatusPage> get pages => rxState ?? const [];
   StatusPage? get detail => _detail;
+  bool get isSubmitting => _isSubmitting;
 
   Future<void> load() async {
     clearErrors();
@@ -39,6 +62,35 @@ class StatusPagesController extends MagicController
     }
     _detail = StatusPage.fromMap(data);
     setState(pages, status: RxStatus.success(), notify: true);
+  }
+
+  /// Typed create wrapper used by [StatusPageCreateView]. Builds the API
+  /// payload, guards concurrent submits, and flips [isSubmitting] so the
+  /// view can render a loading button without owning any flag.
+  Future<StatusPage?> submitCreate({
+    required String title,
+    required String slug,
+    required String primaryColor,
+    String? logoPath,
+    required bool isPublic,
+    required List<String> monitorIds,
+  }) async {
+    if (_isSubmitting) return null;
+    _isSubmitting = true;
+    refreshUI();
+    try {
+      return await store({
+        'title': title.trim(),
+        'slug': slug.trim(),
+        'primary_color': primaryColor,
+        'is_public': isPublic,
+        'monitor_ids': monitorIds,
+        'logo_path': ?logoPath,
+      });
+    } finally {
+      _isSubmitting = false;
+      refreshUI();
+    }
   }
 
   Future<StatusPage?> store(Map<String, dynamic> payload) async {
