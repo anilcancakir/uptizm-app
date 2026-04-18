@@ -22,6 +22,7 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
 
   @override
   List<String> get fillable => [
+    'id',
     'name',
     'type',
     'url',
@@ -39,6 +40,13 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
     'ssl_tracking',
     'alert_on_down',
     'alert_on_warn',
+    'team_id',
+    'status',
+    'last_status',
+    'last_checked_at',
+    'last_response_ms',
+    'created_at',
+    'updated_at',
   ];
 
   @override
@@ -113,7 +121,8 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
 
   static Monitor fromMap(Map<String, dynamic> map) {
     return Monitor()
-      ..setRawAttributes(map, sync: true)
+      ..fill(map)
+      ..syncOriginal()
       ..exists = map.containsKey('id');
   }
 

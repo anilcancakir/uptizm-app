@@ -14,4 +14,24 @@ void main() {
       expect(metric.type, isNull);
     });
   });
+
+  group('MonitorMetric fill hydration', () {
+    test('preserves id, monitor_id, and timestamps through fill()', () {
+      final metric = MonitorMetric.fromMap({
+        'id': 'met_1',
+        'monitor_id': 'mon_1',
+        'label': 'Latency',
+        'key': 'latency',
+        'type': 'numeric',
+        'created_at': '2026-04-18T10:00:00.000000Z',
+        'updated_at': '2026-04-18T11:00:00.000000Z',
+      });
+
+      expect(metric.id, 'met_1');
+      expect(metric.monitorId, 'mon_1');
+      expect(metric.label, 'Latency');
+      expect(metric.key, 'latency');
+      expect(metric.exists, isTrue);
+    });
+  });
 }

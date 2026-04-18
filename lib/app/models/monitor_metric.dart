@@ -24,6 +24,8 @@ class MonitorMetric extends Model with HasTimestamps, InteractsWithPersistence {
 
   @override
   List<String> get fillable => [
+    'id',
+    'monitor_id',
     'group_name',
     'label',
     'key',
@@ -35,6 +37,9 @@ class MonitorMetric extends Model with HasTimestamps, InteractsWithPersistence {
     'warn_bound',
     'critical_bound',
     'display_order',
+    'latest_value',
+    'created_at',
+    'updated_at',
   ];
 
   @override
@@ -103,7 +108,8 @@ class MonitorMetric extends Model with HasTimestamps, InteractsWithPersistence {
 
   static MonitorMetric fromMap(Map<String, dynamic> map) {
     return MonitorMetric()
-      ..setRawAttributes(map, sync: true)
+      ..fill(map)
+      ..syncOriginal()
       ..exists = map.containsKey('id');
   }
 

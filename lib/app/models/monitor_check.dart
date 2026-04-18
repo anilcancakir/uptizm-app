@@ -16,7 +16,24 @@ class MonitorCheck extends Model {
   bool get incrementing => false;
 
   @override
-  List<String> get fillable => const [];
+  List<String> get fillable => const [
+    'id',
+    'monitor_id',
+    'region',
+    'checked_at',
+    'status',
+    'status_code',
+    'response_ms',
+    'error_message',
+    'method',
+    'url',
+    'response_body_preview',
+    'request_headers',
+    'response_headers',
+    'timing',
+    'created_at',
+    'updated_at',
+  ];
 
   @override
   Map<String, dynamic> get casts => {'status': EnumCast(MonitorStatus.values)};
@@ -79,7 +96,8 @@ class MonitorCheck extends Model {
 
   static MonitorCheck fromMap(Map<String, dynamic> map) {
     return MonitorCheck()
-      ..setRawAttributes(map, sync: true)
+      ..fill(map)
+      ..syncOriginal()
       ..exists = map.containsKey('id');
   }
 }

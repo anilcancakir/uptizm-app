@@ -39,4 +39,33 @@ void main() {
       expect(monitor.lastStatus, isNull);
     });
   });
+
+  group('Monitor fill hydration', () {
+    test('preserves id and timestamps through fill()', () {
+      final monitor = Monitor.fromMap({
+        'id': 'mon_42',
+        'name': 'Home page',
+        'url': 'https://example.com',
+        'type': 'http',
+        'created_at': '2026-04-18T10:00:00.000000Z',
+        'updated_at': '2026-04-18T11:00:00.000000Z',
+      });
+
+      expect(monitor.id, 'mon_42');
+      expect(monitor.name, 'Home page');
+      expect(monitor.exists, isTrue);
+      expect(monitor.getAttribute('created_at'), isNotNull);
+      expect(monitor.getAttribute('updated_at'), isNotNull);
+    });
+
+    test('exists stays false when id is absent', () {
+      final monitor = Monitor.fromMap({
+        'name': 'Draft',
+        'url': 'https://draft.local',
+      });
+
+      expect(monitor.exists, isFalse);
+      expect(monitor.name, 'Draft');
+    });
+  });
 }

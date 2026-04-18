@@ -44,7 +44,16 @@ class Team extends Model with HasTimestamps, InteractsWithPersistence {
 
   /// The attributes that are mass assignable.
   @override
-  List<String> get fillable => ['name'];
+  List<String> get fillable => [
+    'id',
+    'name',
+    'owner_id',
+    'profile_photo_url',
+    'personal_team',
+    'user_role',
+    'created_at',
+    'updated_at',
+  ];
 
   /// The attributes that should be cast.
   @override
@@ -135,7 +144,8 @@ class Team extends Model with HasTimestamps, InteractsWithPersistence {
   /// ```
   static Team fromMap(Map<String, dynamic> map) {
     return Team()
-      ..setRawAttributes(map, sync: true)
+      ..fill(map)
+      ..syncOriginal()
       ..exists = map.containsKey('id');
   }
 

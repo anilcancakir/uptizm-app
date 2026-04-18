@@ -54,11 +54,17 @@ class User extends Model
   /// The attributes that are mass assignable.
   @override
   List<String> get fillable => [
+    'id',
     'name',
     'email',
     'phone',
     'timezone',
     'language',
+    'profile_photo_url',
+    'current_team',
+    'all_teams',
+    'created_at',
+    'updated_at',
   ];
 
   /// The attributes that should be cast.
@@ -171,7 +177,8 @@ class User extends Model
   /// ```
   static User fromMap(Map<String, dynamic> map) {
     return User()
-      ..setRawAttributes(map, sync: true)
+      ..fill(map)
+      ..syncOriginal()
       ..exists = map.containsKey('id');
   }
 
