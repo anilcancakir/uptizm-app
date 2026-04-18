@@ -23,6 +23,7 @@ class MonitorSnapshot {
   final int? lastResponseMs;
   final DateTime? lastCheckedAt;
 
+  /// Parses a `MonitorSnapshotResource` payload.
   static MonitorSnapshot fromMap(Map<String, dynamic> map) {
     return MonitorSnapshot(
       id: map['id']?.toString() ?? '',

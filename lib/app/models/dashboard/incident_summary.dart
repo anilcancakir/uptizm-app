@@ -25,6 +25,7 @@ class IncidentSummary {
   final DateTime startedAt;
   final bool aiOwned;
 
+  /// Parses an `IncidentSummaryResource` payload.
   static IncidentSummary fromMap(Map<String, dynamic> map) {
     return IncidentSummary(
       id: map['id']?.toString() ?? '',

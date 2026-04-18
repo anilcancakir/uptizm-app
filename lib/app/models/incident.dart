@@ -53,11 +53,15 @@ class Incident {
   final List<IncidentEvent> events;
   final List<SimilarIncident> similarIncidents;
 
+  /// Wall-clock elapsed time since [startedAt]. Uses [resolvedAt] when set,
+  /// otherwise the current time so live incidents report an ongoing duration.
   Duration get duration {
     final end = resolvedAt ?? DateTime.now();
     return end.difference(startedAt);
   }
 
+  /// Returns a copy with the mutable incident surface swapped. Immutable
+  /// identity fields (id, monitorId, startedAt, signalSource) are preserved.
   Incident copyWith({
     IncidentSeverity? severity,
     IncidentStatus? status,
@@ -87,6 +91,9 @@ class Incident {
     );
   }
 
+  /// Parses an `IncidentResource` payload. Unknown enum values fall back to
+  /// safe defaults (severity: info, status: detected, source: manual) so a
+  /// stale client never crashes on new backend values.
   static Incident fromMap(Map<String, dynamic> map) {
     final rawEvents = map['events'];
     return Incident(
@@ -165,6 +172,8 @@ class IncidentEvent {
   final String type;
   final String message;
 
+  /// Parses one timeline event. Missing `event_type` defaults to `note` so
+  /// the timeline still renders the message when the backend omits the tag.
   static IncidentEvent fromMap(Map<String, dynamic> map) {
     return IncidentEvent(
       at: _date(map['at']) ?? DateTime.now(),
@@ -241,6 +250,9 @@ class SimilarIncident {
   final String resolutionNote;
   final double? similarityScore;
 
+  /// Parses one row from `/incidents/{id}/similar`. Accepts either a nested
+  /// `similar_to` payload (current shape) or a flat row for forward
+  /// compatibility.
   static SimilarIncident fromMap(Map<String, dynamic> map) {
     final similarTo = map['similar_to'];
     final nested = similarTo is Map<String, dynamic> ? similarTo : null;

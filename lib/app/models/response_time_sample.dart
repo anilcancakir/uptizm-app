@@ -15,6 +15,8 @@ class ResponseTimeSample {
   final MonitorStatus status;
   final String? region;
 
+  /// Parses one sample row. Returns null when `checked_at` or `response_ms`
+  /// are missing so the chart can skip incomplete points silently.
   static ResponseTimeSample? fromMap(Map<String, dynamic> map) {
     final rawCheckedAt = map['checked_at'];
     final checkedAt = rawCheckedAt is String

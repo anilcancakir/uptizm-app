@@ -30,6 +30,8 @@ class StatusPage {
   /// can enforce tenant-scoped UI affordances (publish, destroy) via `Gate`.
   final String? teamId;
 
+  /// Public-facing hostname derived from [slug]. Rendered on the status
+  /// page card header; no networking is performed by this getter.
   String get subdomain => '$slug.uptizm.com';
 
   /// Two-letter initials for the logo fallback.
@@ -46,8 +48,12 @@ class StatusPage {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
+  /// Flattened list of attached monitor ids, used by the assign picker to
+  /// seed its pre-selected state.
   List<String> get monitorIds => monitors.map((m) => m.id).toList();
 
+  /// Returns a copy with the mutable status-page surface swapped. [id] and
+  /// [teamId] are identity fields and never change here.
   StatusPage copyWith({
     String? title,
     String? slug,
@@ -68,6 +74,8 @@ class StatusPage {
     );
   }
 
+  /// Parses a `StatusPageResource` payload. Defaults [primaryColor] to the
+  /// Uptizm brand blue when the server omits it (legacy pages).
   static StatusPage fromMap(Map<String, dynamic> map) {
     final rawMonitors = map['monitors'];
     return StatusPage(
@@ -106,8 +114,11 @@ class StatusPageMonitor {
   final int displayOrder;
   final String? customLabel;
 
+  /// Visible label used on the public status page — the pivot's custom
+  /// override when provided, otherwise the monitor's own name.
   String get label => customLabel ?? name;
 
+  /// Parses one pivot row from `StatusPageResource.monitors`.
   static StatusPageMonitor fromMap(Map<String, dynamic> map) {
     return StatusPageMonitor(
       id: map['id']?.toString() ?? '',

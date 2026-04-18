@@ -15,6 +15,8 @@ class DashboardStats {
   final int activeIncidents;
   final int pendingSuggestions;
 
+  /// Parses a `DashboardStatsResource` payload. Missing counters default to
+  /// zero so the stats bar never renders a blank tile.
   static DashboardStats fromMap(Map<String, dynamic> map) {
     return DashboardStats(
       monitorsTotal: _int(map['monitors_total']),

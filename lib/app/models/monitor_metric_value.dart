@@ -18,6 +18,8 @@ class MonitorMetricValue {
   final String? statusValue;
   final MetricBand? band;
 
+  /// Parses one `MonitorMetricValueResource` row. Unknown `band` values
+  /// collapse to null so a stale client never fails on new server bands.
   static MonitorMetricValue fromMap(Map<String, dynamic> map) {
     final rawRecorded = map['recorded_at'] as String?;
     final rawNumeric = map['numeric_value'];

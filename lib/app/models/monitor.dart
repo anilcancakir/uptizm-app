@@ -113,12 +113,18 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
     return const {};
   }
 
+  /// Hybrid lookup: tries the local SQLite cache first, then falls back to
+  /// `GET /monitors/{id}`. See `InteractsWithPersistence.findById`.
   static Future<Monitor?> find(dynamic id) =>
       InteractsWithPersistence.findById<Monitor>(id, Monitor.new);
 
+  /// Loads every monitor from the local cache, populating from API when empty.
   static Future<List<Monitor>> all() =>
       InteractsWithPersistence.allModels<Monitor>(Monitor.new);
 
+  /// Builds a [Monitor] from a `MonitorResource` map. `exists` flips true
+  /// when an `id` is present so subsequent `save()` calls hit update, not
+  /// insert.
   static Monitor fromMap(Map<String, dynamic> map) {
     return Monitor()
       ..fill(map)
@@ -126,6 +132,8 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
       ..exists = map.containsKey('id');
   }
 
+  /// Convenience constructor for inbound broadcast payloads that arrive as
+  /// raw JSON strings.
   static Monitor fromJson(String json) {
     final map = jsonDecode(json) as Map<String, dynamic>;
     return Monitor.fromMap(map);

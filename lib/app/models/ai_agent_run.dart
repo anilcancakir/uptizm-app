@@ -38,6 +38,8 @@ class AiAgentRun {
   final DateTime? startedAt;
   final DateTime? completedAt;
 
+  /// Parses an `AiAgentRunResource` payload. Status defaults to `pending`
+  /// when missing; numeric fields silently coerce from numbers or strings.
   static AiAgentRun fromMap(Map<String, dynamic> map) {
     return AiAgentRun(
       id: map['id']?.toString() ?? '',

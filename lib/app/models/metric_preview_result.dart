@@ -21,8 +21,12 @@ class MetricPreviewResult {
   final bool typeValid;
   final String? error;
 
+  /// True when the extraction rule actually yielded a value, even if the
+  /// type validation failed. The preview card uses this to pick between the
+  /// "no match" empty state and the value + validity chip.
   bool get hasValue => extractedValue != null;
 
+  /// Parses the preview endpoint response.
   static MetricPreviewResult fromMap(Map<String, dynamic> map) {
     return MetricPreviewResult(
       statusCode: map['status_code'] as int?,

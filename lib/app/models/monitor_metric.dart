@@ -106,6 +106,7 @@ class MonitorMetric extends Model with HasTimestamps, InteractsWithPersistence {
     return MonitorMetricValue.fromMap(Map<String, dynamic>.from(raw));
   }
 
+  /// Builds a [MonitorMetric] from a `MonitorMetricResource` payload.
   static MonitorMetric fromMap(Map<String, dynamic> map) {
     return MonitorMetric()
       ..fill(map)

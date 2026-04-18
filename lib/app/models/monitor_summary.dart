@@ -24,6 +24,9 @@ class MonitorSummary {
   final int previousIncidentCount;
   final int? previousMttrSeconds;
 
+  /// Parses the monitor summary JSON. Missing aggregates fall back to
+  /// zero or null so the KPI grid can render every tile without branching
+  /// on partial payloads.
   static MonitorSummary fromMap(Map<String, dynamic> map) {
     return MonitorSummary(
       range: map['range']?.toString() ?? '24h',

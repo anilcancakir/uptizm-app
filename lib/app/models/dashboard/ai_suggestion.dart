@@ -29,6 +29,7 @@ class AiSuggestion {
   final String status;
   final DateTime createdAt;
 
+  /// Parses an `AiSuggestionResource` payload.
   static AiSuggestion fromMap(Map<String, dynamic> map) {
     return AiSuggestion(
       id: map['id']?.toString() ?? '',

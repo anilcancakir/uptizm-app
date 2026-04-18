@@ -94,6 +94,7 @@ class MonitorCheck extends Model {
     return out;
   }
 
+  /// Builds a [MonitorCheck] from a `MonitorCheckResource` payload.
   static MonitorCheck fromMap(Map<String, dynamic> map) {
     return MonitorCheck()
       ..fill(map)
@@ -118,5 +119,7 @@ class CheckTiming {
   final int ttfbMs;
   final int downloadMs;
 
+  /// Sum of each phase. Used as the denominator when rendering the
+  /// segmented timing bar so each phase maps to a proportional width.
   int get totalMs => dnsMs + connectMs + tlsMs + ttfbMs + downloadMs;
 }

@@ -10,6 +10,7 @@ class AiSettings {
   final AiMode aiMode;
   final bool dailyDigestEnabled;
 
+  /// Returns a copy with the given fields swapped.
   AiSettings copyWith({AiMode? aiMode, bool? dailyDigestEnabled}) {
     return AiSettings(
       aiMode: aiMode ?? this.aiMode,
@@ -17,6 +18,8 @@ class AiSettings {
     );
   }
 
+  /// Parses an `AiSettingsResource` payload. Unknown `ai_mode` values fall
+  /// back to [AiMode.off] so a stale client never renders undefined state.
   static AiSettings fromMap(Map<String, dynamic> map) {
     return AiSettings(
       aiMode: _mode(map['ai_mode']),
