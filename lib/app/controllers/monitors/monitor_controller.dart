@@ -43,6 +43,7 @@ class MonitorController extends MagicController
   @override
   Widget edit(String id) => MonitorEditView(monitorId: id);
 
+  /// Loads one monitor into `rxState`, powering both show and edit surfaces.
   Future<void> load(String id) async {
     clearErrors();
     await fetchOne('/monitors/$id', Monitor.fromMap);
@@ -82,6 +83,11 @@ class MonitorController extends MagicController
     setSuccess(Monitor.fromMap(data));
   }
 
+  /// Creates a monitor from the form values and publishes it to `rxState`.
+  ///
+  /// Delegates payload building to [MonitorFormService.buildPayload]; guards
+  /// concurrent submits, surfaces 422 field errors, and converts unexpected
+  /// exceptions into a generic error message.
   Future<Monitor?> store(MonitorFormValues values) async {
     if (_isSubmitting) return null;
     _isSubmitting = true;
@@ -117,6 +123,10 @@ class MonitorController extends MagicController
     }
   }
 
+  /// Patches a monitor and republishes the fresh entity to `rxState`.
+  ///
+  /// Restores the previous state on any failure so the edit view does not
+  /// render a half-updated monitor.
   Future<Monitor?> update(String id, MonitorFormValues values) async {
     if (_isSubmitting) return null;
     _isSubmitting = true;
@@ -176,6 +186,11 @@ class MonitorController extends MagicController
     return mode;
   }
 
+  /// Deletes a monitor after the caller has already confirmed the intent.
+  ///
+  /// The UI must gate this call through a confirm dialog — this method does
+  /// not prompt. Guards against concurrent destroys and restores the
+  /// previous `rxState` on failure.
   Future<bool> destroy(String id) async {
     if (_isDeleting) return false;
     _isDeleting = true;

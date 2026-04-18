@@ -45,6 +45,10 @@ class AiSettingsController extends MagicController with ValidatesRequests {
     }
   }
 
+  /// Loads the current team's AI settings into `_settings`.
+  ///
+  /// Silently returns on failure so the view can render its skeleton state
+  /// without special-casing network errors.
   Future<void> load() async {
     clearErrors();
     final response = await Http.get('/settings/ai');
@@ -55,6 +59,9 @@ class AiSettingsController extends MagicController with ValidatesRequests {
     refreshUI();
   }
 
+  /// Patches `/settings/ai` with [payload] and refreshes `_settings` from
+  /// the server response on success. Field errors surface through
+  /// [handleApiError]; returns false on failure.
   Future<bool> update(Map<String, dynamic> payload) async {
     clearErrors();
     final response = await Http.put('/settings/ai', data: payload);

@@ -51,6 +51,11 @@ class IncidentController extends MagicController
     }
   }
 
+  /// Loads the incident list, optionally scoped to a monitor or status.
+  ///
+  /// Backs both the dashboard feed (no filter) and the monitor Incidents tab
+  /// (monitor-scoped). Results land in `rxState`; errors surface through
+  /// `RxStatus.error` via [fetchList].
   Future<void> load({String? monitorId, String? status}) async {
     clearErrors();
     final query = <String, dynamic>{
@@ -64,6 +69,10 @@ class IncidentController extends MagicController
     );
   }
 
+  /// Fetches a single incident into `_detail` for the detail panel.
+  ///
+  /// Leaves the list untouched (notifies with the current `incidents`) so the
+  /// surrounding list view does not re-render while a detail is opened.
   Future<void> loadOne(String id) async {
     clearErrors();
     setLoading();
@@ -81,6 +90,11 @@ class IncidentController extends MagicController
     setState(incidents, status: RxStatus.success(), notify: true);
   }
 
+  /// Creates an incident and prepends it to the list on success.
+  ///
+  /// Expects a payload already produced by [StoreIncidentRequest]; 422 errors
+  /// surface as field errors via [handleApiError]. On failure the previous
+  /// list is restored without notifying so the UI does not flicker.
   Future<Incident?> store(Map<String, dynamic> payload) async {
     clearErrors();
     final previous = List<Incident>.from(incidents);
@@ -103,6 +117,10 @@ class IncidentController extends MagicController
     return created;
   }
 
+  /// Patches an incident and reconciles both the list and the detail pane.
+  ///
+  /// Replaces the matching entry in place (order preserved) and swaps
+  /// `_detail` when the updated entity is the one currently displayed.
   Future<Incident?> update(String id, Map<String, dynamic> payload) async {
     clearErrors();
     final previous = List<Incident>.from(incidents);
@@ -133,6 +151,11 @@ class IncidentController extends MagicController
     return updated;
   }
 
+  /// Appends a timeline event (note, ack, status change) to an incident.
+  ///
+  /// Pushes the returned event into `_detail.events` only when the target
+  /// incident is the one currently open, so off-screen incidents are not
+  /// mutated under the caller's feet.
   Future<bool> addEvent(String id, Map<String, dynamic> payload) async {
     clearErrors();
     final response = await Http.post('/incidents/$id/events', data: payload);
@@ -153,6 +176,11 @@ class IncidentController extends MagicController
     return true;
   }
 
+  /// Fetches AI-surfaced similar past incidents for the detail panel.
+  ///
+  /// Returns an empty list instead of throwing when the backend is offline
+  /// or returns a non-list payload, because "similar" is a nice-to-have
+  /// surface and must not block the incident detail from rendering.
   Future<List<SimilarIncident>> similar(String id) async {
     final response = await Http.get('/incidents/$id/similar');
     if (!response.successful) return const [];

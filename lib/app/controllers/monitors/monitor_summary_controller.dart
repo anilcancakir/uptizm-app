@@ -19,6 +19,8 @@ class MonitorSummaryController extends MagicController
   String get currentRange => _currentRange;
   MonitorSummary? get summary => rxState;
 
+  /// Loads the aggregate KPI summary (uptime, avg response, incidents, MTTR)
+  /// for a monitor scoped to the given time range.
   Future<void> load(String monitorId, {String range = '24h'}) async {
     _currentMonitorId = monitorId;
     _currentRange = range;

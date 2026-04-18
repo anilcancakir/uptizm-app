@@ -25,6 +25,8 @@ class MonitorMetricController extends MagicController
   bool get isSubmitting => _isSubmitting;
   bool get isDeleting => _isDeleting;
 
+  /// Groups the current metric list by `groupName` for the grouped rendering
+  /// on the monitor Metrics tab. Ungrouped metrics land under the empty key.
   Map<String, List<MonitorMetric>> get groups {
     final grouped = <String, List<MonitorMetric>>{};
     for (final metric in metrics) {
@@ -34,6 +36,7 @@ class MonitorMetricController extends MagicController
     return grouped;
   }
 
+  /// Loads the metric list for a monitor into `rxState`.
   Future<void> load(String monitorId) async {
     _currentMonitorId = monitorId;
     clearErrors();
@@ -55,6 +58,11 @@ class MonitorMetricController extends MagicController
     setSuccess(items);
   }
 
+  /// Creates a metric under a monitor and refetches the whole list.
+  ///
+  /// The refetch is intentional — server-side ordering and derived fields
+  /// (latest value, band) are easier to trust from the canonical list than
+  /// from a single-entity response.
   Future<MonitorMetric?> store(
     String monitorId,
     Map<String, dynamic> payload,
@@ -97,6 +105,7 @@ class MonitorMetricController extends MagicController
     }
   }
 
+  /// Patches a metric and refetches the list for the same reasons as [store].
   Future<MonitorMetric?> update(
     String monitorId,
     String metricId,
@@ -140,6 +149,7 @@ class MonitorMetricController extends MagicController
     }
   }
 
+  /// Deletes a metric under a monitor after the caller has confirmed.
   Future<bool> destroy(String monitorId, String metricId) async {
     if (_isDeleting) return false;
     _isDeleting = true;
@@ -193,6 +203,10 @@ class MonitorMetricController extends MagicController
     return MetricPreviewResult.fromMap(data);
   }
 
+  /// Loads the time-series values for a single metric, scoped to the range.
+  ///
+  /// Returns an empty list on any failure so the metric detail sheet can
+  /// render an empty-state chart without special-casing network errors.
   Future<List<MonitorMetricValue>> series(
     String monitorId,
     String metricId, {

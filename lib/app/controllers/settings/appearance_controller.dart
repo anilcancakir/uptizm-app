@@ -40,6 +40,7 @@ class AppearanceController extends MagicController with ValidatesRequests {
     }
   }
 
+  /// Loads the current team's appearance settings into `_settings`.
   Future<void> load() async {
     clearErrors();
     final response = await Http.get('/settings/appearance');
@@ -50,6 +51,12 @@ class AppearanceController extends MagicController with ValidatesRequests {
     refreshUI();
   }
 
+  /// Patches the current team's appearance settings with [payload].
+  ///
+  /// On success, refreshes `_settings` from the server response so derived
+  /// UI reads the canonical stored values (not the submitted draft). Field
+  /// errors surface through [handleApiError]; returns false without
+  /// mutating state on failure.
   Future<bool> update(Map<String, dynamic> payload) async {
     clearErrors();
     final response = await Http.put('/settings/appearance', data: payload);

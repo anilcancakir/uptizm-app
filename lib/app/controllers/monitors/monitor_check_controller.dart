@@ -16,6 +16,7 @@ class MonitorCheckController extends MagicController
   String? get currentMonitorId => _currentMonitorId;
   List<MonitorCheck> get checks => rxState ?? const [];
 
+  /// Fetches the latest `perPage` checks for a monitor into `rxState`.
   Future<void> load(String monitorId, {int perPage = 20}) async {
     _currentMonitorId = monitorId;
     await fetchList(
@@ -24,6 +25,8 @@ class MonitorCheckController extends MagicController
     );
   }
 
+  /// Non-destructive refresh for live polling: swaps the list in place and
+  /// leaves the previous values visible if the request fails.
   Future<void> reload(String monitorId, {int perPage = 20}) async {
     final response = await HttpCache.get(
       '/monitors/$monitorId/checks',

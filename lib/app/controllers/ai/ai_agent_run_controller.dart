@@ -18,6 +18,8 @@ class AiAgentRunController extends MagicController
 
   List<AiAgentRun> get runs => rxState ?? const [];
 
+  /// Loads the AI agent run page into `rxState`. Omits the `page` query
+  /// when null so the backend can return its default first page.
   Future<void> load({int? page}) async {
     clearErrors();
     await fetchList<AiAgentRun>(

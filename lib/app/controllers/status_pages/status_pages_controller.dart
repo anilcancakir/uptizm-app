@@ -41,11 +41,16 @@ class StatusPagesController extends MagicController
   StatusPage? get detail => _detail;
   bool get isSubmitting => _isSubmitting;
 
+  /// Loads the status page list into `rxState`.
   Future<void> load() async {
     clearErrors();
     await fetchList<StatusPage>('/status-pages', StatusPage.fromMap);
   }
 
+  /// Loads a single status page into `_detail` for the show / edit screens.
+  ///
+  /// Keeps the existing list in `rxState` intact — the detail fetch must not
+  /// disturb the feed so the user can back out without a reload.
   Future<void> loadOne(String id) async {
     clearErrors();
     setLoading();
@@ -95,6 +100,9 @@ class StatusPagesController extends MagicController
     }
   }
 
+  /// Creates a status page and prepends it to the list so the new page
+  /// appears at the top of the feed immediately. Restores the previous
+  /// list on failure.
   Future<StatusPage?> store(Map<String, dynamic> payload) async {
     clearErrors();
     final previous = List<StatusPage>.from(pages);
@@ -117,6 +125,8 @@ class StatusPagesController extends MagicController
     return created;
   }
 
+  /// Patches a status page, replaces it in the list in place, and refreshes
+  /// `_detail` if the updated page is the one being inspected.
   Future<StatusPage?> update(String id, Map<String, dynamic> payload) async {
     clearErrors();
     final previous = List<StatusPage>.from(pages);
@@ -147,6 +157,8 @@ class StatusPagesController extends MagicController
     return updated;
   }
 
+  /// Deletes a status page after the caller has confirmed. Clears `_detail`
+  /// if the deleted page was being inspected so the show screen can pop.
   Future<bool> destroy(String id) async {
     clearErrors();
     final previous = List<StatusPage>.from(pages);
@@ -165,6 +177,9 @@ class StatusPagesController extends MagicController
     return true;
   }
 
+  /// Publishes a status page (flips visibility + snapshots the current
+  /// monitor selection server-side). Returns true even when the response
+  /// omits the updated record so the UI can optimistically advance.
   Future<bool> publish(String id) async {
     clearErrors();
     final previous = List<StatusPage>.from(pages);

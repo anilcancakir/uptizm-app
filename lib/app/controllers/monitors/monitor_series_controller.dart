@@ -18,6 +18,8 @@ class MonitorSeriesController extends MagicController
   String get currentRange => _currentRange;
   List<ResponseTimeSample> get samples => rxState ?? const [];
 
+  /// Loads the response-time series for a monitor + range, distinguishing
+  /// empty (no samples) from error so the chart can render an empty state.
   Future<void> load(String monitorId, {String range = '24h'}) async {
     _currentMonitorId = monitorId;
     _currentRange = range;

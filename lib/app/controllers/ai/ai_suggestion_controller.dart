@@ -15,6 +15,8 @@ class AiSuggestionController extends MagicController
 
   List<AiSuggestion> get suggestions => rxState ?? const [];
 
+  /// Loads the pending AI suggestion inbox into `rxState`. Empty responses
+  /// flip to `empty` (not `success`) so the view can render the zero-state.
   Future<void> load() async {
     clearErrors();
     setLoading();
@@ -40,6 +42,9 @@ class AiSuggestionController extends MagicController
     setSuccess(items);
   }
 
+  /// Accepts a suggestion, which promotes it to an incident on the server
+  /// and removes it from the inbox locally. Returns the new incident id so
+  /// the caller can navigate to the incident detail.
   Future<String?> accept(String id) async {
     clearErrors();
     final previous = List<AiSuggestion>.from(suggestions);
@@ -60,6 +65,8 @@ class AiSuggestionController extends MagicController
     return incidentId;
   }
 
+  /// Archives a suggestion from the inbox without creating an incident.
+  /// Restores the previous list on failure.
   Future<bool> skip(String id) async {
     clearErrors();
     final previous = List<AiSuggestion>.from(suggestions);

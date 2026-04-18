@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:magic/magic.dart';
 
+import '../../../resources/views/dashboard_view.dart';
 import '../../helpers/http_cache.dart';
 import '../../models/dashboard/ai_suggestion.dart';
 import '../../models/dashboard/dashboard_stats.dart';
@@ -38,6 +39,13 @@ class DashboardController extends MagicController {
   /// button can render its spinner without touching [firstLoad].
   final ValueNotifier<bool> refreshing = ValueNotifier(false);
 
+  /// Route entry point. Mirrors the monitor resource-controller pattern so
+  /// `lib/routes/app.dart` can wire every page through its controller.
+  Widget index() => const DashboardView();
+
+  /// Fans out the four dashboard section loads in parallel and flips
+  /// `firstLoad` off after the first successful completion so subsequent
+  /// refreshes skip the skeleton path.
   Future<void> loadAll() async {
     await Future.wait([
       loadStats(),
@@ -59,6 +67,9 @@ class DashboardController extends MagicController {
     }
   }
 
+  /// Loads the KPI tiles (total monitors, up/down counts, open incidents).
+  /// On failure, clears `stats` and flips `statsError` so the tile row can
+  /// render its error state without wiping sibling sections.
   Future<void> loadStats() async {
     final response = await HttpCache.get('/dashboard/stats');
     if (!response.successful) {
@@ -76,6 +87,7 @@ class DashboardController extends MagicController {
     stats.value = DashboardStats.fromMap(data);
   }
 
+  /// Loads the active incidents strip shown above the monitors list.
   Future<void> loadActiveIncidents() => _loadList<IncidentSummary>(
     '/dashboard/active-incidents',
     IncidentSummary.fromMap,
@@ -83,6 +95,7 @@ class DashboardController extends MagicController {
     activeIncidentsError,
   );
 
+  /// Loads the compact monitor snapshots that back the dashboard list.
   Future<void> loadMonitorsSnapshot() => _loadList<MonitorSnapshot>(
     '/dashboard/monitors-snapshot',
     MonitorSnapshot.fromMap,
@@ -90,6 +103,7 @@ class DashboardController extends MagicController {
     monitorsError,
   );
 
+  /// Loads the AI suggestion inbox shown in the dashboard side panel.
   Future<void> loadAiInbox() => _loadList<AiSuggestion>(
     '/dashboard/ai-inbox',
     AiSuggestion.fromMap,
