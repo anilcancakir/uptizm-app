@@ -105,14 +105,15 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
               icon: Icons.open_in_new_rounded,
               onTap: () => Magic.toast('https://${page.subdomain}'),
             ),
-            PrimaryButton(
-              labelKey: page.isPublic
-                  ? 'status_page.show.unpublish'
-                  : 'status_page.show.publish',
-              icon: Icons.public_rounded,
-              isLoading: _publishing,
-              onTap: () => _onPublish(page),
-            ),
+            if (Gate.allows('status-pages.publish', page))
+              PrimaryButton(
+                labelKey: page.isPublic
+                    ? 'status_page.show.unpublish'
+                    : 'status_page.show.publish',
+                icon: Icons.public_rounded,
+                isLoading: _publishing,
+                onTap: () => _onPublish(page),
+              ),
           ],
         ),
         _hero(page),

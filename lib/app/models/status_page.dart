@@ -11,6 +11,7 @@ class StatusPage {
     required this.slug,
     required this.primaryColor,
     required this.isPublic,
+    this.teamId,
     this.logoPath,
     this.monitors = const [],
   });
@@ -24,6 +25,10 @@ class StatusPage {
   final String? logoPath;
   final bool isPublic;
   final List<StatusPageMonitor> monitors;
+
+  /// Owning team id. Sourced from `StatusPageResource.team_id` so the client
+  /// can enforce tenant-scoped UI affordances (publish, destroy) via `Gate`.
+  final String? teamId;
 
   String get subdomain => '$slug.uptizm.com';
 
@@ -58,6 +63,7 @@ class StatusPage {
       primaryColor: primaryColor ?? this.primaryColor,
       logoPath: logoPath ?? this.logoPath,
       isPublic: isPublic ?? this.isPublic,
+      teamId: teamId,
       monitors: monitors ?? this.monitors,
     );
   }
@@ -71,6 +77,7 @@ class StatusPage {
       primaryColor: (map['primary_color'] as String?) ?? '#2563EB',
       logoPath: map['logo_path'] as String?,
       isPublic: map['is_public'] == true,
+      teamId: map['team_id']?.toString(),
       monitors: rawMonitors is List
           ? rawMonitors
                 .whereType<Map<String, dynamic>>()

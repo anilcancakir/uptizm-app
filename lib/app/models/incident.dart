@@ -20,6 +20,7 @@ class Incident {
     required this.status,
     required this.startedAt,
     required this.signalSource,
+    this.teamId,
     this.triggerRef,
     this.resolvedAt,
     this.metricKey,
@@ -32,6 +33,10 @@ class Incident {
 
   final String id;
   final String monitorId;
+
+  /// Owning team id. Sourced from `IncidentResource.team_id` so the client
+  /// can run tenant-scoped authorization checks via `Gate`.
+  final String? teamId;
   final String title;
   final IncidentSeverity severity;
   final IncidentStatus status;
@@ -65,6 +70,7 @@ class Incident {
     return Incident(
       id: id,
       monitorId: monitorId,
+      teamId: teamId,
       title: title ?? this.title,
       severity: severity ?? this.severity,
       status: status ?? this.status,
@@ -86,6 +92,7 @@ class Incident {
     return Incident(
       id: map['id']?.toString() ?? '',
       monitorId: map['monitor_id']?.toString() ?? '',
+      teamId: map['team_id']?.toString(),
       title: (map['title'] as String?) ?? '',
       severity: _severity(map['severity']),
       status: _status(map['status']),

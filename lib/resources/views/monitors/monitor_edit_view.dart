@@ -101,6 +101,7 @@ class _MonitorEditViewState
   }
 
   Widget _form(MonitorFormValues initial) {
+    final canDestroy = Gate.allows('monitors.destroy', controller.monitor);
     return MonitorFormShell(
       initial: initial,
       errorFor: (field) => controller.getError(field),
@@ -114,16 +115,17 @@ class _MonitorEditViewState
             sm:flex-row sm:flex-wrap sm:items-center sm:justify-end
           ''',
           children: [
-            WDiv(
-              className: 'sm:mr-auto',
-              child: DangerButton(
-                labelKey: 'monitor.edit.delete',
-                icon: Icons.delete_outline_rounded,
-                isLoading: controller.isDeleting,
-                isDisabled: controller.isSubmitting,
-                onTap: _onDelete,
+            if (canDestroy)
+              WDiv(
+                className: 'sm:mr-auto',
+                child: DangerButton(
+                  labelKey: 'monitor.edit.delete',
+                  icon: Icons.delete_outline_rounded,
+                  isLoading: controller.isDeleting,
+                  isDisabled: controller.isSubmitting,
+                  onTap: _onDelete,
+                ),
               ),
-            ),
             SecondaryButton(
               labelKey: 'monitor.edit.cancel',
               onTap: () {
