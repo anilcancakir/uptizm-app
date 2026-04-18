@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
 import '../../../app/controllers/incidents/incident_controller.dart';
-import '../../../app/enums/incident_severity.dart';
 import '../../../app/enums/incident_status.dart';
 import '../../../app/models/incident.dart';
 import '../components/common/empty_state.dart';
@@ -134,7 +133,6 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
             context,
             monitorTitle: widget.monitorId,
             monitorId: widget.monitorId,
-            onSubmit: _onCreateSubmit,
           ),
           className: '''
             px-4 py-2.5 rounded-lg
@@ -221,32 +219,6 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
         _ => 'incident.toast.updated',
       }),
     );
-  }
-
-  Future<void> _onCreateSubmit(
-    IncidentSeverity severity,
-    String title,
-    String description,
-    String? metricKey,
-    bool notifyTeam,
-  ) async {
-    final payload = <String, dynamic>{
-      'monitor_id': widget.monitorId,
-      'title': title,
-      'severity': severity.name,
-      'signal_source': 'manual',
-      'description': ?description.isEmpty ? null : description,
-      'metric_key': ?metricKey,
-      'notify_team': notifyTeam,
-    };
-    final result = await _controller.store(payload);
-    if (!mounted) return;
-    if (result == null) {
-      final err = _controller.firstError;
-      Magic.toast(err ?? trans('incident.errors.generic_create'));
-      return;
-    }
-    Magic.toast(trans('incident.create.toast_created'));
   }
 
   Future<void> _onNoteSubmit(

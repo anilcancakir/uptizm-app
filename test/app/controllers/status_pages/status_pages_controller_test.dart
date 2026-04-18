@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic/magic.dart';
 import 'package:app/app/controllers/status_pages/status_pages_controller.dart';
+import 'package:app/resources/views/status_pages/status_page_create_view.dart';
+import 'package:app/resources/views/status_pages/status_page_list_view.dart';
+import 'package:app/resources/views/status_pages/status_page_show_view.dart';
 
 class _MockNetworkDriver implements NetworkDriver {
   String? lastMethod;
@@ -225,6 +228,71 @@ void main() {
       expect(driver.lastMethod, 'POST');
       expect(driver.lastUrl, '/status-pages/sp_1/publish');
       expect(controller.pages.single.isPublic, isTrue);
+    });
+
+    test('index() returns StatusPageListView', () {
+      expect(controller.index(), isA<StatusPageListView>());
+    });
+
+    test('create() returns StatusPageCreateView', () {
+      expect(controller.create(), isA<StatusPageCreateView>());
+    });
+
+    test('show(id) forwards id to StatusPageShowView', () {
+      final view = controller.show('sample') as StatusPageShowView;
+      expect(view.statusPageId, 'sample');
+    });
+
+    test(
+      'submitCreate builds typed payload and toggles isSubmitting',
+      () async {
+        driver.response = MagicResponse(
+          data: {'data': _pagePayload(id: 'sp_new')},
+          statusCode: 201,
+        );
+
+        expect(controller.isSubmitting, isFalse);
+        final future = controller.submitCreate(
+          title: '  Cloud  ',
+          slug: '  cloud  ',
+          primaryColor: '#2563EB',
+          logoPath: 'logos/c.png',
+          isPublic: true,
+          monitorIds: const ['m1', 'm2'],
+        );
+        expect(controller.isSubmitting, isTrue);
+        final result = await future;
+
+        expect(result?.id, 'sp_new');
+        expect(controller.isSubmitting, isFalse);
+        expect(driver.lastMethod, 'POST');
+        expect(driver.lastUrl, '/status-pages');
+        final payload = driver.lastData as Map;
+        expect(payload['title'], 'Cloud');
+        expect(payload['slug'], 'cloud');
+        expect(payload['primary_color'], '#2563EB');
+        expect(payload['is_public'], isTrue);
+        expect(payload['monitor_ids'], ['m1', 'm2']);
+        expect(payload['logo_path'], 'logos/c.png');
+      },
+    );
+
+    test('submitCreate omits logo_path when null', () async {
+      driver.response = MagicResponse(
+        data: {'data': _pagePayload(id: 'sp_x')},
+        statusCode: 201,
+      );
+
+      await controller.submitCreate(
+        title: 'Cloud',
+        slug: 'cloud',
+        primaryColor: '#2563EB',
+        isPublic: false,
+        monitorIds: const [],
+      );
+
+      final payload = driver.lastData as Map;
+      expect(payload.containsKey('logo_path'), isFalse);
     });
   });
 }

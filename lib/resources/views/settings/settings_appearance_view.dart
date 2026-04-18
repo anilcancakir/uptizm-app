@@ -12,41 +12,40 @@ enum _ThemeMode { system, light, dark }
 /// Appearance preferences: theme mode (system / light / dark) and accent
 /// color. Persists via [AppearanceController] and reflects changes
 /// immediately through Wind UI's theme stream.
-class SettingsAppearanceView extends StatefulWidget {
+class SettingsAppearanceView extends MagicStatefulView<AppearanceController> {
   const SettingsAppearanceView({super.key});
 
   @override
   State<SettingsAppearanceView> createState() => _SettingsAppearanceViewState();
 }
 
-class _SettingsAppearanceViewState extends State<SettingsAppearanceView> {
-  AppearanceController get _c => AppearanceController.instance;
-
+class _SettingsAppearanceViewState
+    extends
+        MagicStatefulViewState<AppearanceController, SettingsAppearanceView> {
   final _color = TextEditingController();
   final _logo = TextEditingController();
   bool _hydrated = false;
-  bool _saving = false;
 
   @override
-  void initState() {
-    super.initState();
-    _c.addListener(_onControllerChanged);
+  void onInit() {
+    super.onInit();
+    controller.addListener(_onControllerChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _c.load().then((_) => _onControllerChanged());
+      controller.load().then((_) => _onControllerChanged());
     });
   }
 
   @override
-  void dispose() {
-    _c.removeListener(_onControllerChanged);
+  void onClose() {
+    controller.removeListener(_onControllerChanged);
     _color.dispose();
     _logo.dispose();
-    super.dispose();
+    super.onClose();
   }
 
   void _onControllerChanged() {
     if (!mounted) return;
-    final s = _c.settings;
+    final s = controller.settings;
     if (s == null || _hydrated) return;
     _hydrated = true;
     _color.text = s.primaryColor ?? '';
@@ -55,19 +54,17 @@ class _SettingsAppearanceViewState extends State<SettingsAppearanceView> {
   }
 
   Future<void> _save() async {
-    if (_saving) return;
-    setState(() => _saving = true);
-    final ok = await _c.update({
-      'appearance_primary_color': _color.text.trim(),
-      'appearance_logo_path': _logo.text.trim().isEmpty
-          ? null
-          : _logo.text.trim(),
-    });
+    if (controller.isSubmitting) return;
+    final ok = await controller.submit(
+      primaryColor: _color.text,
+      logoPath: _logo.text,
+    );
     if (!mounted) return;
-    setState(() => _saving = false);
     if (ok) {
       Magic.toast(trans('settings.appearance.brand_saved'));
-    } else {
+      return;
+    }
+    if (!controller.hasErrors) {
       Magic.toast(trans('settings.appearance.errors.generic_update'));
     }
   }
@@ -145,14 +142,14 @@ class _SettingsAppearanceViewState extends State<SettingsAppearanceView> {
               _field(
                 labelKey: 'settings.appearance.brand_color_label',
                 hintKey: 'settings.appearance.brand_color_hint',
-                controller: _color,
+                textController: _color,
                 placeholder: '#2563eb',
                 errorKey: 'appearance_primary_color',
               ),
               _field(
                 labelKey: 'settings.appearance.brand_logo_label',
                 hintKey: 'settings.appearance.brand_logo_hint',
-                controller: _logo,
+                textController: _logo,
                 placeholder: 'logos/team.png',
                 errorKey: 'appearance_logo_path',
               ),
@@ -161,7 +158,7 @@ class _SettingsAppearanceViewState extends State<SettingsAppearanceView> {
                 child: PrimaryButton(
                   labelKey: 'settings.appearance.brand_save',
                   icon: Icons.save_rounded,
-                  isLoading: _saving,
+                  isLoading: controller.isSubmitting,
                   onTap: _save,
                 ),
               ),
@@ -175,11 +172,11 @@ class _SettingsAppearanceViewState extends State<SettingsAppearanceView> {
   Widget _field({
     required String labelKey,
     required String hintKey,
-    required TextEditingController controller,
+    required TextEditingController textController,
     required String placeholder,
     required String errorKey,
   }) {
-    final err = _c.getError(errorKey);
+    final err = controller.getError(errorKey);
     return WDiv(
       className: 'flex flex-col gap-1.5',
       children: [
@@ -191,7 +188,7 @@ class _SettingsAppearanceViewState extends State<SettingsAppearanceView> {
           ''',
         ),
         WInput(
-          controller: controller,
+          controller: textController,
           placeholder: placeholder,
           className: '''
             w-full px-3 py-2.5 rounded-lg text-sm

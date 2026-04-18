@@ -16,7 +16,7 @@ MonitorFormValues _values({
     type: MonitorType.http,
     method: HttpMethod.get,
     interval: CheckInterval.m1,
-    regions: {'eu-west-1', 'us-east-1'},
+    regions: {'eu-west', 'us-east'},
     sslTracking: true,
     alertOnDown: true,
     alertOnWarn: false,
@@ -45,7 +45,7 @@ void main() {
       expect(payload['check_interval'], 60);
       expect(payload['timeout_seconds'], 30);
       expect(payload['expected_status_code'], 200);
-      expect(payload['regions'], containsAll(['eu-west-1', 'us-east-1']));
+      expect(payload['regions'], containsAll(['eu-west', 'us-east']));
       expect(payload['ssl_tracking'], isTrue);
       expect(payload['alert_on_down'], isTrue);
       expect(payload['alert_on_warn'], isFalse);

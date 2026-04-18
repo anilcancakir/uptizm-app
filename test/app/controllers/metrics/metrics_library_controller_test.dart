@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic/magic.dart';
 import 'package:app/app/controllers/metrics/metrics_library_controller.dart';
+import 'package:app/resources/views/settings/settings_metrics_library_view.dart';
 
 class _MockNetworkDriver implements NetworkDriver {
   String? lastUrl;
@@ -132,6 +133,10 @@ void main() {
       await controller.load();
 
       expect(controller.isError, isTrue);
+    });
+
+    test('index() returns SettingsMetricsLibraryView', () {
+      expect(controller.index(), isA<SettingsMetricsLibraryView>());
     });
   });
 }

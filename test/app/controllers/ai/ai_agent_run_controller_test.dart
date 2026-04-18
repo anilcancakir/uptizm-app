@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic/magic.dart';
 import 'package:app/app/controllers/ai/ai_agent_run_controller.dart';
+import 'package:app/resources/views/settings/settings_ai_activity_view.dart';
 
 class _MockNetworkDriver implements NetworkDriver {
   String? lastMethod;
@@ -133,6 +134,10 @@ void main() {
       );
       await controller.load(page: 2);
       expect(driver.lastQuery?['page'], 2);
+    });
+
+    test('index() returns SettingsAiActivityView', () {
+      expect(controller.index(), isA<SettingsAiActivityView>());
     });
   });
 }

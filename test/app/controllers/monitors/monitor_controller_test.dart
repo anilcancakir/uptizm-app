@@ -105,7 +105,7 @@ Map<String, dynamic> _payload() => {
   'expected_status_code': 204,
   'check_interval': 300,
   'timeout_seconds': 15,
-  'regions': ['eu-west-1', 'us-east-1'],
+  'regions': ['eu-west', 'us-east'],
   'auth_config': {'type': 'api_key', 'header': 'X-API', 'value': 'secret'},
   'ssl_tracking': true,
   'alert_on_down': true,
@@ -123,7 +123,7 @@ MonitorFormValues _values({
     type: MonitorType.http,
     method: HttpMethod.get,
     interval: CheckInterval.m1,
-    regions: {'eu-west-1', 'us-east-1'},
+    regions: {'eu-west', 'us-east'},
     sslTracking: true,
     alertOnDown: true,
     alertOnWarn: false,
@@ -220,7 +220,7 @@ void main() {
       expect(payload['check_interval'], 60);
       expect(payload['timeout_seconds'], 30);
       expect(payload['expected_status_code'], 200);
-      expect(payload['regions'], containsAll(['eu-west-1', 'us-east-1']));
+      expect(payload['regions'], containsAll(['eu-west', 'us-east']));
       expect(payload.containsKey('auth_config'), isFalse);
       expect(payload.containsKey('request_headers'), isFalse);
     });

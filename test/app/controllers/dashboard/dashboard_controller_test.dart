@@ -3,6 +3,7 @@ import 'package:magic/magic.dart';
 import 'package:app/app/controllers/ai/ai_suggestion_controller.dart';
 import 'package:app/app/controllers/dashboard/dashboard_controller.dart';
 import 'package:app/app/helpers/http_cache.dart';
+import 'package:app/resources/views/dashboard_view.dart';
 
 class _MockNetworkDriver implements NetworkDriver {
   final List<String> urls = [];
@@ -254,5 +255,9 @@ void main() {
         expect(aiInboxHits, 1);
       },
     );
+
+    test('index() returns DashboardView', () {
+      expect(controller.index(), isA<DashboardView>());
+    });
   });
 }

@@ -15,16 +15,21 @@ import '../components/status_pages/color_chip_grid.dart';
 import '../components/status_pages/logo_upload_zone.dart';
 import '../components/status_pages/monitor_assign_list.dart';
 
-/// Create a new status page. Mock behavior: submits a toast + navigates to
-/// the sample show page.
-class StatusPageCreateView extends StatefulWidget {
+/// Create a new status page.
+///
+/// Holds only the transient field values; [StatusPagesController.submitCreate]
+/// builds the payload, owns the `isSubmitting` flag, and surfaces 422 field
+/// errors via `getError`.
+class StatusPageCreateView extends MagicStatefulView<StatusPagesController> {
   const StatusPageCreateView({super.key});
 
   @override
   State<StatusPageCreateView> createState() => _StatusPageCreateViewState();
 }
 
-class _StatusPageCreateViewState extends State<StatusPageCreateView> {
+class _StatusPageCreateViewState
+    extends
+        MagicStatefulViewState<StatusPagesController, StatusPageCreateView> {
   final _titleCtrl = TextEditingController();
   final _slugCtrl = TextEditingController();
   bool _slugTouched = false;
@@ -32,10 +37,8 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
   String _primaryColor = '#2563EB';
   String? _logoPath;
   final Set<String> _selectedMonitors = {};
-  bool _submitting = false;
 
   MonitorController get _monitors => MonitorController.instance;
-  StatusPagesController get _pages => StatusPagesController.instance;
 
   static const _inputClass = '''
     w-full px-3 py-2.5 rounded-lg
@@ -46,17 +49,17 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
   ''';
 
   @override
-  void initState() {
-    super.initState();
+  void onInit() {
+    super.onInit();
     _titleCtrl.addListener(_syncSlugFromTitle);
     WidgetsBinding.instance.addPostFrameCallback((_) => _monitors.loadList());
   }
 
   @override
-  void dispose() {
+  void onClose() {
     _titleCtrl.dispose();
     _slugCtrl.dispose();
-    super.dispose();
+    super.onClose();
   }
 
   void _syncSlugFromTitle() {
@@ -248,7 +251,7 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
         PrimaryButton(
           labelKey: 'status_page.create.submit',
           icon: Icons.check_rounded,
-          isLoading: _submitting,
+          isLoading: controller.isSubmitting,
           onTap: _submit,
         ),
       ],
@@ -256,29 +259,23 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
   }
 
   Future<void> _submit() async {
-    if (_submitting) return;
-    final slugError = validateSlug(_slugCtrl.text);
-    if (_titleCtrl.text.trim().isEmpty) {
-      Magic.toast(trans('status_page.validation.title_required'));
-      return;
-    }
-    if (slugError != null) {
-      Magic.toast(trans(slugError));
-      return;
-    }
-    setState(() => _submitting = true);
-    final created = await _pages.store({
-      'title': _titleCtrl.text.trim(),
-      'slug': _slugCtrl.text.trim(),
-      'primary_color': _primaryColor,
-      'is_public': _isPublic,
-      'monitor_ids': _selectedMonitors.toList(),
-      if (_logoPath != null) 'logo_path': _logoPath,
-    });
+    if (controller.isSubmitting) return;
+    final created = await controller.submitCreate(
+      title: _titleCtrl.text,
+      slug: _slugCtrl.text,
+      primaryColor: _primaryColor,
+      logoPath: _logoPath,
+      isPublic: _isPublic,
+      monitorIds: _selectedMonitors.toList(),
+    );
     if (!mounted) return;
-    setState(() => _submitting = false);
     if (created == null) {
-      Magic.toast(trans('status_page.errors.generic_create'));
+      if (!controller.hasErrors) {
+        Magic.toast(
+          controller.rxStatus.message ??
+              trans('status_page.errors.generic_create'),
+        );
+      }
       return;
     }
     Magic.toast(trans('status_page.create.toast_created'));

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:magic/magic.dart';
 import 'package:app/app/controllers/ai/ai_settings_controller.dart';
 import 'package:app/app/enums/ai_mode.dart';
+import 'package:app/resources/views/settings/settings_ai_view.dart';
 
 class _MockNetworkDriver implements NetworkDriver {
   String? lastMethod;
@@ -147,6 +148,52 @@ void main() {
 
       expect(ok, isFalse);
       expect(controller.getError('ai_mode'), 'The ai mode field is invalid.');
+    });
+
+    test('index() returns SettingsAiView', () {
+      expect(controller.index(), isA<SettingsAiView>());
+    });
+
+    test('submit builds typed payload and toggles isSubmitting', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': {'ai_mode': 'auto', 'ai_daily_digest_enabled': false},
+        },
+        statusCode: 200,
+      );
+
+      expect(controller.isSubmitting, isFalse);
+      final future = controller.submit(aiMode: AiMode.auto, dailyDigest: false);
+      expect(controller.isSubmitting, isTrue);
+      final ok = await future;
+
+      expect(ok, isTrue);
+      expect(controller.isSubmitting, isFalse);
+      expect(driver.lastMethod, 'PUT');
+      expect(driver.lastUrl, '/settings/ai');
+      expect((driver.lastData as Map)['ai_mode'], 'auto');
+      expect((driver.lastData as Map)['ai_daily_digest_enabled'], false);
+    });
+
+    test('submit returns false and surfaces 422 via getError', () async {
+      driver.response = MagicResponse(
+        data: {
+          'message': 'Validation failed',
+          'errors': {
+            'ai_mode': ['Invalid.'],
+          },
+        },
+        statusCode: 422,
+      );
+
+      final ok = await controller.submit(
+        aiMode: AiMode.suggest,
+        dailyDigest: true,
+      );
+
+      expect(ok, isFalse);
+      expect(controller.isSubmitting, isFalse);
+      expect(controller.getError('ai_mode'), 'Invalid.');
     });
   });
 }

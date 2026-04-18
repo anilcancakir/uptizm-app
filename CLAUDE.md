@@ -1,107 +1,113 @@
 # CLAUDE.md
 
-## Mission
+Uptizm — website monitoring (up/down + custom metrics) on web, Android, iOS.
+Stack: **magic** (Laravel-inspired Flutter) + **magic_starter** (auth/profile/teams) + **wind** (Tailwind-for-Flutter).
+Backend API: sibling repo `../uptizm-api`.
 
-Uptizm — website monitoring service (up/down status + custom metrics) across web, Android, and iOS.
-Built on **magic** + **magic_starter** framework (Laravel-inspired Flutter architecture) + **wind** (Tailwind-for-Flutter design system).
+## In-House SDKs (read-only vendored source)
 
-## Flutter SDK Packages (In-House)
+| Package       | Source                     |
+|---------------|----------------------------|
+| magic         | `references/magic`         |
+| magic_starter | `references/magic_starter` |
+| wind          | `references/wind`          |
 
-| Package                            | Source Path                |
-|------------------------------------|----------------------------|
-| **Magic** (core framework)         | `references/magic`         |
-| **Magic Starter** (app scaffold)   | `references/magic_starter` |
-| **Wind UI** (Tailwind-for-Flutter) | `references/wind`          |
-
-- **Read-only**: Research source locally for debugging and understanding internals
-- **STRICT: NEVER fix bugs or make changes directly.** File a GitHub issue → the project's LLM agent handles implementation
+Research only. NEVER patch in-place — open a GitHub issue on the upstream repo instead.
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `flutter test` | Run all tests |
-| `dart format lib/ test/` | Format code |
-| `dart analyze` | Static analysis (zero warnings) |
-| `flutter run -d chrome` | Run on web |
-| `flutter run -d <device>` | Run on Android/iOS |
-| `dart run magic:magic <command>` | Magic CLI |
+| Command                                 | Description                         |
+|-----------------------------------------|-------------------------------------|
+| `flutter test`                          | Run all tests (baseline: 145 green) |
+| `dart format lib/ test/`                | Format (must produce no diff)       |
+| `dart analyze`                          | Static analysis (zero issues)       |
+| `flutter run -d chrome` / `-d <device>` | Run on web / Android / iOS          |
+| `dart run magic:magic <cmd>`            | Magic CLI (no global install)       |
 
 ## Architecture
 
 ```
 lib/
-├── main.dart              # Magic.init() + configFactories + runApp(MagicApplication())
+├── main.dart              # Magic.init() + configFactories, then runApp(MagicApplication())
 ├── app/
-│   ├── controllers/       # Magic controllers (one per domain action)
-│   ├── enums/             # MonitorStatus, IncidentSeverity, MetricType, SignalSource, AiTrigger, ...
-│   ├── events/            # Broadcast/app events
-│   ├── helpers/           # Pure-function utilities (no IO)
-│   ├── listeners/         # Event listeners
-│   ├── middleware/        # MagicMiddleware subclasses (auth guards, etc.)
-│   ├── models/            # user.dart, team.dart; mock/ holds design-mock models (Monitor, Incident, ...)
-│   ├── policies/          # Authorization gates
-│   ├── providers/         # ServiceProvider (register = sync bindings, boot = async)
-│   └── kernel.dart        # Kernel.registerAll() named middleware
-├── config/                # app, auth, broadcasting, cache, database, logging, magic_starter, network, routing, view, wind
-├── database/
-│   ├── factories/         # Model factories for tests/seeds
-│   ├── migrations/        # Schema migrations
-│   └── seeders/           # Seed data
-├── resources/
-│   └── views/
-│       ├── dashboard_view.dart
-│       ├── monitors/      # Full-screen monitor pages (list, show, edit, tabs)
-│       ├── settings/      # Settings pages (ai, metrics library, appearance, ...)
-│       ├── status_pages/  # Status page management screens
-│       └── components/    # Reusable widgets grouped by domain
-│           ├── ai/        # ai_avatar, ai_mode_selector, ...
-│           ├── common/    # app_tab_bar, segmented_choice, color_swatch, ...
-│           ├── dashboard/ # recent_incidents_section, ...
-│           ├── incidents/ # incident_create_sheet, incident_timeline, ...
-│           ├── monitors/  # response_sparkline, check_detail_sheet, metric_*, ...
-│           ├── settings/
-│           └── status_pages/  # status_page_card, logo_upload_zone, color_chip_grid, ...
-├── routes/app.dart        # MagicRoute.page() / .group() / .layout()
-assets/
-└── lang/en.json           # trans('key') i18n strings
+│   ├── controllers/       # MagicController + MagicStateMixin<T> (grouped by domain)
+│   ├── enums/             # Backed enums (MonitorStatus, IncidentSeverity, MetricType, SignalSource, AiTrigger, ...)
+│   ├── events/ listeners/ # Broadcast/app event plumbing
+│   ├── helpers/           # Pure functions, no IO
+│   ├── middleware/        # MagicMiddleware (EnsureAuthenticated, RedirectIfAuthenticated)
+│   ├── models/            # Eloquent-style models (mock/ = design-only fixtures)
+│   ├── policies/          # Gate policies
+│   ├── providers/         # ServiceProvider — register (sync) vs boot (async)
+│   ├── requests/          # FormRequest subclasses (prepared + rules)
+│   └── kernel.dart        # Named middleware registry
+├── config/                # app, auth, network, routing, wind, magic_starter, ... (configFactories consume these)
+├── database/              # migrations/, factories/, seeders/
+├── resources/views/       # Screens grouped by domain; views/components/ = reusable widgets
+└── routes/app.dart        # MagicRoute.page() / .group() / .layout()
+assets/lang/en.json        # trans('section.key') strings
 ```
 
-Backend API lives in sibling repo `../uptizm-api`.
+## Stack Decisions
 
-## Key Decisions
+- **State**: `ChangeNotifier` + `MagicStateMixin<T>`. No Riverpod/Bloc/GetX.
+- **HTTP**: `Http` facade → uptizm-api. Never raw Dio.
+- **Routing**: `MagicRoute.page()` / `.group()`. Never raw GoRouter.
+- **Feedback/nav**: `MagicRoute.to()`, `Magic.snackbar()`, `Magic.toast()`, `Magic.dialog()`, `Magic.confirm()`. Never
+  `BuildContext` for feedback or nav.
+- **UI**: Wind UI W-prefix + `className`. Every color token (`bg-` / `text-` / `border-`) needs a `dark:` pair.
+  Conditional styling via `states` + prefixed classes, not string interpolation. Multi-line `className` via triple
+  quotes, one concern per line.
+- **i18n**: `trans('section.key')` from `assets/lang/en.json`. No hardcoded user-facing strings.
 
-- **State**: `ChangeNotifier` + `MagicStateMixin` (no Riverpod/Bloc/GetX)
-- **HTTP**: `Http` facade against uptizm-api (never raw Dio)
-- **Routing**: `MagicRoute.page()` / `.group()` (never raw GoRouter)
-- **UI**: Wind UI W-prefix + `className` for all layout/styling. Every `bg-`/`text-`/`border-` needs a `dark:` pair. Conditional styling via `states` param + prefixed classes, never string interpolation. Multi-line `className` via triple quotes, one concern per line.
-- **Feedback/nav**: `MagicRoute.to()`, `Magic.snackbar()`, `Magic.toast()` (never BuildContext)
-- **i18n**: `trans('section.key')` from `assets/lang/en.json` (never hardcoded strings)
-- **Platforms**: web, Android, iOS (design responsive from the start)
-- **TDD**: red-green-refactor, no exceptions. Write a failing test first, make it pass with minimum code, then refactor. Every new controller, model, helper, and view ships with tests.
+## Project Patterns (match the nearest neighbor before writing new code)
 
-## Skills
+**Controller** — `class X extends MagicController with MagicStateMixin<T>, ValidatesRequests`. Singleton via
+`static X get instance => Magic.findOrPut(X.new);`. State lives in `rxState`. Optimistic mutations: snapshot `previous`,
+restore with `setState(previous, status: rxStatus, notify: false)` on failure. Surface 422s with
+`handleApiError(response, fallback: trans('...'))`. List loads use `fetchList(url, X.fromMap)`; polling uses a separate
+`reload()` that skips `setLoading()`.
 
-| Skill | Coverage |
-|-------|----------|
-| `magic-framework` | Facades, ORM, providers, controllers, routing, testing |
-| `wind-ui` | W-components, className tokens, states, responsive, theme |
+**Request** — `class StoreXRequest extends FormRequest { const StoreXRequest(); }`. `prepared()` trims strings,
+collapses enums to `.name`, drops blank optional fields (absent ≠ empty). `rules()` returns the validation map.
+Controllers never build payloads inline — expose a typed `submitCreate({...})` that calls
+`const StoreXRequest().validate({...})` behind an `isSubmitting` guard.
 
-Via `fluttersdk` CC plugin. Full API refs + templates + anti-patterns. Defer to skills for details.
+**View** — `MagicView<T>` for display. Forms: `MagicStatefulView<T>` + `MagicStatefulViewState<T, V>`, owning a
+`MagicFormData` disposed in `onClose()`. Feedback/nav via the facades above, never `context`.
+
+**Model** — `extends Model with HasTimestamps, InteractsWithPersistence`. Declare `table`, `resource`, `incrementing`,
+`fillable`, `casts` (enums → `EnumCast(MyEnum.values)`). Factory:
+`static fromMap(map) => X()..fill(map)..syncOriginal()..exists = map.containsKey('id');`. Typed access via
+`getAttribute('key') as T?` — never raw maps.
+
+**Enum** — backed enums for every status/type/source. Snake_case wire values go through an explicit `switch` mapper (see
+`MetricSource`, `SignalSource`).
 
 ## Testing
 
-- `setUp()`: `MagicApp.reset()` + `Magic.flush()`
-- Mock via contract inheritance (no mockito)
-- `Magic.put<T>(controller)` for controller injection
-- Wind UI layouts: `tester.view.physicalSize = const Size(1440, 900); addTearDown(tester.view.resetPhysicalSize)`
+- `setUp()` must call `MagicApp.reset()` + `Magic.flush()`.
+- Fakes: `Http.fake([...])` + `Auth.fake()`. No mockito. Mock via contract inheritance if needed.
+- Controller injection: `Magic.put<T>(controller)`.
+- Wind UI layouts: `tester.view.physicalSize = const Size(1440, 900); addTearDown(tester.view.resetPhysicalSize);`.
+- Tree mirrors `lib/` — one test file per controller/model/helper/view.
 
 ## Gotchas
 
-- `.env` = Flutter asset (`pubspec.yaml`), not dart-define
-- `Auth.manager.setUserFactory()` in provider `boot()`, not `register()`
-- `configFactories` (not `configs`) when values need `Env.get()`
-- `BroadcastServiceProvider`/`EncryptionServiceProvider`/`LaunchServiceProvider` NOT auto-registered
-- `routerConfig` only after `Magic.init()` completes
-- Web SQLite = in-memory; mobile/desktop = file-based — don't rely on local persistence for cross-platform caches
-- Backend API is in `../uptizm-api` — coordinate contract changes across both repos
+- `.env` is a Flutter asset (`pubspec.yaml`), not a `--dart-define`.
+- `Auth.manager.setUserFactory()` belongs in provider `boot()`, not `register()`.
+- Use `configFactories` (not `configs`) whenever a config value reads `Env.get()` — `configs` evaluates before env
+  loads.
+- `BroadcastServiceProvider` / `EncryptionServiceProvider` / `LaunchServiceProvider` are NOT auto-registered.
+- `routerConfig` only resolves after `Magic.init()` completes.
+- Web SQLite is in-memory; mobile/desktop is file-backed. Don't rely on local persistence for cross-platform caches.
+- Contract changes cross repos — keep `../uptizm-api` in sync.
+
+## Skills
+
+| Skill             | Coverage                                                  |
+|-------------------|-----------------------------------------------------------|
+| `magic-framework` | Facades, ORM, providers, controllers, routing, testing    |
+| `wind-ui`         | W-components, className tokens, states, responsive, theme |
+| `e2e-testing`     | E2E testing for Flutter for LLM agents                    |
+
+Defer to the skills for full APIs, templates, and anti-patterns.

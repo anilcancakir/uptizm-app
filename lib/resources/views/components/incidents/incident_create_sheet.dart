@@ -1,49 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
+import '../../../../app/controllers/incidents/incident_controller.dart';
 import '../../../../app/enums/incident_severity.dart';
+import '../../../../app/models/incident.dart';
 import '../../../../app/models/monitor_metric.dart';
 import '../common/form_field_label.dart';
 import '../common/segmented_choice.dart';
 
 /// Bottom-sheet composer for manually reporting an incident on a monitor.
 ///
-/// Mock-only: captures severity, title, description, optional metric link
-/// and a notify-team toggle. Submits nothing; just toasts.
-class IncidentCreateSheet extends StatefulWidget {
+/// Captures severity, title, description, optional metric link and a
+/// notify-team toggle, then delegates to [IncidentController.submitCreate].
+/// The controller owns payload building and submit state; the sheet only
+/// holds the transient field values.
+class IncidentCreateSheet extends MagicStatefulView<IncidentController> {
   const IncidentCreateSheet({
     super.key,
     required this.monitorTitle,
-    this.monitorId,
+    required this.monitorId,
     this.metrics,
-    this.onSubmit,
+    this.onCreated,
   });
 
   final String monitorTitle;
-  final String? monitorId;
+  final String monitorId;
   final List<MonitorMetric>? metrics;
-  final void Function(
-    IncidentSeverity severity,
-    String title,
-    String description,
-    String? metricKey,
-    bool notifyTeam,
-  )?
-  onSubmit;
+  final void Function(Incident incident)? onCreated;
 
   static Future<void> show(
     BuildContext context, {
     required String monitorTitle,
-    String? monitorId,
+    required String monitorId,
     List<MonitorMetric>? metrics,
-    void Function(
-      IncidentSeverity severity,
-      String title,
-      String description,
-      String? metricKey,
-      bool notifyTeam,
-    )?
-    onSubmit,
+    void Function(Incident incident)? onCreated,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -54,7 +44,7 @@ class IncidentCreateSheet extends StatefulWidget {
         monitorTitle: monitorTitle,
         monitorId: monitorId,
         metrics: metrics,
-        onSubmit: onSubmit,
+        onCreated: onCreated,
       ),
     );
   }
@@ -63,7 +53,8 @@ class IncidentCreateSheet extends StatefulWidget {
   State<IncidentCreateSheet> createState() => _IncidentCreateSheetState();
 }
 
-class _IncidentCreateSheetState extends State<IncidentCreateSheet> {
+class _IncidentCreateSheetState
+    extends MagicStatefulViewState<IncidentController, IncidentCreateSheet> {
   final _title = TextEditingController();
   final _description = TextEditingController();
 
@@ -72,10 +63,10 @@ class _IncidentCreateSheetState extends State<IncidentCreateSheet> {
   bool _notifyTeam = true;
 
   @override
-  void dispose() {
+  void onClose() {
     _title.dispose();
     _description.dispose();
-    super.dispose();
+    super.onClose();
   }
 
   @override
@@ -398,7 +389,7 @@ class _IncidentCreateSheetState extends State<IncidentCreateSheet> {
           ),
         ),
         WButton(
-          onTap: _submit,
+          onTap: controller.isSubmitting ? null : _submit,
           className: '''
             px-4 py-2.5 rounded-lg
             bg-primary-600 dark:bg-primary-500
@@ -423,19 +414,27 @@ class _IncidentCreateSheetState extends State<IncidentCreateSheet> {
     );
   }
 
-  void _submit() {
-    final title = _title.text.trim();
-    if (title.isEmpty) {
-      Magic.toast(trans('incident.create.title_required'));
+  Future<void> _submit() async {
+    if (controller.isSubmitting) return;
+    final created = await controller.submitCreate(
+      monitorId: widget.monitorId,
+      title: _title.text,
+      severity: _severity,
+      description: _description.text,
+      metricKey: _metricKey,
+      notifyTeam: _notifyTeam,
+    );
+    if (!mounted) return;
+    if (created == null) {
+      if (!controller.hasErrors) {
+        Magic.toast(
+          controller.rxStatus.message ??
+              trans('incident.errors.generic_create'),
+        );
+      }
       return;
     }
-    widget.onSubmit?.call(
-      _severity,
-      title,
-      _description.text.trim(),
-      _metricKey,
-      _notifyTeam,
-    );
+    widget.onCreated?.call(created);
     MagicRoute.back();
     Magic.toast(trans('incident.create.toast_created'));
   }

@@ -572,7 +572,7 @@
         "title": "Incidents (30d)",
         "subtitle": "Aggregated across every assigned monitor.",
         "sample_1": "Elevated latency on checkout, mitigated in 11 min",
-        "sample_2": "CDN origin returned 503 from eu-west-1, resolved"
+        "sample_2": "CDN origin returned 503 from eu-west, resolved"
       }
     },
     "validation": {

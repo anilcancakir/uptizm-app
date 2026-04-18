@@ -14,28 +14,28 @@ import '../components/common/setting_toggle_row.dart';
 /// Workspace-level AI settings.
 ///
 /// Drives the default AI autonomy mode and the daily digest flag. Backed by
-/// `AiSettingsController` which mirrors the `/settings/ai` endpoint.
-class SettingsAiView extends StatefulWidget {
+/// `AiSettingsController` which mirrors the `/settings/ai` endpoint; the view
+/// only holds the transient form snapshot and delegates submit to the
+/// controller.
+class SettingsAiView extends MagicStatefulView<AiSettingsController> {
   const SettingsAiView({super.key});
 
   @override
   State<SettingsAiView> createState() => _SettingsAiViewState();
 }
 
-class _SettingsAiViewState extends State<SettingsAiView> {
-  AiSettingsController get _c => AiSettingsController.instance;
-
+class _SettingsAiViewState
+    extends MagicStatefulViewState<AiSettingsController, SettingsAiView> {
   AiMode _default = AiMode.suggest;
   bool _digest = true;
-  bool _saving = false;
   bool _hydrated = false;
 
   @override
-  void initState() {
-    super.initState();
+  void onInit() {
+    super.onInit();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _c.load();
-      final loaded = _c.settings;
+      await controller.load();
+      final loaded = controller.settings;
       if (!mounted || loaded == null) return;
       setState(() {
         _default = loaded.aiMode;
@@ -188,7 +188,7 @@ class _SettingsAiViewState extends State<SettingsAiView> {
         PrimaryButton(
           labelKey: 'common.save',
           icon: Icons.check_rounded,
-          isLoading: _saving,
+          isLoading: controller.isSubmitting,
           isDisabled: !_hydrated,
           onTap: _submit,
         ),
@@ -197,16 +197,14 @@ class _SettingsAiViewState extends State<SettingsAiView> {
   }
 
   Future<void> _submit() async {
-    setState(() => _saving = true);
-    final ok = await _c.update({
-      'ai_mode': _default.name,
-      'ai_daily_digest_enabled': _digest,
-    });
+    if (controller.isSubmitting) return;
+    final ok = await controller.submit(aiMode: _default, dailyDigest: _digest);
     if (!mounted) return;
-    setState(() => _saving = false);
     if (ok) {
       Magic.toast(trans('settings.ai.toast_saved'));
-    } else {
+      return;
+    }
+    if (!controller.hasErrors) {
       Magic.toast(trans('settings.ai.errors.generic_update'));
     }
   }

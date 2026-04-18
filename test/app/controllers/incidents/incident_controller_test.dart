@@ -321,6 +321,58 @@ void main() {
       expect((driver.lastData as Map)['event_type'], 'note');
     });
 
+    test(
+      'submitCreate builds typed payload and toggles isSubmitting',
+      () async {
+        driver.response = MagicResponse(
+          data: {'data': _incidentPayload(id: 'inc_new')},
+          statusCode: 201,
+        );
+
+        expect(controller.isSubmitting, isFalse);
+        final future = controller.submitCreate(
+          monitorId: 'mon_1',
+          title: '  Latency spike  ',
+          severity: IncidentSeverity.warn,
+          description: '  trace  ',
+          metricKey: 'latency_ms',
+          notifyTeam: false,
+        );
+        expect(controller.isSubmitting, isTrue);
+        final result = await future;
+
+        expect(result?.id, 'inc_new');
+        expect(controller.isSubmitting, isFalse);
+        expect(driver.lastMethod, 'POST');
+        expect(driver.lastUrl, '/incidents');
+        final payload = driver.lastData as Map;
+        expect(payload['monitor_id'], 'mon_1');
+        expect(payload['title'], 'Latency spike');
+        expect(payload['severity'], 'warn');
+        expect(payload['description'], 'trace');
+        expect(payload['metric_key'], 'latency_ms');
+        expect(payload['notify_team'], false);
+      },
+    );
+
+    test('submitCreate omits description and metric_key when blank', () async {
+      driver.response = MagicResponse(
+        data: {'data': _incidentPayload(id: 'inc_x')},
+        statusCode: 201,
+      );
+
+      await controller.submitCreate(
+        monitorId: 'mon_1',
+        title: 'Bare minimum',
+        severity: IncidentSeverity.info,
+      );
+
+      final payload = driver.lastData as Map;
+      expect(payload.containsKey('description'), isFalse);
+      expect(payload.containsKey('metric_key'), isFalse);
+      expect(payload['notify_team'], true);
+    });
+
     test('similar GETs and returns list without mutating state', () async {
       driver.response = MagicResponse(
         data: {

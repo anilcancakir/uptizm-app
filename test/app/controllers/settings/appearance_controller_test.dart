@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic/magic.dart';
 import 'package:app/app/controllers/settings/appearance_controller.dart';
+import 'package:app/resources/views/settings/settings_appearance_view.dart';
 
 class _MockNetworkDriver implements NetworkDriver {
   String? lastMethod;
@@ -152,6 +153,54 @@ void main() {
 
       expect(ok, isFalse);
       expect(controller.getError('appearance_primary_color'), 'Bad color.');
+    });
+
+    test('index() returns SettingsAppearanceView', () {
+      expect(controller.index(), isA<SettingsAppearanceView>());
+    });
+
+    test('submit trims inputs and toggles isSubmitting', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': {
+            'appearance_primary_color': '#ff0066',
+            'appearance_logo_path': 'logos/team.png',
+          },
+        },
+        statusCode: 200,
+      );
+
+      expect(controller.isSubmitting, isFalse);
+      final future = controller.submit(
+        primaryColor: '  #ff0066  ',
+        logoPath: '  logos/team.png  ',
+      );
+      expect(controller.isSubmitting, isTrue);
+      final ok = await future;
+
+      expect(ok, isTrue);
+      expect(controller.isSubmitting, isFalse);
+      expect(driver.lastMethod, 'PUT');
+      expect(driver.lastUrl, '/settings/appearance');
+      final payload = driver.lastData as Map;
+      expect(payload['appearance_primary_color'], '#ff0066');
+      expect(payload['appearance_logo_path'], 'logos/team.png');
+    });
+
+    test('submit nulls empty logo path', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': {
+            'appearance_primary_color': '#112233',
+            'appearance_logo_path': null,
+          },
+        },
+        statusCode: 200,
+      );
+
+      await controller.submit(primaryColor: '#112233', logoPath: '   ');
+
+      expect((driver.lastData as Map)['appearance_logo_path'], isNull);
     });
   });
 }
