@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
 import '../../../../app/enums/signal_source.dart';
-import '../../../../app/models/mock/incident.dart';
+import '../../../../app/models/incident.dart';
 import '../ai/ai_avatar.dart';
 import 'incident_severity_dot.dart';
 import 'incident_status_pill.dart';
@@ -54,7 +54,7 @@ class IncidentListItem extends StatelessWidget {
                     child: WText(
                       incident.title,
                       className: '''
-                        text-sm font-semibold truncate
+                        text-sm font-semibold line-clamp-2
                         text-gray-900 dark:text-white
                       ''',
                     ),

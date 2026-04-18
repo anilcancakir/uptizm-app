@@ -26,8 +26,8 @@ enum MetricBand {
   critical;
 
   String get toneKey => switch (this) {
-        MetricBand.ok => 'up',
-        MetricBand.warn => 'degraded',
-        MetricBand.critical => 'down',
-      };
+    MetricBand.ok => 'up',
+    MetricBand.warn => 'degraded',
+    MetricBand.critical => 'down',
+  };
 }

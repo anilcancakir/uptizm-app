@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
 import '../../../../app/enums/incident_severity.dart';
-import '../../../../app/models/mock/monitor_metric.dart';
+import '../../../../app/models/monitor_metric.dart';
 import '../common/form_field_label.dart';
 import '../common/segmented_choice.dart';
 
@@ -244,7 +244,8 @@ class _IncidentCreateSheetState extends State<IncidentCreateSheet> {
             className: 'flex flex-col gap-1.5',
             children: [
               _metricRow(null, trans('incident.create.metric_none')),
-              for (final m in metrics) _metricRow(m.key, m.label),
+              for (final m in metrics)
+                _metricRow(m.key, m.label ?? m.key ?? ''),
             ],
           ),
       ],

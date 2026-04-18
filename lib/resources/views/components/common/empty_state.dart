@@ -32,9 +32,9 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wrapper = variant == 'plain'
-        ? 'p-6 flex flex-col items-center text-center gap-3'
+        ? 'w-full p-6 flex flex-col items-center text-center gap-3'
         : '''
-          rounded-xl p-8
+          w-full rounded-xl p-8
           bg-white dark:bg-gray-800
           border border-gray-200 dark:border-gray-700
           flex flex-col items-center text-center gap-3
@@ -43,7 +43,8 @@ class EmptyState extends StatelessWidget {
       className: wrapper,
       children: [
         WDiv(
-          className: '''
+          className:
+              '''
             w-12 h-12 rounded-full
             bg-$tone-50 dark:bg-$tone-900/30
             flex items-center justify-center
@@ -68,11 +69,7 @@ class EmptyState extends StatelessWidget {
               text-gray-500 dark:text-gray-400
             ''',
           ),
-        if (action != null)
-          WDiv(
-            className: 'pt-2',
-            child: action,
-          ),
+        if (action != null) WDiv(className: 'pt-2', child: action),
       ],
     );
   }

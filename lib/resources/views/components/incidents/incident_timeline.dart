@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
-import '../../../../app/models/mock/incident.dart';
+import '../../../../app/models/incident.dart';
 import '../ai/ai_avatar.dart';
 
 /// Vertical timeline of events on an incident.
@@ -10,17 +10,28 @@ import '../ai/ai_avatar.dart';
 /// connecting them. AI actions use the `Uptizm AI` avatar; humans get a
 /// gray initials chip.
 class IncidentTimeline extends StatelessWidget {
-  const IncidentTimeline({super.key, required this.events});
+  const IncidentTimeline({super.key, required this.events, this.detectedAt});
 
   final List<IncidentEvent> events;
+  final DateTime? detectedAt;
 
   @override
   Widget build(BuildContext context) {
+    final list = events.isEmpty && detectedAt != null
+        ? [
+            IncidentEvent(
+              at: detectedAt!,
+              actor: 'system',
+              type: 'detected',
+              message: trans('incident.timeline.detected'),
+            ),
+          ]
+        : events;
     return WDiv(
       className: 'flex flex-col',
       children: [
-        for (var i = 0; i < events.length; i++)
-          _row(events[i], isLast: i == events.length - 1),
+        for (var i = 0; i < list.length; i++)
+          _row(list[i], isLast: i == list.length - 1),
       ],
     );
   }

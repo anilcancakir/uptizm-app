@@ -23,8 +23,7 @@ class CollapsibleFormSection extends StatefulWidget {
   final bool initiallyOpen;
 
   @override
-  State<CollapsibleFormSection> createState() =>
-      _CollapsibleFormSectionState();
+  State<CollapsibleFormSection> createState() => _CollapsibleFormSectionState();
 }
 
 class _CollapsibleFormSectionState extends State<CollapsibleFormSection> {
@@ -86,19 +85,13 @@ class _CollapsibleFormSectionState extends State<CollapsibleFormSection> {
                 ],
               ),
               WIcon(
-                _open
-                    ? Icons.expand_less_rounded
-                    : Icons.expand_more_rounded,
+                _open ? Icons.expand_less_rounded : Icons.expand_more_rounded,
                 className: 'text-base text-gray-500 dark:text-gray-400',
               ),
             ],
           ),
         ),
-        if (_open)
-          WDiv(
-            className: 'p-4',
-            child: widget.child,
-          ),
+        if (_open) WDiv(className: 'p-4', child: widget.child),
       ],
     );
   }

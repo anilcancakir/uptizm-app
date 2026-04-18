@@ -28,11 +28,9 @@ class IncidentSeverityDot extends StatelessWidget {
     final dim = size == 'sm' ? 'w-1.5 h-1.5' : 'w-2.5 h-2.5';
     final dimmed = status != null && !status!.isActive;
     return WDiv(
-      states: {
-        severity.toneKey,
-        if (dimmed) 'dimmed',
-      },
-      className: '''
+      states: {severity.toneKey, if (dimmed) 'dimmed'},
+      className:
+          '''
         $dim rounded-full
         critical:bg-down-500 dark:critical:bg-down-400
         warn:bg-degraded-500 dark:warn:bg-degraded-400

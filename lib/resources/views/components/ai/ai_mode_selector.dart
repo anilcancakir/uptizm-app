@@ -25,9 +25,7 @@ class AiModeSelector extends StatelessWidget {
         flex flex-row p-1 rounded-lg gap-1
         bg-gray-100 dark:bg-gray-800
       ''',
-      children: [
-        for (final m in AiMode.values) _segment(m),
-      ],
+      children: [for (final m in AiMode.values) _segment(m)],
     );
   }
 

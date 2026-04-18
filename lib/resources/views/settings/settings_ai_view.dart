@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
+import '../../../app/controllers/ai/ai_settings_controller.dart';
 import '../../../app/enums/ai_mode.dart';
 import '../components/ai/ai_mode_selector.dart';
 import '../components/common/app_back_button.dart';
 import '../components/common/form_section_card.dart';
 import '../components/common/primary_button.dart';
+import '../components/common/secondary_button.dart';
 import '../components/common/setting_toggle_row.dart';
 
 /// Workspace-level AI settings.
 ///
-/// Sets the default AI autonomy mode (Off / Suggest / Auto) applied to every
-/// new monitor. Each monitor may still override this via its own AI card.
+/// Drives the default AI autonomy mode and the daily digest flag. Backed by
+/// `AiSettingsController` which mirrors the `/settings/ai` endpoint.
 class SettingsAiView extends StatefulWidget {
   const SettingsAiView({super.key});
 
@@ -21,10 +23,27 @@ class SettingsAiView extends StatefulWidget {
 }
 
 class _SettingsAiViewState extends State<SettingsAiView> {
+  AiSettingsController get _c => AiSettingsController.instance;
+
   AiMode _default = AiMode.suggest;
-  bool _autoResolve = true;
-  bool _summarizeDigest = true;
-  bool _similarMatch = true;
+  bool _digest = true;
+  bool _saving = false;
+  bool _hydrated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _c.load();
+      final loaded = _c.settings;
+      if (!mounted || loaded == null) return;
+      setState(() {
+        _default = loaded.aiMode;
+        _digest = loaded.dailyDigestEnabled;
+        _hydrated = true;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +55,13 @@ class _SettingsAiViewState extends State<SettingsAiView> {
           title: trans('settings.ai.title'),
           subtitle: trans('settings.ai.subtitle'),
           inlineActions: true,
+          actions: [
+            SecondaryButton(
+              labelKey: 'settings.ai.activity_link',
+              icon: Icons.history_rounded,
+              onTap: () => MagicRoute.to('/settings/ai/activity'),
+            ),
+          ],
         ),
         _defaultModeSection(),
         _behaviorSection(),
@@ -91,31 +117,12 @@ class _SettingsAiViewState extends State<SettingsAiView> {
       titleKey: 'settings.ai.behavior.title',
       subtitleKey: 'settings.ai.behavior.subtitle',
       icon: Icons.tune_rounded,
-      child: WDiv(
-        className: 'flex flex-col gap-2',
-        children: [
-          SettingToggleRow(
-            icon: Icons.healing_rounded,
-            titleKey: 'settings.ai.behavior.auto_resolve_title',
-            subtitleKey: 'settings.ai.behavior.auto_resolve_subtitle',
-            value: _autoResolve,
-            onChanged: (v) => setState(() => _autoResolve = v),
-          ),
-          SettingToggleRow(
-            icon: Icons.summarize_outlined,
-            titleKey: 'settings.ai.behavior.digest_title',
-            subtitleKey: 'settings.ai.behavior.digest_subtitle',
-            value: _summarizeDigest,
-            onChanged: (v) => setState(() => _summarizeDigest = v),
-          ),
-          SettingToggleRow(
-            icon: Icons.compare_arrows_rounded,
-            titleKey: 'settings.ai.behavior.similarity_title',
-            subtitleKey: 'settings.ai.behavior.similarity_subtitle',
-            value: _similarMatch,
-            onChanged: (v) => setState(() => _similarMatch = v),
-          ),
-        ],
+      child: SettingToggleRow(
+        icon: Icons.summarize_outlined,
+        titleKey: 'settings.ai.behavior.digest_title',
+        subtitleKey: 'settings.ai.behavior.digest_subtitle',
+        value: _digest,
+        onChanged: (v) => setState(() => _digest = v),
       ),
     );
   }
@@ -147,10 +154,7 @@ class _SettingsAiViewState extends State<SettingsAiView> {
                   text-ai-700 dark:text-ai-300
                 ''',
               ),
-              WText(
-                '•',
-                className: 'text-xs text-gray-400 dark:text-gray-500',
-              ),
+              WText('•', className: 'text-xs text-gray-400 dark:text-gray-500'),
               WText(
                 trans('ai.confidence.high'),
                 className: 'text-xs text-gray-500 dark:text-gray-400',
@@ -184,11 +188,26 @@ class _SettingsAiViewState extends State<SettingsAiView> {
         PrimaryButton(
           labelKey: 'common.save',
           icon: Icons.check_rounded,
-          onTap: () {
-            Magic.toast(trans('settings.ai.toast_saved'));
-          },
+          isLoading: _saving,
+          isDisabled: !_hydrated,
+          onTap: _submit,
         ),
       ],
     );
+  }
+
+  Future<void> _submit() async {
+    setState(() => _saving = true);
+    final ok = await _c.update({
+      'ai_mode': _default.name,
+      'ai_daily_digest_enabled': _digest,
+    });
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (ok) {
+      Magic.toast(trans('settings.ai.toast_saved'));
+    } else {
+      Magic.toast(trans('settings.ai.errors.generic_update'));
+    }
   }
 }

@@ -151,7 +151,8 @@ class ThresholdBandEditor extends StatelessWidget {
       ''',
       children: [
         WDiv(
-          className: 'flex flex-row items-center h-2 rounded-full overflow-hidden',
+          className:
+              'flex flex-row items-center h-2 rounded-full overflow-hidden',
           children: [
             _bandSegment(
               tone: isHigh ? 'ok' : 'critical',

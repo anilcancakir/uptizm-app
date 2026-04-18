@@ -12,6 +12,7 @@ class SegmentedChoice<T> extends StatelessWidget {
     required this.onChanged,
     this.labelBuilder,
     this.iconBuilder,
+    this.scrollable = false,
   });
 
   final List<T> options;
@@ -19,18 +20,30 @@ class SegmentedChoice<T> extends StatelessWidget {
   final ValueChanged<T> onChanged;
   final String Function(T value)? labelBuilder;
   final IconData? Function(T value)? iconBuilder;
+  final bool scrollable;
 
   @override
   Widget build(BuildContext context) {
+    if (scrollable) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: WDiv(
+          className: '''
+            flex flex-row gap-1 p-1 rounded-lg
+            bg-gray-100 dark:bg-gray-900
+            border border-gray-200 dark:border-gray-700
+          ''',
+          children: [for (final o in options) _tab(o)],
+        ),
+      );
+    }
     return WDiv(
       className: '''
         flex flex-row gap-1 p-1 rounded-lg
         bg-gray-100 dark:bg-gray-900
         border border-gray-200 dark:border-gray-700
       ''',
-      children: [
-        for (final o in options) _tab(o),
-      ],
+      children: [for (final o in options) _tab(o)],
     );
   }
 
@@ -40,12 +53,13 @@ class SegmentedChoice<T> extends StatelessWidget {
     final label = labelBuilder?.call(option) ?? option.toString();
 
     return WDiv(
-      className: 'flex-1',
+      className: scrollable ? '' : 'flex-1',
       child: WButton(
         onTap: () => onChanged(option),
         states: isActive ? {'active'} : {},
-        className: '''
-          w-full px-2 py-2.5 rounded-md
+        className:
+            '''
+          ${scrollable ? '' : 'w-full'} px-2 py-2.5 rounded-md
           flex flex-row items-center justify-center gap-1.5
           text-gray-600 dark:text-gray-300
           hover:text-gray-900 dark:hover:text-white
@@ -57,13 +71,15 @@ class SegmentedChoice<T> extends StatelessWidget {
           className: 'flex flex-row items-center gap-1.5 min-w-0',
           children: [
             if (icon != null) WIcon(icon, className: 'text-sm'),
-            WDiv(
-              className: 'flex-1 min-w-0',
-              child: WText(
-                label,
-                className: 'text-sm font-semibold truncate',
-              ),
-            ),
+            scrollable
+                ? WText(label, className: 'text-sm font-semibold')
+                : WDiv(
+                    className: 'flex-1 min-w-0',
+                    child: WText(
+                      label,
+                      className: 'text-sm font-semibold truncate',
+                    ),
+                  ),
           ],
         ),
       ),

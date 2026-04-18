@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
+import 'package:flutter_skill/flutter_skill.dart';
+
 import 'config/app.dart';
 import 'config/routing.dart';
 import 'config/view.dart';
@@ -14,6 +17,7 @@ import 'config/wind.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kDebugMode) FlutterSkillBinding.ensureInitialized();
 
   await Magic.init(
     configFactories: [

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
-import '../../../../app/models/mock/check_log.dart';
+import '../../../../app/models/monitor_check.dart';
 import '../common/monitor_status_dot.dart';
 
 /// Single row in the Checks timeline.
@@ -9,18 +9,15 @@ import '../common/monitor_status_dot.dart';
 /// Condensed, tappable variant: status dot + HTTP method/code + response time
 /// + region badge + "x m ago" timestamp. Tapping opens the detail sheet.
 class CheckTimelineRow extends StatelessWidget {
-  const CheckTimelineRow({
-    super.key,
-    required this.check,
-    this.onTap,
-  });
+  const CheckTimelineRow({super.key, required this.check, this.onTap});
 
-  final CheckLog check;
+  final MonitorCheck check;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final tone = check.status.toneKey;
+    final tone = check.status?.toneKey ?? 'paused';
+    final checkedAt = check.checkedAt;
     return WButton(
       onTap: onTap,
       className: '''
@@ -37,7 +34,7 @@ class CheckTimelineRow extends StatelessWidget {
             className: 'flex-1 flex flex-row items-center gap-2 min-w-0',
             children: [
               WText(
-                check.method,
+                (check.method ?? 'GET').toUpperCase(),
                 className: '''
                   text-xs font-mono font-bold
                   text-gray-500 dark:text-gray-400
@@ -58,19 +55,20 @@ class CheckTimelineRow extends StatelessWidget {
                     text-gray-600 dark:text-gray-300
                   ''',
                 ),
-              WDiv(
-                className: '''
-                  px-2 py-0.5 rounded-full
-                  bg-gray-100 dark:bg-gray-800
-                ''',
-                child: WText(
-                  check.region,
+              if (check.region != null)
+                WDiv(
                   className: '''
-                    text-[10px] font-bold font-mono uppercase
-                    text-gray-600 dark:text-gray-300
+                    px-2 py-0.5 rounded-full
+                    bg-gray-100 dark:bg-gray-800
                   ''',
+                  child: WText(
+                    check.region!,
+                    className: '''
+                      text-[10px] font-bold font-mono uppercase
+                      text-gray-600 dark:text-gray-300
+                    ''',
+                  ),
                 ),
-              ),
               if (check.errorMessage != null)
                 WDiv(
                   className: 'flex-1 min-w-0',
@@ -85,7 +83,7 @@ class CheckTimelineRow extends StatelessWidget {
             ],
           ),
           WText(
-            _ago(check.checkedAt),
+            _ago(checkedAt),
             className: 'text-xs text-gray-400 dark:text-gray-500',
           ),
         ],
@@ -93,7 +91,8 @@ class CheckTimelineRow extends StatelessWidget {
     );
   }
 
-  String _ago(DateTime at) {
+  String _ago(DateTime? at) {
+    if (at == null) return '—';
     final diff = DateTime.now().difference(at);
     if (diff.inMinutes < 1) return trans('time.just_now');
     if (diff.inHours < 1) {

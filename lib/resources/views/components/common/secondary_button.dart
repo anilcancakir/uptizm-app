@@ -27,10 +27,7 @@ class SecondaryButton extends StatelessWidget {
         className: 'flex flex-row items-center justify-center gap-2',
         children: [
           if (icon != null)
-            WIcon(
-              icon!,
-              className: 'text-sm text-gray-700 dark:text-gray-200',
-            ),
+            WIcon(icon!, className: 'text-sm text-gray-700 dark:text-gray-200'),
           WText(trans(labelKey)),
         ],
       ),

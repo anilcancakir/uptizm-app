@@ -3,18 +3,21 @@ import 'package:magic/magic.dart';
 
 import '../../../../app/enums/monitor_type.dart';
 import '../common/collapsible_form_section.dart';
+import '../common/form_field_error.dart';
 import '../common/form_field_label.dart';
 import '../common/form_section_card.dart';
 import '../common/segmented_choice.dart';
 import '../common/setting_toggle_row.dart';
 import 'region_multi_select.dart';
 
+/// Single HTTP request header row inside the monitor form.
 class MonitorFormHeader {
   const MonitorFormHeader({required this.name, required this.value});
   final String name;
   final String value;
 }
 
+/// Allowed timeout values (seconds) for the monitor create / edit form.
 enum MonitorFormTimeout {
   s5(5),
   s15(15),
@@ -26,9 +29,10 @@ enum MonitorFormTimeout {
   String get labelKey => 'monitor.create.timeout_label.$name';
 }
 
-/// Prefill payload for [MonitorFormShell]. Pass null to create-mode.
-class MonitorFormInitial {
-  const MonitorFormInitial({
+/// Unified snapshot: drives shell initial values AND carries the form
+/// read-out on submit. Defaults match the create-mode prefill.
+class MonitorFormValues {
+  const MonitorFormValues({
     this.name = '',
     this.url = '',
     this.expectedStatus = '200',
@@ -68,63 +72,65 @@ class MonitorFormInitial {
   final String authApiKeyName;
   final String authApiKeyValue;
 
-  /// Preloaded values used by the edit flow.
-  factory MonitorFormInitial.sample() => const MonitorFormInitial(
-    name: 'Production API',
-    url: 'https://api.example.com/health',
-    expectedStatus: '200',
-    type: MonitorType.http,
-    method: HttpMethod.get,
-    interval: CheckInterval.m1,
-    regions: {'eu-west-1', 'us-east-1'},
-    sslTracking: true,
-    alertOnDown: true,
-    alertOnWarn: false,
-    timeout: MonitorFormTimeout.s30,
-  );
-}
+  factory MonitorFormValues.fromMap(Map<String, dynamic> data) {
+    final authMap = data['auth_config'] is Map<String, dynamic>
+        ? data['auth_config'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final authType = switch (authMap['type'] as String? ?? 'none') {
+      'basic' => HttpAuthType.basic,
+      'bearer' => HttpAuthType.bearer,
+      'api_key' => HttpAuthType.apiKey,
+      _ => HttpAuthType.none,
+    };
 
-/// Snapshot handed to the footer's submit callback.
-class MonitorFormValues {
-  const MonitorFormValues({
-    required this.name,
-    required this.url,
-    required this.expectedStatus,
-    required this.type,
-    required this.method,
-    required this.interval,
-    required this.regions,
-    required this.sslTracking,
-    required this.alertOnDown,
-    required this.alertOnWarn,
-    required this.timeout,
-    required this.headers,
-    required this.authType,
-    required this.authUsername,
-    required this.authPassword,
-    required this.authToken,
-    required this.authApiKeyName,
-    required this.authApiKeyValue,
-  });
+    final headers = <MonitorFormHeader>[];
+    final headersRaw = data['request_headers'];
+    if (headersRaw is Map) {
+      headersRaw.forEach(
+        (k, v) => headers.add(
+          MonitorFormHeader(name: k.toString(), value: v?.toString() ?? ''),
+        ),
+      );
+    }
 
-  final String name;
-  final String url;
-  final String expectedStatus;
-  final MonitorType type;
-  final HttpMethod method;
-  final CheckInterval interval;
-  final Set<String> regions;
-  final bool sslTracking;
-  final bool alertOnDown;
-  final bool alertOnWarn;
-  final MonitorFormTimeout timeout;
-  final List<MonitorFormHeader> headers;
-  final HttpAuthType authType;
-  final String authUsername;
-  final String authPassword;
-  final String authToken;
-  final String authApiKeyName;
-  final String authApiKeyValue;
+    final regionsRaw = data['regions'];
+    final regions = regionsRaw is List
+        ? regionsRaw.map((e) => e.toString()).toSet()
+        : <String>{};
+
+    return MonitorFormValues(
+      name: (data['name'] as String?) ?? '',
+      url: (data['url'] as String?) ?? '',
+      expectedStatus: (data['expected_status_code']?.toString()) ?? '200',
+      type: MonitorType.values.firstWhere(
+        (t) => t.name == data['type'],
+        orElse: () => MonitorType.http,
+      ),
+      method: HttpMethod.values.firstWhere(
+        (m) => m.name == data['method'],
+        orElse: () => HttpMethod.get,
+      ),
+      interval: CheckInterval.values.firstWhere(
+        (i) => i.seconds == data['check_interval'],
+        orElse: () => CheckInterval.m1,
+      ),
+      regions: regions.isEmpty ? const {'eu-west-1'} : regions,
+      sslTracking: data['ssl_tracking'] == true,
+      alertOnDown: data['alert_on_down'] == true,
+      alertOnWarn: data['alert_on_warn'] == true,
+      timeout: MonitorFormTimeout.values.firstWhere(
+        (t) => t.seconds == data['timeout_seconds'],
+        orElse: () => MonitorFormTimeout.s30,
+      ),
+      headers: headers,
+      authType: authType,
+      authUsername: (authMap['username'] as String?) ?? '',
+      authPassword: (authMap['password'] as String?) ?? '',
+      authToken: (authMap['token'] as String?) ?? '',
+      authApiKeyName: (authMap['header'] as String?) ?? 'X-API-Key',
+      authApiKeyValue: (authMap['value'] as String?) ?? '',
+    );
+  }
 }
 
 /// Shared form body used by both monitor create and edit surfaces.
@@ -136,14 +142,23 @@ class MonitorFormShell extends StatefulWidget {
     super.key,
     this.initial,
     required this.footerBuilder,
+    this.errorFor,
+    this.onFieldEdit,
   });
 
-  final MonitorFormInitial? initial;
-  final Widget Function(
-    BuildContext context,
-    MonitorFormValues Function() read,
-  )
+  final MonitorFormValues? initial;
+  final Widget Function(BuildContext context, MonitorFormValues Function() read)
   footerBuilder;
+
+  /// Resolves the current validation error for a given API field name
+  /// (`name`, `url`, `expected_status_code`, ...). Returning `null` hides
+  /// the inline error row. Wire to `controller.getError(field)` on a
+  /// controller that mixes in `ValidatesRequests`.
+  final String? Function(String field)? errorFor;
+
+  /// Called whenever the user edits a field, so the host controller can
+  /// clear the stale server-side error for that field.
+  final void Function(String field)? onFieldEdit;
 
   @override
   State<MonitorFormShell> createState() => _MonitorFormShellState();
@@ -162,7 +177,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
   late bool _alertOnDown;
   late bool _alertOnWarn;
   late MonitorFormTimeout _timeout;
-  late List<MonitorFormHeader> _headers;
+  final List<_HeaderRowState> _headerRows = [];
   late HttpAuthType _authType;
   late final TextEditingController _authUsername;
   late final TextEditingController _authPassword;
@@ -173,7 +188,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
   @override
   void initState() {
     super.initState();
-    final i = widget.initial ?? const MonitorFormInitial();
+    final i = widget.initial ?? const MonitorFormValues();
     _name = TextEditingController(text: i.name);
     _url = TextEditingController(text: i.url);
     _expectedStatus = TextEditingController(text: i.expectedStatus);
@@ -185,7 +200,9 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
     _alertOnDown = i.alertOnDown;
     _alertOnWarn = i.alertOnWarn;
     _timeout = i.timeout;
-    _headers = List<MonitorFormHeader>.from(i.headers);
+    for (final h in i.headers) {
+      _headerRows.add(_HeaderRowState.fromModel(h));
+    }
     _authType = i.authType;
     _authUsername = TextEditingController(text: i.authUsername);
     _authPassword = TextEditingController(text: i.authPassword);
@@ -204,8 +221,15 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
     _authToken.dispose();
     _authApiKeyName.dispose();
     _authApiKeyValue.dispose();
+    for (final row in _headerRows) {
+      row.dispose();
+    }
     super.dispose();
   }
+
+  List<MonitorFormHeader> _readHeaders() => [
+    for (final row in _headerRows) row.toModel(),
+  ];
 
   MonitorFormValues _read() => MonitorFormValues(
     name: _name.text,
@@ -219,7 +243,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
     alertOnDown: _alertOnDown,
     alertOnWarn: _alertOnWarn,
     timeout: _timeout,
-    headers: _headers,
+    headers: _readHeaders(),
     authType: _authType,
     authUsername: _authUsername.text,
     authPassword: _authPassword.text,
@@ -262,7 +286,10 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
               ),
               WInput(
                 value: _name.text,
-                onChanged: (v) => _name.text = v,
+                onChanged: (v) {
+                  _name.text = v;
+                  widget.onFieldEdit?.call('name');
+                },
                 placeholder: 'Production API',
                 className: '''
                   w-full px-3 py-2.5 rounded-lg
@@ -272,6 +299,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
                   focus:border-primary-500 dark:focus:border-primary-400
                 ''',
               ),
+              FormFieldError(message: widget.errorFor?.call('name')),
             ],
           ),
           WDiv(
@@ -305,7 +333,10 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
               ),
               WInput(
                 value: _url.text,
-                onChanged: (v) => _url.text = v,
+                onChanged: (v) {
+                  _url.text = v;
+                  widget.onFieldEdit?.call('url');
+                },
                 placeholder: _type == MonitorType.http
                     ? 'https://api.example.com/health'
                     : 'db.example.com:5432',
@@ -317,6 +348,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
                   focus:border-primary-500 dark:focus:border-primary-400
                 ''',
               ),
+              FormFieldError(message: widget.errorFor?.call('url')),
             ],
           ),
         ],
@@ -336,9 +368,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
             WDiv(
               className: 'flex flex-col',
               children: [
-                const FormFieldLabel(
-                  labelKey: 'monitor.create.fields.method',
-                ),
+                const FormFieldLabel(labelKey: 'monitor.create.fields.method'),
                 SegmentedChoice<HttpMethod>(
                   options: HttpMethod.values,
                   selected: _method,
@@ -389,6 +419,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
             selected: _authType,
             onChanged: (v) => setState(() => _authType = v),
             labelBuilder: (v) => trans(v.labelKey),
+            scrollable: true,
             iconBuilder: (v) => switch (v) {
               HttpAuthType.none => Icons.lock_open_rounded,
               HttpAuthType.basic => Icons.person_outline_rounded,
@@ -523,7 +554,9 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
               value: _authApiKeyValue.text,
               onChanged: (v) => _authApiKeyValue.text = v,
               type: InputType.password,
-              placeholder: trans('monitor.create.auth.api_key.value_placeholder'),
+              placeholder: trans(
+                'monitor.create.auth.api_key.value_placeholder',
+              ),
               className: '''
                 w-full px-3 py-2.5 rounded-lg
                 bg-white dark:bg-gray-900
@@ -585,7 +618,10 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
               ),
               WInput(
                 value: _expectedStatus.text,
-                onChanged: (v) => _expectedStatus.text = v,
+                onChanged: (v) {
+                  _expectedStatus.text = v;
+                  widget.onFieldEdit?.call('expected_status_code');
+                },
                 placeholder: '200',
                 className: '''
                   w-full px-3 py-2.5 rounded-lg
@@ -594,6 +630,9 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
                   text-sm text-gray-900 dark:text-white
                   focus:border-primary-500 dark:focus:border-primary-400
                 ''',
+              ),
+              FormFieldError(
+                message: widget.errorFor?.call('expected_status_code'),
               ),
             ],
           ),
@@ -620,7 +659,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
                 hintKey: 'monitor.create.advanced.headers_hint',
               ),
               _headerPresets(),
-              for (var i = 0; i < _headers.length; i++) _headerRow(i),
+              for (final row in _headerRows) _headerRow(row),
               _addHeaderButton(),
             ],
           ),
@@ -631,9 +670,17 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
 
   Widget _headerPresets() {
     final presets = [
-      ('Accept', 'application/json', 'monitor.create.advanced.preset_accept_json'),
+      (
+        'Accept',
+        'application/json',
+        'monitor.create.advanced.preset_accept_json',
+      ),
       ('User-Agent', 'Uptizm/1.0', 'monitor.create.advanced.preset_user_agent'),
-      ('Authorization', 'Bearer ', 'monitor.create.advanced.preset_authorization'),
+      (
+        'Authorization',
+        'Bearer ',
+        'monitor.create.advanced.preset_authorization',
+      ),
     ];
     return WDiv(
       className: 'flex flex-row flex-wrap gap-2',
@@ -641,7 +688,11 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
         for (final p in presets)
           WButton(
             onTap: () => setState(
-              () => _headers.add(MonitorFormHeader(name: p.$1, value: p.$2)),
+              () => _headerRows.add(
+                _HeaderRowState.fromModel(
+                  MonitorFormHeader(name: p.$1, value: p.$2),
+                ),
+              ),
             ),
             className: '''
               px-2.5 py-1.5 rounded-full
@@ -671,21 +722,15 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
     );
   }
 
-  Widget _headerRow(int index) {
-    final h = _headers[index];
+  Widget _headerRow(_HeaderRowState row) {
     return WDiv(
+      key: ObjectKey(row),
       className: 'flex flex-row items-center gap-2',
       children: [
         WDiv(
           className: 'w-1/3',
           child: WInput(
-            value: h.name,
-            onChanged: (v) => setState(
-              () => _headers[index] = MonitorFormHeader(
-                name: v,
-                value: h.value,
-              ),
-            ),
+            controller: row.name,
             placeholder: trans(
               'monitor.create.advanced.header_name_placeholder',
             ),
@@ -701,13 +746,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
         WDiv(
           className: 'flex-1',
           child: WInput(
-            value: h.value,
-            onChanged: (v) => setState(
-              () => _headers[index] = MonitorFormHeader(
-                name: h.name,
-                value: v,
-              ),
-            ),
+            controller: row.value,
             placeholder: trans(
               'monitor.create.advanced.header_value_placeholder',
             ),
@@ -721,7 +760,10 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
           ),
         ),
         WButton(
-          onTap: () => setState(() => _headers.removeAt(index)),
+          onTap: () => setState(() {
+            _headerRows.remove(row);
+            row.dispose();
+          }),
           className: '''
             p-2 rounded-lg
             hover:bg-down-50 dark:hover:bg-down-900/30
@@ -738,9 +780,7 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
 
   Widget _addHeaderButton() {
     return WButton(
-      onTap: () => setState(
-        () => _headers.add(const MonitorFormHeader(name: '', value: '')),
-      ),
+      onTap: () => setState(() => _headerRows.add(_HeaderRowState.empty())),
       className: '''
         w-full px-3 py-2.5 rounded-lg
         border border-dashed border-gray-300 dark:border-gray-600
@@ -832,10 +872,9 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
             onChanged: (v) => setState(() => _regions = v),
           ),
           WText(
-            trans(
-              'monitor.create.regions.count',
-              {'count': '${_regions.length}'},
-            ),
+            trans('monitor.create.regions.count', {
+              'count': '${_regions.length}',
+            }),
             className: 'text-xs text-gray-500 dark:text-gray-400',
           ),
         ],
@@ -868,5 +907,36 @@ class _MonitorFormShellState extends State<MonitorFormShell> {
         ],
       ),
     );
+  }
+}
+
+/// Per-row state for custom request headers.
+///
+/// Owns its own [TextEditingController]s so each row can be identified by
+/// object identity (via `ObjectKey`) across rebuilds: adding or removing
+/// rows no longer shifts text into neighbouring inputs.
+class _HeaderRowState {
+  _HeaderRowState({required this.name, required this.value});
+
+  factory _HeaderRowState.empty() => _HeaderRowState(
+    name: TextEditingController(),
+    value: TextEditingController(),
+  );
+
+  factory _HeaderRowState.fromModel(MonitorFormHeader header) =>
+      _HeaderRowState(
+        name: TextEditingController(text: header.name),
+        value: TextEditingController(text: header.value),
+      );
+
+  final TextEditingController name;
+  final TextEditingController value;
+
+  MonitorFormHeader toModel() =>
+      MonitorFormHeader(name: name.text, value: value.text);
+
+  void dispose() {
+    name.dispose();
+    value.dispose();
   }
 }

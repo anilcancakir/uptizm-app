@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
 import '../../../../app/enums/metric_type.dart';
-import '../../../../app/models/mock/monitor_metric.dart';
+import '../../../../app/models/monitor_metric.dart';
 import 'numeric_metric_card.dart';
 import 'status_metric_card.dart';
 import 'string_metric_row.dart';
@@ -17,6 +17,7 @@ import 'string_metric_row.dart';
 class MetricGroupSection extends StatelessWidget {
   const MetricGroupSection({
     super.key,
+    required this.monitorId,
     required this.group,
     required this.metrics,
     required this.icon,
@@ -24,6 +25,7 @@ class MetricGroupSection extends StatelessWidget {
     this.onAddMetric,
   });
 
+  final String monitorId;
   final String group;
   final List<MonitorMetric> metrics;
   final IconData icon;
@@ -37,9 +39,7 @@ class MetricGroupSection extends StatelessWidget {
           (m) => m.type == MetricType.numeric || m.type == MetricType.status,
         )
         .toList();
-    final strings = metrics
-        .where((m) => m.type == MetricType.string)
-        .toList();
+    final strings = metrics.where((m) => m.type == MetricType.string).toList();
 
     return WDiv(
       className: 'flex flex-col gap-3',
@@ -47,10 +47,7 @@ class MetricGroupSection extends StatelessWidget {
         WDiv(
           className: 'flex flex-row items-center gap-2',
           children: [
-            WIcon(
-              icon,
-              className: 'text-sm text-gray-500 dark:text-gray-400',
-            ),
+            WIcon(icon, className: 'text-sm text-gray-500 dark:text-gray-400'),
             WDiv(
               className: 'flex-1',
               child: WText(
@@ -102,11 +99,13 @@ class MetricGroupSection extends StatelessWidget {
               for (final m in cards)
                 if (m.type == MetricType.numeric)
                   NumericMetricCard(
+                    monitorId: monitorId,
                     metric: m,
                     onTap: onMetricTap == null ? null : () => onMetricTap!(m),
                   )
                 else
                   StatusMetricCard(
+                    monitorId: monitorId,
                     metric: m,
                     onTap: onMetricTap == null ? null : () => onMetricTap!(m),
                   ),
@@ -118,6 +117,7 @@ class MetricGroupSection extends StatelessWidget {
             children: [
               for (final m in strings)
                 StringMetricRow(
+                  monitorId: monitorId,
                   metric: m,
                   onTap: onMetricTap == null ? null : () => onMetricTap!(m),
                 ),

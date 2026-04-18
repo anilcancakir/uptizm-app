@@ -2,16 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
+import '../../../app/controllers/metrics/metrics_library_controller.dart';
 import '../../../app/enums/metric_type.dart';
+import '../../../app/models/monitor_metric.dart';
 import '../components/common/app_back_button.dart';
 import '../components/common/empty_state.dart';
+import '../components/common/error_banner.dart';
+import '../components/common/refresh_icon_button.dart';
+import '../components/common/skeleton_row.dart';
 
 /// Workspace-wide metrics library.
 ///
-/// Aggregates every custom metric key defined across the workspace's
-/// monitors and shows how widely each is used. Read-only mockup; editing
-/// still happens on the owning monitor.
-class SettingsMetricsLibraryView extends StatefulWidget {
+/// Flat, read-only list of every custom metric declared across the
+/// team's monitors. Powered by [MetricsLibraryController]; editing still
+/// happens on the owning monitor's metrics tab.
+class SettingsMetricsLibraryView
+    extends MagicStatefulView<MetricsLibraryController> {
   const SettingsMetricsLibraryView({super.key});
 
   @override
@@ -20,27 +26,68 @@ class SettingsMetricsLibraryView extends StatefulWidget {
 }
 
 class _SettingsMetricsLibraryViewState
-    extends State<SettingsMetricsLibraryView> {
+    extends
+        MagicStatefulViewState<
+          MetricsLibraryController,
+          SettingsMetricsLibraryView
+        > {
   MetricType? _typeFilter;
   String? _groupFilter;
 
   @override
-  Widget build(BuildContext context) {
-    final rows = _rows();
-    final groups = rows.map((r) => r.group).toSet().toList();
-    final filtered = rows
-        .where((r) => _typeFilter == null || r.type == _typeFilter)
-        .where((r) => _groupFilter == null || r.group == _groupFilter)
-        .toList();
+  void onInit() {
+    super.onInit();
+    controller.load();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return WDiv(
       className: 'p-4 lg:p-6 flex flex-col gap-6',
       children: [
-        MagicStarterPageHeader(
-          leading: const AppBackButton(fallbackPath: '/'),
-          title: trans('settings.metrics_library.title'),
-          subtitle: trans('settings.metrics_library.subtitle'),
+        AnimatedBuilder(
+          animation: controller,
+          builder: (_, _) => MagicStarterPageHeader(
+            leading: const AppBackButton(fallbackPath: '/'),
+            title: trans('settings.metrics_library.title'),
+            subtitle: trans('settings.metrics_library.subtitle'),
+            inlineActions: true,
+            actions: [
+              RefreshIconButton(
+                onTap: controller.load,
+                isRefreshing: controller.rxStatus.isLoading,
+              ),
+            ],
+          ),
         ),
+        RefreshIndicator(
+          onRefresh: controller.load,
+          child: controller.renderState(
+            (metrics) => _body(metrics),
+            onLoading: const SkeletonRowList(),
+            onEmpty: _empty(),
+            onError: (msg) =>
+                ErrorBanner(message: msg, onRetry: controller.load),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _body(List<MonitorMetric> metrics) {
+    final groups = metrics
+        .map((m) => m.groupName ?? '')
+        .where((g) => g.isNotEmpty)
+        .toSet()
+        .toList();
+    final filtered = metrics
+        .where((m) => _typeFilter == null || m.type == _typeFilter)
+        .where((m) => _groupFilter == null || m.groupName == _groupFilter)
+        .toList();
+
+    return WDiv(
+      className: 'flex flex-col gap-4',
+      children: [
         _filterBar(groups),
         if (filtered.isEmpty) _empty() else _table(filtered),
       ],
@@ -106,25 +153,18 @@ class _SettingsMetricsLibraryViewState
     );
   }
 
-  Widget _table(List<_MetricRow> rows) {
+  Widget _table(List<MonitorMetric> rows) {
     final shellClass = '''
       rounded-xl overflow-hidden
       bg-white dark:bg-gray-800
       border border-gray-200 dark:border-gray-700
     ''';
-    final inner = WDiv(
-      className: 'flex flex-col w-[760px] tablet:w-full',
-      children: [_header(), for (final r in rows) _row(r)],
-    );
-    return WBreakpoint(
-      base: (_) => WDiv(
-        className: shellClass,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: inner,
-        ),
+    return WDiv(
+      className: shellClass,
+      child: WDiv(
+        className: 'flex flex-col w-full',
+        children: [_header(), for (final r in rows) _row(r)],
       ),
-      custom: {'tablet': (_) => WDiv(className: shellClass, child: inner)},
     );
   }
 
@@ -134,24 +174,25 @@ class _SettingsMetricsLibraryViewState
         px-4 py-2
         bg-gray-50 dark:bg-gray-900
         border-b border-gray-200 dark:border-gray-700
-        flex flex-row items-center gap-4
+        flex flex-row items-center gap-3
       ''',
       children: [
         _headerCell(
           'settings.metrics_library.columns.key',
-          width: 'flex-1 min-w-[260px]',
+          width: 'flex-1 min-w-0',
         ),
         _headerCell(
           'settings.metrics_library.columns.type',
-          width: 'w-[140px]',
+          width: 'w-[96px] flex-shrink-0',
         ),
-        _headerCell(
-          'settings.metrics_library.columns.group',
-          width: 'w-[160px]',
-        ),
-        _headerCell(
-          'settings.metrics_library.columns.usage',
-          width: 'w-[120px]',
+        WBreakpoint(
+          base: (_) => const SizedBox.shrink(),
+          custom: {
+            'tablet': (_) => _headerCell(
+              'settings.metrics_library.columns.group',
+              width: 'w-[140px] flex-shrink-0',
+            ),
+          },
         ),
       ],
     );
@@ -170,26 +211,26 @@ class _SettingsMetricsLibraryViewState
     );
   }
 
-  Widget _row(_MetricRow r) {
+  Widget _row(MonitorMetric r) {
     return WDiv(
       className: '''
         px-4 py-3
         border-b border-gray-100 dark:border-gray-800
-        flex flex-row items-center gap-4
+        flex flex-row items-center gap-3
       ''',
       children: [
         WDiv(
-          className: 'flex-1 min-w-[260px] flex flex-col gap-0.5',
+          className: 'flex-1 min-w-0 flex flex-col gap-0.5',
           children: [
             WText(
-              r.key,
+              r.key ?? '',
               className: '''
                 text-sm font-mono font-semibold
                 text-gray-900 dark:text-white truncate
               ''',
             ),
             WText(
-              r.label,
+              r.label ?? '',
               className: '''
                 text-xs
                 text-gray-500 dark:text-gray-400 truncate
@@ -197,26 +238,24 @@ class _SettingsMetricsLibraryViewState
             ),
           ],
         ),
-        WDiv(className: 'w-[140px]', child: _typeBadge(r.type, r.unit)),
         WDiv(
-          className: 'w-[160px]',
-          child: WText(
-            r.group,
-            className: '''
-              text-xs
-              text-gray-600 dark:text-gray-300
-            ''',
-          ),
+          className: 'w-[96px] flex-shrink-0',
+          child: _typeBadge(r.type ?? MetricType.numeric, r.unit),
         ),
-        WDiv(
-          className: 'w-[120px]',
-          child: WText(
-            trans('settings.metrics_library.used_by', {'count': '${r.usedBy}'}),
-            className: '''
-              text-xs font-semibold
-              text-gray-700 dark:text-gray-200
-            ''',
-          ),
+        WBreakpoint(
+          base: (_) => const SizedBox.shrink(),
+          custom: {
+            'tablet': (_) => WDiv(
+              className: 'w-[140px] flex-shrink-0',
+              child: WText(
+                r.groupName ?? '—',
+                className: '''
+                  text-xs
+                  text-gray-600 dark:text-gray-300
+                ''',
+              ),
+            ),
+          },
         ),
       ],
     );
@@ -247,83 +286,4 @@ class _SettingsMetricsLibraryViewState
       tone: 'gray',
     );
   }
-
-  List<_MetricRow> _rows() {
-    return const [
-      _MetricRow(
-        key: 'db_conn_ms',
-        label: 'DB connection latency',
-        type: MetricType.numeric,
-        unit: 'ms',
-        group: 'Database',
-        usedBy: 3,
-      ),
-      _MetricRow(
-        key: 'ssl_days_to_expiry',
-        label: 'SSL certificate days to expiry',
-        type: MetricType.numeric,
-        unit: 'd',
-        group: 'SSL',
-        usedBy: 5,
-      ),
-      _MetricRow(
-        key: 'queue_depth',
-        label: 'Job queue depth',
-        type: MetricType.numeric,
-        unit: null,
-        group: 'Background jobs',
-        usedBy: 2,
-      ),
-      _MetricRow(
-        key: 'queue_last_job_ms',
-        label: 'Last job runtime',
-        type: MetricType.numeric,
-        unit: 'ms',
-        group: 'Background jobs',
-        usedBy: 2,
-      ),
-      _MetricRow(
-        key: 'cache_hit_ratio',
-        label: 'CDN cache hit ratio',
-        type: MetricType.numeric,
-        unit: '%',
-        group: 'Performance',
-        usedBy: 1,
-      ),
-      _MetricRow(
-        key: 'build_version',
-        label: 'Deployed build version',
-        type: MetricType.string,
-        unit: null,
-        group: 'Release',
-        usedBy: 4,
-      ),
-      _MetricRow(
-        key: 'payment_gateway_status',
-        label: 'Payment gateway status',
-        type: MetricType.status,
-        unit: null,
-        group: 'Upstream',
-        usedBy: 1,
-      ),
-    ];
-  }
-}
-
-class _MetricRow {
-  const _MetricRow({
-    required this.key,
-    required this.label,
-    required this.type,
-    required this.unit,
-    required this.group,
-    required this.usedBy,
-  });
-
-  final String key;
-  final String label;
-  final MetricType type;
-  final String? unit;
-  final String group;
-  final int usedBy;
 }

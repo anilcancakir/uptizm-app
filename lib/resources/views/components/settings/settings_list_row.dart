@@ -49,7 +49,8 @@ class SettingsListRow extends StatelessWidget {
         onTap();
       },
       states: comingSoon ? {'soon'} : {},
-      className: '''
+      className:
+          '''
         w-full px-4 py-3
         bg-white dark:bg-gray-800
         hover:bg-gray-50 dark:hover:bg-gray-900/40
@@ -61,7 +62,8 @@ class SettingsListRow extends StatelessWidget {
         className: 'flex flex-row items-center gap-3 w-full',
         children: [
           WDiv(
-            className: '''
+            className:
+                '''
               w-9 h-9 rounded-lg
               bg-$iconTone-50 dark:bg-$iconTone-900/40
               flex items-center justify-center

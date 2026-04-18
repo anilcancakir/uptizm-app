@@ -69,10 +69,7 @@ class FormSectionCard extends StatelessWidget {
             ),
           ],
         ),
-        WDiv(
-          className: 'p-4',
-          child: child,
-        ),
+        WDiv(className: 'p-4', child: child),
       ],
     );
   }

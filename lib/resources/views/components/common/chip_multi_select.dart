@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
-/// Wrap of toggle chips used as a multi-select picker (e.g. regions).
+/// Single chip option in a [ChipMultiSelect].
 class ChipOption {
-  const ChipOption({
-    required this.value,
-    required this.label,
-    this.subtitle,
-  });
+  const ChipOption({required this.value, required this.label, this.subtitle});
 
   final String value;
   final String label;
   final String? subtitle;
 }
 
+/// Wrap of toggle chips used as a multi-select picker (e.g. regions).
 class ChipMultiSelect extends StatelessWidget {
   const ChipMultiSelect({
     super.key,
@@ -30,9 +27,7 @@ class ChipMultiSelect extends StatelessWidget {
   Widget build(BuildContext context) {
     return WDiv(
       className: 'wrap gap-2',
-      children: [
-        for (final o in options) _chip(o),
-      ],
+      children: [for (final o in options) _chip(o)],
     );
   }
 

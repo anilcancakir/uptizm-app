@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "php",
+      "args": [
+        "../uptizm-api/artisan",
+        "boost:mcp"
+      ]
+    },
+    "laravel-telescope": {
+      "command": "php",
+      "args": [
+        "../uptizm-api/artisan",
+        "telescope-mcp:server"
+      ],
+      "env": {
+        "APP_ENV": "local"
+      },
+      "cwd": "/Users/anilcan/Code/uptizmv2/uptizm-api"
+    },
+    "dart-mcp-server": {
+      "command": "dart",
+      "args": [
+        "mcp-server"
+      ],
+      "env": {}
+    },
+    "flutter-skill": {
+      "command": "/opt/homebrew/bin/flutter-skill",
+      "args": ["server"]
+    }
+  }
+}

@@ -14,10 +14,16 @@ class MonitorAiModeCard extends StatefulWidget {
     super.key,
     required this.workspaceDefault,
     this.initialOverride,
+    this.onChanged,
   });
 
   final AiMode workspaceDefault;
   final AiMode? initialOverride;
+
+  /// Fires whenever the effective mode changes (inherit → override on/off, or
+  /// override value changes). `null` means "inherit workspace default". Kept
+  /// optional so the component stays usable without persistence.
+  final ValueChanged<AiMode?>? onChanged;
 
   @override
   State<MonitorAiModeCard> createState() => _MonitorAiModeCardState();
@@ -46,7 +52,10 @@ class _MonitorAiModeCardState extends State<MonitorAiModeCard> {
             if (_override) ...[
               AiModeSelector(
                 selected: _mode,
-                onChanged: (v) => setState(() => _mode = v),
+                onChanged: (v) {
+                  setState(() => _mode = v);
+                  widget.onChanged?.call(v);
+                },
               ),
               WText(
                 trans(_mode.descriptionKey),
@@ -192,7 +201,10 @@ class _MonitorAiModeCardState extends State<MonitorAiModeCard> {
 
   Widget _inheritRow() {
     return WButton(
-      onTap: () => setState(() => _override = !_override),
+      onTap: () {
+        setState(() => _override = !_override);
+        widget.onChanged?.call(_override ? _mode : null);
+      },
       states: _override ? {'on'} : {},
       className: '''
         w-full p-3 rounded-lg
@@ -234,7 +246,9 @@ class _MonitorAiModeCardState extends State<MonitorAiModeCard> {
               flex flex-row items-center
               on:justify-end
             ''',
-            child: WDiv(className: 'w-5 h-5 rounded-full bg-white dark:bg-white'),
+            child: WDiv(
+              className: 'w-5 h-5 rounded-full bg-white dark:bg-white',
+            ),
           ),
         ],
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
-import '../../../../app/models/mock/status_page.dart';
+import '../../../../app/models/status_page.dart';
 import '../common/color_swatch.dart';
 
 /// Card shown on the status-page list grid. Click navigates to the show view.

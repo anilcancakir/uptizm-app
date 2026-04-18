@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
+import '../../../../app/enums/metric_source.dart';
+import '../../../../app/enums/metric_type.dart';
 import '../common/primary_button.dart';
 import 'metric_form_sheet.dart';
 
@@ -24,7 +26,9 @@ class _Preset {
 /// Presents hand-picked preset cards that open the Add sheet pre-filled, plus
 /// a fallback "Add custom metric" CTA at the bottom.
 class MetricsEmptyState extends StatelessWidget {
-  const MetricsEmptyState({super.key});
+  const MetricsEmptyState({super.key, required this.monitorId});
+
+  final String monitorId;
 
   static final List<_Preset> _presets = [
     const _Preset(
@@ -35,7 +39,9 @@ class MetricsEmptyState extends StatelessWidget {
         label: 'Response time',
         key: 'response_time',
         group: 'HTTP',
+        source: MetricSource.header,
         path: 'X-Response-Time',
+        type: MetricType.numeric,
         unit: 'ms',
         warn: '500',
         critical: '1000',
@@ -49,8 +55,9 @@ class MetricsEmptyState extends StatelessWidget {
         label: 'HTTP status',
         key: 'http_status',
         group: 'HTTP',
-        path: r'$.status',
-        unit: '',
+        source: MetricSource.httpStatus,
+        path: '',
+        type: MetricType.numeric,
       ),
     ),
     const _Preset(
@@ -61,7 +68,9 @@ class MetricsEmptyState extends StatelessWidget {
         label: 'Cache hit',
         key: 'cache_hit',
         group: 'HTTP',
+        source: MetricSource.header,
         path: 'X-Cache',
+        type: MetricType.string,
       ),
     ),
   ];
@@ -122,9 +131,7 @@ class MetricsEmptyState extends StatelessWidget {
               className: '''
                 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3
               ''',
-              children: [
-                for (final p in _presets) _presetCard(context, p),
-              ],
+              children: [for (final p in _presets) _presetCard(context, p)],
             ),
           ],
         ),
@@ -147,6 +154,7 @@ class MetricsEmptyState extends StatelessWidget {
               onTap: () => MetricFormSheet.show(
                 context,
                 mode: 'create',
+                monitorId: monitorId,
                 existingGroups: const [],
               ),
             ),
@@ -161,6 +169,7 @@ class MetricsEmptyState extends StatelessWidget {
       onTap: () => MetricFormSheet.show(
         context,
         mode: 'create',
+        monitorId: monitorId,
         existingGroups: const [],
         initial: preset.initial,
       ),

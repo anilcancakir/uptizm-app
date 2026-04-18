@@ -2,143 +2,135 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
+import '../../../app/controllers/ai/ai_settings_controller.dart';
+import '../../../app/controllers/monitors/monitor_controller.dart';
 import '../../../app/enums/ai_mode.dart';
 import '../../../app/enums/monitor_status.dart';
+import '../../../app/models/monitor.dart';
 import '../components/common/empty_state.dart';
+import '../components/common/error_banner.dart';
 import '../components/common/monitor_status_dot.dart';
 import '../components/common/primary_button.dart';
+import '../components/common/refresh_icon_button.dart';
+import '../components/common/skeleton_row.dart';
 import '../components/monitors/status_badge.dart';
 
-/// Mock monitor-list screen.
-///
-/// Shows the workspace's monitors with status, last response, AI mode badge,
-/// and an override dot when the monitor overrides the workspace default.
-class MonitorListView extends StatelessWidget {
+/// Workspace monitor list, hydrated from `/monitors`.
+class MonitorListView extends StatefulWidget {
   const MonitorListView({super.key});
 
   @override
+  State<MonitorListView> createState() => _MonitorListViewState();
+}
+
+class _MonitorListViewState extends State<MonitorListView> {
+  MonitorController get _c => MonitorController.instance;
+  AiSettingsController get _ai => AiSettingsController.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _c.loadList();
+      if (_ai.settings == null) _ai.load();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final monitors = _mock();
     return WDiv(
       className: 'p-4 lg:p-6 flex flex-col gap-6',
       children: [
-        MagicStarterPageHeader(
-          title: trans('monitor.list.title'),
-          subtitle: trans('monitor.list.subtitle'),
-          inlineActions: true,
-          actions: [
-            PrimaryButton(
-              labelKey: 'monitor.list.add',
-              icon: Icons.add_rounded,
-              onTap: () => MagicRoute.to('/monitors/create'),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final narrow = constraints.maxWidth < 480;
+            return ValueListenableBuilder<bool>(
+              valueListenable: _c.listLoading,
+              builder: (_, loading, _) => MagicStarterPageHeader(
+                title: trans('monitor.list.title'),
+                subtitle: trans('monitor.list.subtitle'),
+                inlineActions: true,
+                actions: [
+                  RefreshIconButton(onTap: _c.loadList, isRefreshing: loading),
+                  PrimaryButton(
+                    labelKey: narrow
+                        ? 'monitor.list.add_short'
+                        : 'monitor.list.add',
+                    icon: Icons.add_rounded,
+                    onTap: () => MagicRoute.to('/monitors/create'),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
-        if (monitors.isEmpty)
-          EmptyState(
-            icon: Icons.monitor_heart_outlined,
-            titleKey: 'monitor.list.empty_title',
-            subtitleKey: 'monitor.list.empty_subtitle',
-            action: PrimaryButton(
-              labelKey: 'monitor.list.add',
-              icon: Icons.add_rounded,
-              onTap: () => MagicRoute.to('/monitors/create'),
-            ),
-          )
-        else
-          WDiv(
-            className: '''
-              rounded-xl overflow-hidden
-              bg-white dark:bg-gray-800
-              border border-gray-200 dark:border-gray-700
-              flex flex-col
-            ''',
-            children: [
-              for (final m in monitors) _MonitorRow(monitor: m),
-            ],
+        RefreshIndicator(
+          onRefresh: _c.loadList,
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _c.listError,
+            builder: (_, hasError, _) {
+              if (hasError) {
+                return ErrorBanner(onRetry: _c.loadList);
+              }
+              return ValueListenableBuilder<bool>(
+                valueListenable: _c.listLoading,
+                builder: (_, loading, _) {
+                  return ValueListenableBuilder<List<Monitor>>(
+                    valueListenable: _c.list,
+                    builder: (_, monitors, _) {
+                      if (loading && monitors.isEmpty) {
+                        return const SkeletonRowList();
+                      }
+                      if (monitors.isEmpty) return _empty();
+                      return _table(monitors);
+                    },
+                  );
+                },
+              );
+            },
           ),
+        ),
       ],
     );
   }
 
-  List<_Monitor> _mock() {
-    return const [
-      _Monitor(
-        id: 'sample',
-        name: 'Production API',
-        url: 'https://api.example.com/health',
-        status: MonitorStatus.up,
-        responseMs: 245,
-        aiMode: AiMode.suggest,
-        overridesWorkspaceDefault: false,
+  Widget _empty() {
+    return EmptyState(
+      icon: Icons.monitor_heart_outlined,
+      titleKey: 'monitor.list.empty_title',
+      subtitleKey: 'monitor.list.empty_subtitle',
+      action: PrimaryButton(
+        labelKey: 'monitor.list.add',
+        icon: Icons.add_rounded,
+        onTap: () => MagicRoute.to('/monitors/create'),
       ),
-      _Monitor(
-        id: 'web',
-        name: 'Marketing site',
-        url: 'https://www.example.com',
-        status: MonitorStatus.up,
-        responseMs: 112,
-        aiMode: AiMode.auto,
-        overridesWorkspaceDefault: true,
-      ),
-      _Monitor(
-        id: 'db',
-        name: 'Primary DB health',
-        url: 'https://api.example.com/db/ping',
-        status: MonitorStatus.degraded,
-        responseMs: 812,
-        aiMode: AiMode.auto,
-        overridesWorkspaceDefault: false,
-      ),
-      _Monitor(
-        id: 'legacy',
-        name: 'Legacy billing',
-        url: 'https://billing-legacy.example.com/ok',
-        status: MonitorStatus.down,
-        responseMs: null,
-        aiMode: AiMode.off,
-        overridesWorkspaceDefault: true,
-      ),
-      _Monitor(
-        id: 'staging',
-        name: 'Staging API',
-        url: 'https://staging.example.com/health',
-        status: MonitorStatus.paused,
-        responseMs: null,
-        aiMode: AiMode.off,
-        overridesWorkspaceDefault: false,
-      ),
-    ];
+    );
   }
-}
 
-class _Monitor {
-  const _Monitor({
-    required this.id,
-    required this.name,
-    required this.url,
-    required this.status,
-    required this.responseMs,
-    required this.aiMode,
-    required this.overridesWorkspaceDefault,
-  });
+  Widget _table(List<Monitor> monitors) {
+    return WDiv(
+      className: '''
+        rounded-xl overflow-hidden
+        bg-white dark:bg-gray-800
+        border border-gray-200 dark:border-gray-700
+        flex flex-col
+      ''',
+      children: [for (final m in monitors) _row(m)],
+    );
+  }
 
-  final String id;
-  final String name;
-  final String url;
-  final MonitorStatus status;
-  final int? responseMs;
-  final AiMode aiMode;
-  final bool overridesWorkspaceDefault;
-}
-
-class _MonitorRow extends StatelessWidget {
-  const _MonitorRow({required this.monitor});
-
-  final _Monitor monitor;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _row(Monitor monitor) {
+    final status = monitor.lastStatus ?? MonitorStatus.paused;
+    final responseMs = (monitor.getAttribute('last_response_ms') as num?)
+        ?.toInt();
+    final rawMode = monitor.getAttribute('ai_mode') as String?;
+    final aiMode = rawMode == null
+        ? _ai.settings?.aiMode ?? AiMode.off
+        : AiMode.values.firstWhere(
+            (m) => m.name == rawMode,
+            orElse: () => AiMode.off,
+          );
+    final overrides = rawMode != null && rawMode != _ai.settings?.aiMode.name;
     return WButton(
       onTap: () => MagicRoute.to('/monitors/${monitor.id}'),
       className: '''
@@ -150,19 +142,19 @@ class _MonitorRow extends StatelessWidget {
       child: WDiv(
         className: 'flex flex-row items-center gap-4 w-full',
         children: [
-          MonitorStatusDot(toneKey: monitor.status.toneKey, size: 'md'),
+          MonitorStatusDot(toneKey: status.toneKey, size: 'md'),
           WDiv(
             className: 'flex-1 flex flex-col gap-0.5 min-w-0',
             children: [
               WText(
-                monitor.name,
+                monitor.name ?? '',
                 className: '''
                   text-sm font-semibold
                   text-gray-900 dark:text-white truncate
                 ''',
               ),
               WText(
-                monitor.url,
+                monitor.url ?? '',
                 className: '''
                   text-xs font-mono
                   text-gray-500 dark:text-gray-400 truncate
@@ -170,22 +162,19 @@ class _MonitorRow extends StatelessWidget {
               ),
             ],
           ),
-          if (monitor.responseMs != null)
+          if (responseMs != null)
             WText(
-              '${monitor.responseMs} ms',
+              '$responseMs ms',
               className: '''
                 text-xs font-mono
                 text-gray-600 dark:text-gray-300
                 hidden sm:flex
               ''',
             ),
-          _AiModeBadge(
-            mode: monitor.aiMode,
-            overrides: monitor.overridesWorkspaceDefault,
-          ),
+          _AiModeBadge(mode: aiMode, overrides: overrides),
           WDiv(
             className: 'hidden md:flex',
-            child: StatusBadge(status: monitor.status),
+            child: StatusBadge(status: status),
           ),
         ],
       ),

@@ -30,10 +30,7 @@ class StatusBadge extends StatelessWidget {
       ''',
       children: [
         MonitorStatusDot(toneKey: status.toneKey, size: 'xs'),
-        WText(
-          trans(status.labelKey),
-          className: 'text-xs font-semibold',
-        ),
+        WText(trans(status.labelKey), className: 'text-xs font-semibold'),
       ],
     );
   }

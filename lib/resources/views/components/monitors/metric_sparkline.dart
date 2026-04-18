@@ -23,14 +23,14 @@ class MetricSparkline extends StatelessWidget {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = _toneColor(context) ??
+    final color =
+        _toneColor(context) ??
         wColor(context, 'gray', shade: 400, darkShade: 500)!;
     final fillStart = color.withValues(alpha: isDark ? 0.22 : 0.14);
     final fillEnd = color.withValues(alpha: 0);
 
     final spots = <FlSpot>[
-      for (var i = 0; i < samples.length; i++)
-        FlSpot(i.toDouble(), samples[i]),
+      for (var i = 0; i < samples.length; i++) FlSpot(i.toDouble(), samples[i]),
     ];
     final maxV = samples.reduce((a, b) => a > b ? a : b);
     final minV = samples.reduce((a, b) => a < b ? a : b);

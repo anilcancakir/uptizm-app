@@ -30,6 +30,21 @@
       "threshold": "Threshold crossed",
       "anomaly": "Anomaly detected",
       "manual_assist": "Assisting a manual report"
+    },
+    "suggestions": {
+      "errors": {
+        "generic_accept": "Could not accept suggestion. Please try again.",
+        "generic_skip": "Could not skip suggestion. Please try again."
+      }
+    },
+    "activity": {
+      "title": "AI activity",
+      "subtitle": "Every agent run, with cost and latency.",
+      "empty_title": "No AI runs yet",
+      "empty_subtitle": "Once monitors start calling the AI, runs will show up here.",
+      "errors": {
+        "generic_load": "Could not load AI activity."
+      }
     }
   },
   "signal": {
@@ -119,12 +134,16 @@
     "user": "User",
     "done": "Done",
     "error_occurred": "An unexpected error occurred. Please try again.",
-    "page_of": ":current / :total"
+    "page_of": ":current / :total",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "loading": "Loading..."
   },
   "errors": {
     "unexpected": "An unexpected error occurred. Please try again.",
     "network_error": "Network connection failed. Please check your internet connection and try again.",
-    "network_timeout": "Request timed out. Please try again later."
+    "network_timeout": "Request timed out. Please try again later.",
+    "generic_load": "Could not load data. Try again."
   },
   "fields": {
     "email_placeholder": "you@example.com",
@@ -159,7 +178,8 @@
     "timeline": {
       "title": "Timeline",
       "add_note": "Add note",
-      "system": "System"
+      "system": "System",
+      "detected": "Incident detected"
     },
     "footer": {
       "ai_owned": "AI is driving this incident. Acknowledge to take over.",
@@ -171,7 +191,14 @@
     },
     "toast": {
       "acknowledged": "Incident acknowledged",
-      "resolved": "Incident resolved"
+      "resolved": "Incident resolved",
+      "updated": "Incident updated"
+    },
+    "errors": {
+      "generic_load": "Could not load incidents.",
+      "generic_create": "Could not create the incident.",
+      "generic_update": "Could not update the incident.",
+      "generic_event": "Could not post the note."
     },
     "empty": {
       "title": "All clear",
@@ -238,6 +265,7 @@
       "ai_hint": "The AI reads every note and uses it for similarity matching on future incidents.",
       "submit": "Post note",
       "saved_toast": "Note added",
+      "toast_added": "Note added",
       "empty_toast": "Write something before posting."
     }
   },
@@ -309,7 +337,25 @@
   },
   "dashboard": {
     "title": "Overview",
-    "subtitle": "Live status of every monitor across your account",
+    "subtitle": "Live status across your monitors.",
+    "live": {
+      "on": "Live",
+      "off": "Paused",
+      "on_hint": "Auto-refreshing every 60s",
+      "off_hint": "Tap to resume auto-refresh"
+    },
+    "time": {
+      "just_now": "just now",
+      "minutes_ago": ":nm ago",
+      "hours_ago": ":nh ago",
+      "days_ago": ":nd ago"
+    },
+    "workspace": {
+      "uptime": "Uptime 30d",
+      "active_incidents": "Incidents",
+      "avg_response": "Avg p95",
+      "ai_actions": "AI 24h"
+    },
     "stats": {
       "total": "Total",
       "up": "Up",
@@ -319,15 +365,27 @@
     },
     "monitors": {
       "title": "Monitors",
+      "subtitle": "Live snapshot of every check in your workspace.",
+      "view_all": "View all",
       "empty_title": "No monitors yet",
       "empty_subtitle": "Add your first monitor to start tracking uptime.",
       "add_first": "Add Monitor"
     },
-    "recent_incidents": {
-      "title": "Recent incidents",
-      "window": "Last 30 days",
+    "active_incidents": {
+      "title": "Active incidents",
+      "subtitle": "Anything not yet resolved lives here.",
+      "view_all": "All incidents",
+      "ai_owned": "AI",
       "empty_title": "All clear",
-      "empty": "All systems healthy in the last 30 days."
+      "empty": "No active incidents right now."
+    },
+    "ai_inbox": {
+      "title": "AI suggestions",
+      "subtitle": "Anomalies the AI surfaced in suggest mode.",
+      "accept": "Accept",
+      "skip": "Skip",
+      "empty_title": "Inbox zero",
+      "empty": "No suggestions waiting for your review."
     }
   },
   "settings": {
@@ -371,7 +429,18 @@
       "mode_light_subtitle": "Always use the light color scheme.",
       "mode_dark_title": "Dark",
       "mode_dark_subtitle": "Always use the dark color scheme.",
-      "toast_saved": "Theme updated"
+      "toast_saved": "Theme updated",
+      "section_brand_title": "Workspace branding",
+      "section_brand_subtitle": "Primary color and logo used across status pages.",
+      "brand_color_label": "Primary color",
+      "brand_color_hint": "Hex value, e.g. #2563eb.",
+      "brand_logo_label": "Logo path",
+      "brand_logo_hint": "Relative path of the uploaded logo asset.",
+      "brand_save": "Save branding",
+      "brand_saved": "Branding saved",
+      "errors": {
+        "generic_update": "Could not save appearance settings."
+      }
     },
     "help": {
       "title": "Help & support",
@@ -401,8 +470,13 @@
     },
     "ai": {
       "title": "AI settings",
-      "subtitle": "Workspace-wide defaults for every monitor.",
+      "subtitle": "Defaults for every monitor.",
       "toast_saved": "AI settings saved",
+      "activity_link": "Activity",
+      "errors": {
+        "generic_load": "Could not load AI settings.",
+        "generic_update": "Could not save AI settings. Please try again."
+      },
       "default_mode": {
         "title": "Default mode",
         "subtitle": "New monitors inherit this mode. Each monitor may override."
@@ -435,6 +509,7 @@
       "title": "Status pages",
       "subtitle": "Public availability pages powered by your monitors.",
       "create": "New status page",
+      "create_short": "New",
       "monitor_count": ":count monitor(s)",
       "public": "Public",
       "private": "Private",
@@ -482,6 +557,11 @@
     "show": {
       "open": "Open",
       "edit": "Edit",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "published_toast": "Status page published",
+      "missing_title": "Status page not found",
+      "missing_subtitle": "It may have been deleted or you lack permission to view it.",
       "components": {
         "title": "Components",
         "subtitle": "30-day availability of every assigned monitor.",
@@ -501,6 +581,23 @@
       "slug_too_short": "Subdomain must be at least 3 characters.",
       "slug_too_long": "Subdomain must be 40 characters or fewer.",
       "slug_format": "Use lowercase letters, digits, and hyphens only."
+    },
+    "errors": {
+      "generic_load": "Could not load status pages.",
+      "generic_create": "Could not create status page. Please try again.",
+      "generic_update": "Could not update status page. Please try again.",
+      "generic_delete": "Could not delete status page. Please try again.",
+      "generic_publish": "Could not change publish state. Please try again."
+    }
+  },
+  "metric": {
+    "errors": {
+      "generic_create": "Could not create metric. Please try again.",
+      "generic_update": "Could not update metric. Please try again.",
+      "generic_delete": "Could not delete metric. Please try again.",
+      "generic_load": "Could not load metrics.",
+      "not_found": "Metric not found.",
+      "duplicate_key": "A metric with this key already exists on this monitor."
     }
   },
   "monitor": {
@@ -508,6 +605,7 @@
       "title": "Monitors",
       "subtitle": "All of your monitors at a glance.",
       "add": "New monitor",
+      "add_short": "New",
       "empty_title": "No monitors yet",
       "empty_subtitle": "Create your first monitor to start tracking uptime.",
       "ai_mode_label": "AI",
@@ -542,6 +640,17 @@
       "performance": "Performance",
       "recent_checks": "Recent checks"
     },
+    "overview_sheet": {
+      "uptime_title": "Uptime breakdown",
+      "response_title": "Response time breakdown",
+      "previous": "Previous",
+      "up": "Up",
+      "down": "Down",
+      "degraded": "Degraded",
+      "min": "Min",
+      "max": "Max",
+      "avg": "Avg"
+    },
     "chart": {
       "no_data": "No data available"
     },
@@ -560,6 +669,12 @@
       "checks": "Checks",
       "incidents": "Incidents"
     },
+    "live": {
+      "on": "Live",
+      "off": "Live off",
+      "on_hint": "Auto-refreshing every :seconds seconds. Tap to pause.",
+      "off_hint": "Live refresh paused. Tap to resume."
+    },
     "type": {
       "http": "HTTP / HTTPS",
       "tcp": "TCP port"
@@ -573,6 +688,7 @@
       "subtitle": "Set up a check in under a minute. Custom metrics can be added later.",
       "submit": "Create monitor",
       "toast_created": "Monitor created",
+      "error_generic": "Could not create monitor. Please try again.",
       "basics": {
         "title": "Basics",
         "subtitle": "Name the monitor and tell us what to probe."
@@ -665,6 +781,20 @@
         "s60": "60s"
       }
     },
+    "show": {
+      "error_load": "Couldn't load this monitor.",
+      "loading": "Loading monitor...",
+      "empty": {
+        "stats_title": "No data yet",
+        "stats_subtitle": "Stats will populate after the first few checks.",
+        "performance_title": "No response data yet",
+        "performance_subtitle": "Performance samples appear once checks start running.",
+        "uptime_title": "No uptime history yet",
+        "uptime_subtitle": "We need at least a day of checks to draw the timeline.",
+        "checks_title": "No checks yet",
+        "checks_subtitle": "Recent checks will appear here as they run."
+      }
+    },
     "edit": {
       "action": "Edit",
       "title": "Edit monitor",
@@ -673,6 +803,10 @@
       "delete": "Delete monitor",
       "toast_saved": "Monitor updated",
       "toast_deleted": "Monitor deleted",
+      "error_generic": "Couldn't save the monitor. Please review the fields and try again.",
+      "error_load": "Couldn't load this monitor.",
+      "error_delete": "Couldn't delete this monitor.",
+      "loading": "Loading monitor...",
       "delete_confirm_title": "Delete this monitor?",
       "delete_confirm_message": "Checks, metrics and incidents for this monitor will be removed. This cannot be undone.",
       "delete_confirm_confirm": "Delete monitor"
@@ -733,13 +867,15 @@
         "jsonPath": "JSONPath",
         "regex": "Regex",
         "xpath": "XPath",
-        "header": "Response header"
+        "header": "Response header",
+        "httpStatus": "HTTP status"
       },
       "source_placeholder": {
         "jsonPath": "$.data.database.size_mb",
         "regex": "active: (\\d+)",
         "xpath": "//status/text()",
-        "header": "X-Response-Time"
+        "header": "X-Response-Time",
+        "httpStatus": ""
       },
       "type": {
         "numeric": "Numeric",
@@ -747,6 +883,11 @@
         "string": "String"
       },
       "toast_invalid": "Invalid metric",
+      "errors": {
+        "label_required": "Display label is required.",
+        "key_required": "Metric key is required.",
+        "path_required": "Path / pattern is required for this parser."
+      },
       "key_validation": {
         "required": "Metric key is required.",
         "too_long": "Key must be 40 characters or fewer.",
@@ -778,9 +919,22 @@
         "rerun": "Re-run",
         "empty_title": "Nothing to preview yet",
         "empty_subtitle": "Fill in a path to see a sample extraction.",
+        "idle_title": "Ready to preview",
+        "idle_subtitle": "Tap Re-run to fetch the monitor URL and test this rule.",
+        "loading": "Fetching monitor and running extraction…",
+        "network_error": "Preview request failed. Check the monitor URL and try again.",
         "extracted": "extracted",
-        "type_valid": "type valid"
-      }
+        "type_valid": ":type valid",
+        "type_invalid": "not a valid :type value"
+      },
+      "cancel": "Cancel",
+      "toast_deleted": "Metric deleted",
+      "delete_confirm_title": "Delete this metric?",
+      "delete_confirm_message": "The metric definition will be removed from this monitor. Historical samples are kept.",
+      "delete_confirm_confirm": "Delete metric"
+    },
+    "metric_detail": {
+      "series_placeholder": "Historical series view is coming soon."
     },
     "metric_menu": {
       "edit": "Edit metric",
@@ -800,6 +954,10 @@
     "checks_empty": {
       "title": "No checks match",
       "subtitle": "Try widening the time range or clearing filters."
+    },
+    "checks_error": {
+      "title": "Could not load checks",
+      "subtitle": "Retry in a moment or refresh the page."
     },
     "check_detail": {
       "timing": {

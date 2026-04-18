@@ -1,6 +1,8 @@
 import 'package:magic/magic.dart';
 import 'package:flutter/material.dart';
 import 'package:magic_starter/magic_starter.dart';
+import '../controllers/metrics/metrics_library_controller.dart';
+import '../controllers/metrics/monitor_metric_controller.dart';
 import '../models/user.dart';
 
 /// Application Service Provider.
@@ -12,9 +14,11 @@ class AppServiceProvider extends ServiceProvider {
 
   @override
   void register() {
-    // Bind your services here (sync only; do not resolve other services).
-    // Example:
-    //   app.singleton('my_service', () => MyService());
+    // Pre-register metrics controllers so MagicStatefulView can resolve them
+    // via Magic.find<T>() before any nested tab (MonitorMetricsTab,
+    // SettingsMetricsLibraryView) hits its initState.
+    MonitorMetricController.instance;
+    MetricsLibraryController.instance;
   }
 
   @override
@@ -132,13 +136,21 @@ class AppServiceProvider extends ServiceProvider {
       ),
     );
 
-    // Magic Starter: Borderless page header (Uptizm uses card surfaces below).
+    // Magic Starter: Borderless page header (Uptizm uses card surfaces below)
+    // and `tablet:` stacking (Uptizm only defines the `tablet` breakpoint,
+    // upstream default `sm:flex-row` is a no-op here). Title/subtitle wrapping
+    // is handled by the upstream `line-clamp-2` defaults since alpha.14.
     MagicStarter.usePageHeaderTheme(
       const MagicStarterPageHeaderTheme(
-        containerClassName:
-            'w-full flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 p-2 lg:p-4',
-        containerInlineClassName:
-            'w-full flex flex-row items-center justify-between gap-4 p-2 lg:p-4',
+        containerClassName: '''
+          w-full flex flex-col tablet:flex-row
+          items-start tablet:items-center tablet:justify-between
+          gap-4 p-2 lg:p-4
+        ''',
+        containerInlineClassName: '''
+          w-full flex flex-row items-center justify-between
+          gap-4 p-2 lg:p-4
+        ''',
       ),
     );
 

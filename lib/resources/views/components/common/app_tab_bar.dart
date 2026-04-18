@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
-/// Simple horizontal tab bar used on detail screens.
-///
-/// Visual selection is driven by the `active` state prefix; callers supply
-/// an ordered list of [AppTabItem]s and the index of the selected tab.
+/// Single entry in an [AppTabBar] — icon + i18n label key.
 class AppTabItem {
   const AppTabItem({required this.labelKey, required this.icon});
 
@@ -12,6 +9,10 @@ class AppTabItem {
   final IconData icon;
 }
 
+/// Simple horizontal tab bar used on detail screens.
+///
+/// Visual selection is driven by the `active` state prefix; callers supply
+/// an ordered list of [AppTabItem]s and the index of the selected tab.
 class AppTabBar extends StatelessWidget {
   const AppTabBar({
     super.key,
@@ -32,27 +33,37 @@ class AppTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (scrollable) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: WDiv(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final perTab = items.isEmpty
+            ? 0.0
+            : constraints.maxWidth / items.length;
+        final forceScroll = scrollable || perTab < 96;
+        if (forceScroll) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: WDiv(
+              className: '''
+                flex flex-row gap-2 p-1 rounded-lg
+                bg-gray-100 dark:bg-gray-800
+              ''',
+              children: [
+                for (var i = 0; i < items.length; i++) _tab(i, items[i]),
+              ],
+            ),
+          );
+        }
+        return WDiv(
           className: '''
-            flex flex-row gap-2 p-1 rounded-lg
+            flex flex-row gap-1 p-1 rounded-lg
             bg-gray-100 dark:bg-gray-800
           ''',
-          children: [for (var i = 0; i < items.length; i++) _tab(i, items[i])],
-        ),
-      );
-    }
-    return WDiv(
-      className: '''
-        flex flex-row gap-1 p-1 rounded-lg
-        bg-gray-100 dark:bg-gray-800
-      ''',
-      children: [
-        for (var i = 0; i < items.length; i++)
-          WDiv(className: 'flex-1', child: _tab(i, items[i])),
-      ],
+          children: [
+            for (var i = 0; i < items.length; i++)
+              WDiv(className: 'flex-1', child: _tab(i, items[i])),
+          ],
+        );
+      },
     );
   }
 

@@ -17,9 +17,9 @@ enum AiTrigger {
   String get labelKey => 'ai.trigger.$_snake';
 
   String get _snake => switch (this) {
-        AiTrigger.threshold => 'threshold',
-        AiTrigger.anomaly => 'anomaly',
-        AiTrigger.rule => 'rule',
-        AiTrigger.manualAssist => 'manual_assist',
-      };
+    AiTrigger.threshold => 'threshold',
+    AiTrigger.anomaly => 'anomaly',
+    AiTrigger.rule => 'rule',
+    AiTrigger.manualAssist => 'manual_assist',
+  };
 }

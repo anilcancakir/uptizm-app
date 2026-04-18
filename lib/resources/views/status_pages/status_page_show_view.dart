@@ -2,26 +2,92 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
-import '../../../app/models/mock/status_page.dart';
+import '../../../app/controllers/status_pages/status_pages_controller.dart';
+import '../../../app/models/status_page.dart';
 import '../components/common/app_back_button.dart';
 import '../components/common/color_swatch.dart';
 import '../components/common/empty_state.dart';
+import '../components/common/error_banner.dart';
 import '../components/common/form_section_card.dart';
+import '../components/common/primary_button.dart';
+import '../components/common/refresh_icon_button.dart';
 import '../components/common/secondary_button.dart';
+import '../components/common/skeleton_block.dart';
 
-/// Read-only status-page detail view. Mock data.
-class StatusPageShowView extends StatelessWidget {
+/// Status-page detail view. Hydrates from the API via
+/// `StatusPagesController.loadOne`.
+class StatusPageShowView extends StatefulWidget {
   const StatusPageShowView({super.key, required this.statusPageId});
 
   final String statusPageId;
 
   @override
-  Widget build(BuildContext context) {
-    final page = StatusPage.findOr404(statusPageId);
-    final monitors = StatusPageMonitorOption.mockAll()
-        .where((m) => page.monitorIds.contains(m.id))
-        .toList();
+  State<StatusPageShowView> createState() => _StatusPageShowViewState();
+}
 
+class _StatusPageShowViewState extends State<StatusPageShowView> {
+  StatusPagesController get _c => StatusPagesController.instance;
+
+  bool _publishing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _c.loadOne(widget.statusPageId),
+    );
+  }
+
+  Future<void> _refresh() => _c.loadOne(widget.statusPageId);
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (_, _) {
+          final page = _c.detail;
+          if (_c.rxStatus.isError && page == null) {
+            return WDiv(
+              className: 'p-4 lg:p-6',
+              child: ErrorBanner(
+                message: _c.rxStatus.message,
+                onRetry: _refresh,
+              ),
+            );
+          }
+          if (_c.rxStatus.isLoading && page == null) {
+            return _skeleton();
+          }
+          if (page == null) {
+            return const WDiv(
+              className: 'p-6',
+              child: EmptyState(
+                icon: Icons.public_rounded,
+                titleKey: 'status_page.show.missing_title',
+                subtitleKey: 'status_page.show.missing_subtitle',
+              ),
+            );
+          }
+          return _body(page);
+        },
+      ),
+    );
+  }
+
+  Widget _skeleton() {
+    return WDiv(
+      className: 'p-4 lg:p-6 flex flex-col gap-6',
+      children: const [
+        SkeletonBlock(className: 'w-1/3 h-6'),
+        SkeletonBlock(className: 'w-full h-32 rounded-xl'),
+        SkeletonBlock(className: 'w-full h-40 rounded-xl'),
+      ],
+    );
+  }
+
+  Widget _body(StatusPage page) {
     return WDiv(
       className: 'p-4 lg:p-6 flex flex-col gap-6',
       children: [
@@ -30,26 +96,46 @@ class StatusPageShowView extends StatelessWidget {
           title: page.title,
           subtitle: page.subdomain,
           actions: [
+            RefreshIconButton(
+              onTap: _refresh,
+              isRefreshing: _c.rxStatus.isLoading,
+            ),
             SecondaryButton(
               labelKey: 'status_page.show.open',
               icon: Icons.open_in_new_rounded,
               onTap: () => Magic.toast('https://${page.subdomain}'),
             ),
-            SecondaryButton(
-              labelKey: 'status_page.show.edit',
-              icon: Icons.edit_rounded,
-              onTap: () => Magic.toast(trans('settings.coming_soon')),
+            PrimaryButton(
+              labelKey: page.isPublic
+                  ? 'status_page.show.unpublish'
+                  : 'status_page.show.publish',
+              icon: Icons.public_rounded,
+              isLoading: _publishing,
+              onTap: () => _onPublish(page),
             ),
           ],
         ),
-        _hero(page, monitors.length),
-        _componentsSection(monitors),
-        _incidentsSection(),
+        _hero(page),
+        _componentsSection(page.monitors),
       ],
     );
   }
 
-  Widget _hero(StatusPage page, int monitorCount) {
+  Future<void> _onPublish(StatusPage page) async {
+    if (_publishing) return;
+    setState(() => _publishing = true);
+    final ok = await _c.publish(page.id);
+    if (!mounted) return;
+    setState(() => _publishing = false);
+    if (!ok) {
+      Magic.toast(trans('status_page.errors.generic_publish'));
+      return;
+    }
+    Magic.toast(trans('status_page.show.published_toast'));
+  }
+
+  Widget _hero(StatusPage page) {
+    final monitorCount = page.monitors.length;
     return WDiv(
       className: '''
         rounded-xl p-5
@@ -120,7 +206,7 @@ class StatusPageShowView extends StatelessWidget {
     );
   }
 
-  Widget _componentsSection(List<StatusPageMonitorOption> monitors) {
+  Widget _componentsSection(List<StatusPageMonitor> monitors) {
     return FormSectionCard(
       titleKey: 'status_page.show.components.title',
       subtitleKey: 'status_page.show.components.subtitle',
@@ -140,12 +226,13 @@ class StatusPageShowView extends StatelessWidget {
     );
   }
 
-  Widget _componentRow(StatusPageMonitorOption m) {
+  Widget _componentRow(StatusPageMonitor m) {
+    final tone = m.lastStatus.toneKey;
     return WDiv(
       className: 'flex flex-row items-center gap-3',
       children: [
         WDiv(
-          states: {m.statusTone},
+          states: {tone},
           className: '''
             w-2 h-2 rounded-full
             up:bg-up-500 dark:up:bg-up-400
@@ -157,84 +244,13 @@ class StatusPageShowView extends StatelessWidget {
         WDiv(
           className: 'flex-1 min-w-0',
           child: WText(
-            m.name,
+            m.label,
             className: '''
               text-sm font-semibold
               text-gray-900 dark:text-white
               truncate
             ''',
           ),
-        ),
-        WDiv(
-          className: 'flex flex-row items-center gap-0.5',
-          children: [for (var i = 0; i < 20; i++) _segment(i, m.statusTone)],
-        ),
-      ],
-    );
-  }
-
-  Widget _segment(int index, String tone) {
-    final missing =
-        (index == 6 && tone == 'degraded') || (index == 13 && tone == 'down');
-    return WDiv(
-      states: {missing ? 'down' : tone},
-      className: '''
-        w-1.5 h-5 rounded-sm
-        up:bg-up-400 dark:up:bg-up-500
-        down:bg-down-500 dark:down:bg-down-400
-        degraded:bg-degraded-400 dark:degraded:bg-degraded-500
-        paused:bg-paused-300 dark:paused:bg-paused-500
-      ''',
-    );
-  }
-
-  Widget _incidentsSection() {
-    return FormSectionCard(
-      titleKey: 'status_page.show.incidents_30d.title',
-      subtitleKey: 'status_page.show.incidents_30d.subtitle',
-      icon: Icons.report_problem_rounded,
-      child: WDiv(
-        className: 'flex flex-col gap-2',
-        children: [
-          _incidentLine(
-            trans('status_page.show.incidents_30d.sample_1'),
-            '3d ago',
-          ),
-          _incidentLine(
-            trans('status_page.show.incidents_30d.sample_2'),
-            '11d ago',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _incidentLine(String title, String when) {
-    return WDiv(
-      className: '''
-        flex flex-row items-center gap-3
-        px-3 py-2 rounded-lg
-        bg-gray-50 dark:bg-gray-900
-      ''',
-      children: [
-        WDiv(className: 'w-2 h-2 rounded-full bg-up-500 dark:bg-up-400'),
-        WDiv(
-          className: 'flex-1 min-w-0',
-          child: WText(
-            title,
-            className: '''
-              text-sm
-              text-gray-800 dark:text-gray-100
-              truncate
-            ''',
-          ),
-        ),
-        WText(
-          when,
-          className: '''
-            text-xs
-            text-gray-500 dark:text-gray-400
-          ''',
         ),
       ],
     );

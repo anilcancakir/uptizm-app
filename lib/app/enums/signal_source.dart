@@ -15,14 +15,14 @@ enum SignalSource {
 
   /// className tone key used with `states:` + prefixed classes.
   String get toneKey => switch (this) {
-        SignalSource.userThreshold => 'threshold',
-        SignalSource.aiAnomaly => 'ai',
-        SignalSource.manual => 'manual',
-      };
+    SignalSource.userThreshold => 'threshold',
+    SignalSource.aiAnomaly => 'ai',
+    SignalSource.manual => 'manual',
+  };
 
   String get _snake => switch (this) {
-        SignalSource.userThreshold => 'user_threshold',
-        SignalSource.aiAnomaly => 'ai_anomaly',
-        SignalSource.manual => 'manual',
-      };
+    SignalSource.userThreshold => 'user_threshold',
+    SignalSource.aiAnomaly => 'ai_anomaly',
+    SignalSource.manual => 'manual',
+  };
 }

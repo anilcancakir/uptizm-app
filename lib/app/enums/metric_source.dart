@@ -3,7 +3,8 @@ enum MetricSource {
   jsonPath,
   regex,
   xpath,
-  header;
+  header,
+  httpStatus;
 
   String get labelKey => 'monitor.metric_form.source.$name';
   String get placeholderKey => 'monitor.metric_form.source_placeholder.$name';

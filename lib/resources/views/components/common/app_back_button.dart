@@ -6,11 +6,7 @@ import 'package:magic/magic.dart';
 /// Defaults to routing back to [fallbackPath] when no [onTap] is supplied,
 /// which keeps deep-linked pages from popping to a blank screen.
 class AppBackButton extends StatelessWidget {
-  const AppBackButton({
-    super.key,
-    this.onTap,
-    this.fallbackPath = '/',
-  });
+  const AppBackButton({super.key, this.onTap, this.fallbackPath = '/'});
 
   final VoidCallback? onTap;
   final String fallbackPath;

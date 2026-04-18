@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
 import '../../../../app/enums/monitor_status.dart';
-import '../../../../app/models/mock/check_log.dart';
+import '../../../../app/models/monitor_check.dart';
 
 /// Bottom sheet showing a single check's request, response and timing
-/// breakdown. Mock-only for now.
+/// breakdown. Sourced from GET /monitors/{id}/checks.
 class CheckDetailSheet extends StatelessWidget {
   const CheckDetailSheet({super.key, required this.check});
 
-  final CheckLog check;
+  final MonitorCheck check;
 
-  static Future<void> show(BuildContext context, CheckLog check) {
+  static Future<void> show(BuildContext context, MonitorCheck check) {
     return showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
@@ -65,7 +65,9 @@ class CheckDetailSheet extends StatelessWidget {
   }
 
   Widget _header() {
-    final tone = check.status.toneKey;
+    final status = check.status;
+    final tone = status?.toneKey ?? 'paused';
+    final method = (check.method ?? 'GET').toUpperCase();
     return WDiv(
       className: '''
         px-4 pb-4
@@ -84,7 +86,7 @@ class CheckDetailSheet extends StatelessWidget {
             paused:bg-paused-100 dark:paused:bg-paused-800
           ''',
           child: WIcon(
-            _headerIcon(check.status),
+            _headerIcon(status),
             states: {tone},
             className: '''
               text-base
@@ -102,25 +104,26 @@ class CheckDetailSheet extends StatelessWidget {
               className: 'flex flex-row items-center gap-2 flex-wrap',
               children: [
                 WText(
-                  '${check.method} ${check.statusCode ?? '--'}',
+                  '$method ${check.statusCode ?? '--'}',
                   className: '''
                     text-base font-bold font-mono
                     text-gray-900 dark:text-white
                   ''',
                 ),
-                WDiv(
-                  className: '''
-                    px-2 py-0.5 rounded-full
-                    bg-gray-100 dark:bg-gray-800
-                  ''',
-                  child: WText(
-                    check.region,
+                if (check.region != null)
+                  WDiv(
                     className: '''
-                      text-[10px] font-bold font-mono uppercase
-                      text-gray-600 dark:text-gray-300
+                      px-2 py-0.5 rounded-full
+                      bg-gray-100 dark:bg-gray-800
                     ''',
+                    child: WText(
+                      check.region!,
+                      className: '''
+                        text-[10px] font-bold font-mono uppercase
+                        text-gray-600 dark:text-gray-300
+                      ''',
+                    ),
                   ),
-                ),
                 if (check.responseMs != null)
                   WText(
                     '${check.responseMs} ms',
@@ -153,12 +156,13 @@ class CheckDetailSheet extends StatelessWidget {
     );
   }
 
-  IconData _headerIcon(MonitorStatus s) {
+  IconData _headerIcon(MonitorStatus? s) {
     return switch (s) {
       MonitorStatus.up => Icons.check_rounded,
       MonitorStatus.down => Icons.close_rounded,
       MonitorStatus.degraded => Icons.warning_amber_rounded,
       MonitorStatus.paused => Icons.pause_rounded,
+      null => Icons.help_outline_rounded,
     };
   }
 
@@ -234,13 +238,14 @@ class CheckDetailSheet extends StatelessWidget {
   }
 
   Widget _requestCard() {
+    final method = (check.method ?? 'GET').toUpperCase();
     return _card(
       titleKey: 'monitor.check_detail.request.title',
       icon: Icons.outbound_rounded,
       child: WDiv(
         className: 'flex flex-col gap-2',
         children: [
-          _kv('Method', check.method),
+          _kv('Method', method),
           if (check.url != null) _kv('URL', check.url!),
           if (check.requestHeaders.isNotEmpty)
             _headerBlock(check.requestHeaders),

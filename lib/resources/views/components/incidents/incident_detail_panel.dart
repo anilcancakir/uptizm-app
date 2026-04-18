@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
 import '../../../../app/enums/incident_status.dart';
-import '../../../../app/models/mock/incident.dart';
+import '../../../../app/models/incident.dart';
 import 'ai_analysis_card.dart';
 import 'incident_severity_dot.dart';
 import 'incident_status_pill.dart';
@@ -196,7 +196,10 @@ class IncidentDetailPanel extends StatelessWidget {
         ),
         WDiv(
           className: 'p-4',
-          child: IncidentTimeline(events: incident.events),
+          child: IncidentTimeline(
+            events: incident.events,
+            detectedAt: incident.startedAt,
+          ),
         ),
       ],
     );
@@ -260,10 +263,7 @@ class IncidentDetailPanel extends StatelessWidget {
             child: WDiv(
               className: 'flex flex-row items-center gap-1.5',
               children: [
-                WIcon(
-                  Icons.check_rounded,
-                  className: 'text-sm text-white',
-                ),
+                WIcon(Icons.check_rounded, className: 'text-sm text-white'),
                 WText(
                   trans('incident.actions.resolve'),
                   className: 'text-xs font-semibold text-white',

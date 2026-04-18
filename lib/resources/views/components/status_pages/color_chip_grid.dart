@@ -32,9 +32,7 @@ class ColorChipGrid extends StatelessWidget {
       children: [
         WDiv(
           className: 'wrap items-center gap-2',
-          children: [
-            for (final hex in presets) _chip(hex),
-          ],
+          children: [for (final hex in presets) _chip(hex)],
         ),
         WDiv(
           className: '''

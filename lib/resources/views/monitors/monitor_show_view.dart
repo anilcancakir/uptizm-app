@@ -1,31 +1,38 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
+import '../../../app/controllers/ai/ai_settings_controller.dart';
+import '../../../app/controllers/metrics/monitor_metric_controller.dart';
+import '../../../app/controllers/monitors/monitor_check_controller.dart';
+import '../../../app/controllers/monitors/monitor_controller.dart';
+import '../../../app/controllers/monitors/monitor_series_controller.dart';
+import '../../../app/controllers/monitors/monitor_summary_controller.dart';
+import '../../../app/models/monitor_check.dart';
+import '../../../app/models/response_time_sample.dart';
 import '../../../app/enums/ai_mode.dart';
-import '../../../app/enums/metric_type.dart';
 import '../../../app/enums/monitor_status.dart';
-import '../../../app/models/mock/monitor_metric.dart';
 import '../components/common/app_back_button.dart';
 import '../components/common/app_tab_bar.dart';
+import '../components/common/empty_state.dart';
+import '../components/common/error_banner.dart';
 import '../components/common/secondary_button.dart';
-import '../components/monitors/check_row.dart';
-import '../components/monitors/metric_detail_sheet.dart';
 import '../components/monitors/monitor_ai_mode_card.dart';
+import '../components/monitors/overview_stat_sheet.dart';
 import '../components/monitors/response_sparkline.dart';
 import '../components/monitors/stat_card.dart';
 import '../components/monitors/status_badge.dart';
 import '../components/monitors/time_range_tabs.dart';
-import '../components/monitors/uptime_bar.dart';
 import 'monitor_checks_tab.dart';
 import 'monitor_incidents_tab.dart';
 import 'monitor_metrics_tab.dart';
 
 /// Monitor detail screen.
 ///
-/// Single column on mobile, 2-column (5/7 split) on `lg+` screens. Data is
-/// hardcoded mock for design iteration until the API contract lands.
-class MonitorShowView extends StatefulWidget {
+/// Single column on mobile, 2-column (5/7 split) on `lg+` screens.
+class MonitorShowView extends MagicStatefulView<MonitorController> {
   const MonitorShowView({super.key, this.monitorId});
 
   final String? monitorId;
@@ -34,12 +41,144 @@ class MonitorShowView extends StatefulWidget {
   State<MonitorShowView> createState() => _MonitorShowViewState();
 }
 
-class _MonitorShowViewState extends State<MonitorShowView> {
+class _MonitorShowViewState
+    extends MagicStatefulViewState<MonitorController, MonitorShowView>
+    with WidgetsBindingObserver {
   TimeRange _range = TimeRange.d7;
   int _tab = 0;
   bool _showWelcome = false;
   bool _welcomeChecked = false;
   bool _initialTabApplied = false;
+
+  bool _liveMode = true;
+  Timer? _pollTimer;
+  int? _pollingIntervalSeconds;
+
+  @override
+  void onInit() {
+    super.onInit();
+    WidgetsBinding.instance.addObserver(this);
+    final id = widget.monitorId;
+    if (id == null) return;
+    controller.addListener(_syncPolling);
+    // Stagger loads so the scaffold paints before the dependent
+    // controllers cascade their setSuccess() updates.
+    Future.microtask(() async {
+      await controller.load(id);
+      if (!mounted) return;
+      _syncPolling();
+      final rangeParam = _rangeParam(_range);
+      MonitorCheckController.instance.load(id);
+      MonitorSummaryController.instance.load(id, range: rangeParam);
+      MonitorSeriesController.instance.load(id, range: rangeParam);
+      if (AiSettingsController.instance.settings == null) {
+        AiSettingsController.instance.load();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        if (!_liveMode) return;
+        unawaited(_pollTick());
+        _syncPolling();
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _pollTimer?.cancel();
+        _pollTimer = null;
+        _pollingIntervalSeconds = null;
+    }
+  }
+
+  static String _rangeParam(TimeRange range) => switch (range) {
+    TimeRange.h24 => '24h',
+    TimeRange.d7 => '7d',
+    TimeRange.d30 => '30d',
+    TimeRange.d90 => '90d',
+  };
+
+  void _onRangeChanged(TimeRange next) {
+    if (next == _range) return;
+    setState(() => _range = next);
+    final id = widget.monitorId;
+    if (id == null) return;
+    final rangeParam = _rangeParam(next);
+    MonitorSummaryController.instance.load(id, range: rangeParam);
+    MonitorSeriesController.instance.load(id, range: rangeParam);
+  }
+
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    controller.removeListener(_syncPolling);
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    super.onClose();
+  }
+
+  /// Align the poll timer with the monitor's current `check_interval`.
+  /// Called after every controller notification so an interval change made
+  /// via the edit sheet retargets the next tick without a manual restart.
+  void _syncPolling() {
+    final id = widget.monitorId;
+    if (id == null) return;
+    final interval = controller.monitor?.checkInterval;
+    if (!_liveMode || interval == null) {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+      _pollingIntervalSeconds = null;
+      return;
+    }
+    if (_pollTimer != null && _pollingIntervalSeconds == interval) return;
+    _pollTimer?.cancel();
+    _pollingIntervalSeconds = interval;
+    _pollTimer = Timer.periodic(
+      Duration(seconds: interval),
+      (_) => _pollTick(),
+    );
+  }
+
+  Future<void> _pollTick() async {
+    final id = widget.monitorId;
+    if (id == null || !_liveMode) return;
+    await controller.reload(id);
+    // Metrics tab lives behind the same monitor; keep its rxState fresh so
+    // the Metrics tab picks up new samples without the user having to
+    // re-enter the screen.
+    final metrics = MonitorMetricController.instance;
+    if (metrics.currentMonitorId == id) {
+      await metrics.reload(id);
+    }
+    final checks = MonitorCheckController.instance;
+    if (checks.currentMonitorId == id) {
+      await checks.reload(id);
+    }
+    final summary = MonitorSummaryController.instance;
+    if (summary.currentMonitorId == id) {
+      await summary.reload();
+    }
+    final series = MonitorSeriesController.instance;
+    if (series.currentMonitorId == id) {
+      await series.reload();
+    }
+  }
+
+  void _toggleLive() {
+    setState(() => _liveMode = !_liveMode);
+    if (_liveMode) {
+      _syncPolling();
+      unawaited(_pollTick());
+    } else {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+      _pollingIntervalSeconds = null;
+    }
+  }
 
   static const _tabs = [
     AppTabItem(
@@ -79,6 +218,14 @@ class _MonitorShowViewState extends State<MonitorShowView> {
       children: [
         _buildHeader(),
         if (_showWelcome) _buildWelcomeBanner(),
+        if (controller.rxStatus.isError && controller.monitor == null)
+          ErrorBanner(
+            message: controller.rxStatus.message,
+            onRetry: () {
+              final id = widget.monitorId;
+              if (id != null) controller.load(id);
+            },
+          ),
         _buildHeroMeta(),
         WBreakpoint(
           base: (_) => AppTabBar(
@@ -192,9 +339,9 @@ class _MonitorShowViewState extends State<MonitorShowView> {
 
   Widget _buildTabBody() {
     return switch (_tab) {
-      1 => const MonitorMetricsTab(),
-      2 => const MonitorChecksTab(),
-      3 => const MonitorIncidentsTab(),
+      1 => MonitorMetricsTab(monitorId: widget.monitorId ?? ''),
+      2 => MonitorChecksTab(monitorId: widget.monitorId ?? ''),
+      3 => MonitorIncidentsTab(monitorId: widget.monitorId ?? ''),
       _ => _buildOverview(),
     };
   }
@@ -207,7 +354,7 @@ class _MonitorShowViewState extends State<MonitorShowView> {
           _buildStatsGrid(),
           _buildPerformanceCard(),
           _buildUptimeCard(),
-          const MonitorAiModeCard(workspaceDefault: AiMode.suggest),
+          _buildAiModeCard(),
           _buildChecksCard(),
         ],
       ),
@@ -224,31 +371,112 @@ class _MonitorShowViewState extends State<MonitorShowView> {
           ),
           WDiv(
             className: 'flex-1 flex flex-col gap-6 min-w-0',
-            children: [
-              const MonitorAiModeCard(workspaceDefault: AiMode.suggest),
-              _buildChecksCard(),
-            ],
+            children: [_buildAiModeCard(), _buildChecksCard()],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildAiModeCard() {
+    final id = widget.monitorId;
+    if (id == null || id.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final settings = AiSettingsController.instance.settings;
+    final workspaceDefault = settings?.aiMode ?? AiMode.suggest;
+    final rawOverride = controller.monitor?.getAttribute('ai_mode') as String?;
+    final initial = rawOverride == null
+        ? null
+        : AiMode.values.firstWhere(
+            (m) => m.name == rawOverride,
+            orElse: () => workspaceDefault,
+          );
+    return MonitorAiModeCard(
+      workspaceDefault: workspaceDefault,
+      initialOverride: initial,
+      onChanged: (mode) => _onAiModeChanged(id, mode),
+    );
+  }
+
+  Future<void> _onAiModeChanged(String id, AiMode? mode) async {
+    final target = mode ?? AiSettingsController.instance.settings?.aiMode;
+    if (target == null) return;
+    await controller.updateAiMode(id, target);
+  }
+
   Widget _buildHeader() {
     final id = widget.monitorId ?? 'sample';
+    final monitor = controller.monitor;
+    final title = monitor?.name ?? trans('monitor.show.loading');
+    final subtitle = monitor?.url ?? '';
+    final status =
+        monitor?.lastStatus ?? monitor?.status ?? MonitorStatus.paused;
     return MagicStarterPageHeader(
       leading: const AppBackButton(fallbackPath: '/monitors'),
-      title: 'Production API',
-      subtitle: 'https://api.example.com/health',
-      inlineActions: true,
+      title: title,
+      subtitle: subtitle,
       actions: [
-        const StatusBadge(status: MonitorStatus.up),
-        SecondaryButton(
-          labelKey: 'monitor.edit.action',
-          icon: Icons.edit_rounded,
-          onTap: () => MagicRoute.to('/monitors/$id/edit'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            StatusBadge(status: status),
+            _buildLiveToggle(),
+            SecondaryButton(
+              labelKey: 'monitor.edit.action',
+              icon: Icons.edit_rounded,
+              onTap: () => MagicRoute.to('/monitors/$id/edit'),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildLiveToggle() {
+    final interval = controller.monitor?.checkInterval;
+    final tooltip = _liveMode && interval != null
+        ? trans('monitor.live.on_hint', {'seconds': interval.toString()})
+        : trans('monitor.live.off_hint');
+    return Tooltip(
+      message: tooltip,
+      child: WButton(
+        onTap: _toggleLive,
+        states: _liveMode ? {'live'} : {},
+        className: '''
+          h-9 px-3 rounded-lg
+          flex flex-row items-center gap-2
+          border border-gray-200 dark:border-gray-700
+          bg-white dark:bg-gray-800
+          hover:bg-gray-50 dark:hover:bg-gray-700
+          live:border-up-300 dark:live:border-up-700
+          live:bg-up-50 dark:live:bg-up-900/30
+        ''',
+        child: WDiv(
+          className: 'flex flex-row items-center gap-2',
+          children: [
+            WDiv(
+              states: _liveMode ? {'live'} : {},
+              className: '''
+                w-2 h-2 rounded-full
+                bg-gray-400 dark:bg-gray-500
+                live:bg-up-500 dark:live:bg-up-400
+              ''',
+            ),
+            WText(
+              trans(_liveMode ? 'monitor.live.on' : 'monitor.live.off'),
+              states: _liveMode ? {'live'} : {},
+              className: '''
+                text-xs font-semibold
+                text-gray-600 dark:text-gray-300
+                live:text-up-700 dark:live:text-up-300
+              ''',
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -257,22 +485,22 @@ class _MonitorShowViewState extends State<MonitorShowView> {
       _metaCell(
         icon: Icons.bolt_rounded,
         labelKey: 'monitor.stats.meta.response',
-        value: '245 ms',
+        value: _formatResponseMs(controller.monitor?.lastResponseMs),
       ),
       _metaCell(
         icon: Icons.repeat_rounded,
         labelKey: 'monitor.stats.meta.interval',
-        value: '30 s',
+        value: _formatInterval(controller.monitor?.checkInterval),
       ),
       _metaCell(
         icon: Icons.schedule_rounded,
         labelKey: 'monitor.stats.meta.last_check',
-        value: '2 m ago',
+        value: _formatRelative(controller.monitor?.lastCheckedAt),
       ),
       _metaCell(
         icon: Icons.public_rounded,
         labelKey: 'monitor.stats.meta.regions',
-        value: '4',
+        value: '${controller.monitor?.regions.length ?? 0}',
       ),
     ];
     return WDiv(
@@ -285,6 +513,29 @@ class _MonitorShowViewState extends State<MonitorShowView> {
       ''',
       children: [for (final c in cells) WDiv(className: 'sm:flex-1', child: c)],
     );
+  }
+
+  String _formatInterval(int? seconds) {
+    if (seconds == null) return '—';
+    if (seconds < 60) return '${seconds}s';
+    if (seconds % 60 == 0) return '${seconds ~/ 60}m';
+    return '${seconds}s';
+  }
+
+  String _formatResponseMs(int? ms) {
+    if (ms == null) return '—';
+    if (ms < 1000) return '${ms}ms';
+    return '${(ms / 1000).toStringAsFixed(2)}s';
+  }
+
+  String _formatRelative(DateTime? at) {
+    if (at == null) return '—';
+    final diff = DateTime.now().difference(at);
+    if (diff.inSeconds < 10) return trans('time.just_now');
+    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 
   Widget _metaCell({
@@ -330,205 +581,251 @@ class _MonitorShowViewState extends State<MonitorShowView> {
   }
 
   Widget _buildStatsGrid() {
-    final stats = _mockBuiltInMetrics();
+    final summaryController = MonitorSummaryController.instance;
+    return AnimatedBuilder(
+      animation: summaryController,
+      builder: (_, _) {
+        final summary = summaryController.summary;
+        final uptime = summary == null
+            ? '—'
+            : '${(summary.uptimeRatio * 100).toStringAsFixed(1)}%';
+        final avg = _formatResponseMs(summary?.avgResponseMs);
+        final incidents = summary == null
+            ? '—'
+            : summary.incidentCount.toString();
+        final mttr = _formatMttr(summary?.mttrSeconds);
+
+        final uptimeTrend = _deltaPercentPoints(
+          summary?.uptimeRatio,
+          summary?.previousUptimeRatio,
+        );
+        final avgTrend = _deltaPercent(
+          summary?.avgResponseMs?.toDouble(),
+          summary?.previousAvgResponseMs?.toDouble(),
+        );
+        final incidentsTrend = _deltaPercent(
+          summary?.incidentCount.toDouble(),
+          summary?.previousIncidentCount.toDouble(),
+        );
+        final mttrTrend = _deltaPercent(
+          summary?.mttrSeconds?.toDouble(),
+          summary?.previousMttrSeconds?.toDouble(),
+        );
+
+        return WDiv(
+          className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3',
+          children: [
+            StatCard(
+              label: trans('monitor.stats.uptime'),
+              value: uptime,
+              icon: Icons.arrow_upward_rounded,
+              trend: uptimeTrend?.label,
+              trendPositive: uptimeTrend?.good ?? true,
+              onTap: () => OverviewStatSheet.show(
+                context,
+                variant: OverviewStatVariant.uptime,
+              ),
+            ),
+            StatCard(
+              label: trans('monitor.stats.avg_response'),
+              value: avg,
+              icon: Icons.speed_rounded,
+              trend: avgTrend?.label,
+              trendPositive: avgTrend?.good ?? true,
+              onTap: () => OverviewStatSheet.show(
+                context,
+                variant: OverviewStatVariant.response,
+              ),
+            ),
+            StatCard(
+              label: trans('monitor.stats.incidents'),
+              value: incidents,
+              icon: Icons.report_problem_rounded,
+              trend: incidentsTrend?.label,
+              trendPositive: incidentsTrend?.good ?? true,
+            ),
+            StatCard(
+              label: trans('monitor.stats.mttr'),
+              value: mttr,
+              icon: Icons.healing_rounded,
+              trend: mttrTrend?.label,
+              trendPositive: mttrTrend?.good ?? true,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Percent-point delta for ratio fields (uptime). Higher is better.
+  _StatDelta? _deltaPercentPoints(double? current, double? previous) {
+    if (current == null || previous == null) return null;
+    final diff = (current - previous) * 100;
+    if (diff.abs() < 0.01) return const _StatDelta(label: '0.0pp', good: true);
+    final sign = diff >= 0 ? '+' : '';
+    return _StatDelta(
+      label: '$sign${diff.toStringAsFixed(2)}pp',
+      good: diff > 0,
+    );
+  }
+
+  /// Percent delta for count / duration fields. Lower is better.
+  _StatDelta? _deltaPercent(double? current, double? previous) {
+    if (current == null || previous == null) return null;
+    if (previous == 0) {
+      if (current == 0) return const _StatDelta(label: '0%', good: true);
+      // No meaningful percentage vs. zero baseline; hide the chip.
+      return null;
+    }
+    final pct = ((current - previous) / previous.abs()) * 100;
+    if (pct.abs() < 0.1) return const _StatDelta(label: '0%', good: true);
+    final sign = pct >= 0 ? '+' : '';
+    return _StatDelta(label: '$sign${pct.toStringAsFixed(1)}%', good: pct < 0);
+  }
+
+  String _formatMttr(int? seconds) {
+    if (seconds == null) return '—';
+    if (seconds < 60) return '${seconds}s';
+    if (seconds < 3600) return '${seconds ~/ 60}m';
+    return '${(seconds / 3600).toStringAsFixed(1)}h';
+  }
+
+  Widget _buildUptimeCard() {
+    final seriesController = MonitorSeriesController.instance;
+    return _section(
+      titleKey: 'monitor.section.uptime',
+      icon: Icons.timeline_rounded,
+      padded: true,
+      child: AnimatedBuilder(
+        animation: seriesController,
+        builder: (_, _) {
+          final samples = seriesController.samples;
+          if (samples.isEmpty) {
+            return EmptyState(
+              icon: Icons.timeline_rounded,
+              titleKey: 'monitor.show.empty.uptime_title',
+              subtitleKey: 'monitor.show.empty.uptime_subtitle',
+              variant: 'plain',
+            );
+          }
+          return _uptimeStrip(samples);
+        },
+      ),
+    );
+  }
+
+  Widget _uptimeStrip(List<ResponseTimeSample> samples) {
     return WDiv(
-      className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3',
+      className: 'flex flex-row gap-0.5 h-8 items-stretch',
       children: [
-        for (final s in stats)
-          StatCard(
-            label: s.$1.label,
-            value: s.$2,
-            icon: s.$3,
-            trend: s.$4,
-            trendPositive: s.$5,
-            onTap: () => MetricDetailSheet.show(context, s.$1),
+        for (final s in samples)
+          WDiv(
+            states: {s.status.name},
+            className: '''
+              flex-1 rounded-sm
+              bg-gray-300 dark:bg-gray-700
+              up:bg-up-500 dark:up:bg-up-400
+              down:bg-down-500 dark:down:bg-down-400
+              degraded:bg-degraded-500 dark:degraded:bg-degraded-400
+              paused:bg-paused-400 dark:paused:bg-paused-500
+            ''',
           ),
       ],
     );
   }
 
-  List<(MonitorMetric, String, IconData, String, bool)> _mockBuiltInMetrics() {
-    return [
-      (
-        MonitorMetric(
-          group: 'Built-in',
-          label: trans('monitor.stats.uptime'),
-          key: 'uptime',
-          type: MetricType.numeric,
-          unit: '%',
-          numericValue: 99.95,
-          trendLabel: '+0.02%',
-          trendPositive: true,
-          samples: const [
-            99.8,
-            99.82,
-            99.85,
-            99.87,
-            99.9,
-            99.91,
-            99.92,
-            99.93,
-            99.93,
-            99.94,
-            99.94,
-            99.94,
-            99.95,
-            99.95,
-            99.95,
-            99.95,
-            99.95,
-            99.95,
-            99.95,
-            99.95,
-          ],
-        ),
-        '99.95%',
-        Icons.arrow_upward_rounded,
-        '+0.02%',
-        true,
-      ),
-      (
-        MonitorMetric(
-          group: 'Built-in',
-          label: trans('monitor.stats.avg_response'),
-          key: 'avg_response',
-          type: MetricType.numeric,
-          unit: 'ms',
-          numericValue: 245,
-          trendLabel: '-12 ms',
-          trendPositive: true,
-          samples: const [
-            257,
-            260,
-            255,
-            258,
-            253,
-            250,
-            252,
-            248,
-            249,
-            247,
-            246,
-            246,
-            245,
-            244,
-            245,
-            246,
-            245,
-            245,
-            245,
-            245,
-          ],
-        ),
-        '245 ms',
-        Icons.speed_rounded,
-        '-12 ms',
-        true,
-      ),
-      (
-        MonitorMetric(
-          group: 'Built-in',
-          label: trans('monitor.stats.incidents'),
-          key: 'incidents',
-          type: MetricType.numeric,
-          numericValue: 2,
-          trendLabel: '-1',
-          trendPositive: true,
-          samples: const [
-            3,
-            3,
-            3,
-            3,
-            3,
-            3,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-          ],
-        ),
-        '2',
-        Icons.report_problem_rounded,
-        '-1',
-        true,
-      ),
-      (
-        MonitorMetric(
-          group: 'Built-in',
-          label: trans('monitor.stats.mttr'),
-          key: 'mttr',
-          type: MetricType.numeric,
-          unit: 'm',
-          numericValue: 4.2,
-          trendLabel: '-1.1 m',
-          trendPositive: true,
-          samples: const [
-            5.6,
-            5.4,
-            5.3,
-            5.2,
-            5.1,
-            5.0,
-            4.9,
-            4.8,
-            4.7,
-            4.6,
-            4.5,
-            4.4,
-            4.3,
-            4.3,
-            4.2,
-            4.2,
-            4.2,
-            4.2,
-            4.2,
-            4.2,
-          ],
-        ),
-        '4.2 m',
-        Icons.healing_rounded,
-        '-1.1 m',
-        true,
-      ),
-    ];
-  }
-
-  Widget _buildUptimeCard() {
-    return _section(
-      titleKey: 'monitor.section.uptime',
-      icon: Icons.timeline_rounded,
-      child: UptimeBar(days: _mockUptimeDays(), uptimePercent: 99.95),
-    );
-  }
-
   Widget _buildPerformanceCard() {
+    final seriesController = MonitorSeriesController.instance;
     return _section(
       titleKey: 'monitor.section.performance',
       icon: Icons.show_chart_rounded,
-      trailing: TimeRangeTabs(
-        selected: _range,
-        onChanged: (r) => setState(() => _range = r),
+      padded: true,
+      trailing: TimeRangeTabs(selected: _range, onChanged: _onRangeChanged),
+      child: AnimatedBuilder(
+        animation: seriesController,
+        builder: (_, _) {
+          final samples = seriesController.samples;
+          if (samples.isEmpty) {
+            return EmptyState(
+              icon: Icons.show_chart_rounded,
+              titleKey: 'monitor.show.empty.performance_title',
+              subtitleKey: 'monitor.show.empty.performance_subtitle',
+              variant: 'plain',
+            );
+          }
+          return RepaintBoundary(
+            child: ResponseSparkline(
+              samples: [
+                for (final s in samples)
+                  ResponseSample(
+                    timestamp: s.checkedAt,
+                    responseMs: s.responseMs,
+                    status: s.status,
+                  ),
+              ],
+            ),
+          );
+        },
       ),
-      child: ResponseSparkline(samples: _mockSamples()),
     );
   }
 
   Widget _buildChecksCard() {
+    final checksController = MonitorCheckController.instance;
     return _section(
       titleKey: 'monitor.section.recent_checks',
       icon: Icons.history_rounded,
       padded: false,
-      child: WDiv(className: 'flex flex-col', children: _mockChecks()),
+      child: AnimatedBuilder(
+        animation: checksController,
+        builder: (_, _) {
+          final checks = checksController.checks.take(6).toList();
+          if (checks.isEmpty) {
+            return EmptyState(
+              icon: Icons.history_rounded,
+              titleKey: 'monitor.show.empty.checks_title',
+              subtitleKey: 'monitor.show.empty.checks_subtitle',
+              variant: 'plain',
+            );
+          }
+          return WDiv(
+            className:
+                'flex flex-col divide-y divide-gray-100 dark:divide-gray-800',
+            children: [for (final check in checks) _checkRow(check)],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _checkRow(MonitorCheck check) {
+    final status = check.status ?? MonitorStatus.paused;
+    final code = check.statusCode?.toString() ?? '—';
+    final ms = _formatResponseMs(check.responseMs);
+    final when = _formatRelative(check.checkedAt);
+    return WDiv(
+      className: '''
+        flex flex-row items-center gap-3
+        px-4 py-3
+      ''',
+      children: [
+        StatusBadge(status: status),
+        WDiv(
+          className: 'flex-1 min-w-0 flex flex-col gap-0.5',
+          children: [
+            WText(
+              '$code · $ms',
+              className:
+                  'text-sm font-semibold text-gray-900 dark:text-gray-100 truncate',
+            ),
+            WText(
+              check.region ?? '—',
+              className: 'text-xs text-gray-500 dark:text-gray-400 truncate',
+            ),
+          ],
+        ),
+        WText(when, className: 'text-xs text-gray-500 dark:text-gray-400'),
+      ],
     );
   }
 
@@ -570,97 +867,11 @@ class _MonitorShowViewState extends State<MonitorShowView> {
       ],
     );
   }
+}
 
-  List<UptimeDay> _mockUptimeDays() {
-    final now = DateTime.now();
-    return List.generate(30, (i) {
-      final MonitorStatus s;
-      if (i == 14) {
-        s = MonitorStatus.down;
-      } else if (i == 15 || i == 20) {
-        s = MonitorStatus.degraded;
-      } else {
-        s = MonitorStatus.up;
-      }
-      return UptimeDay(
-        date: now.subtract(Duration(days: 29 - i)),
-        status: s,
-      );
-    });
-  }
+class _StatDelta {
+  const _StatDelta({required this.label, required this.good});
 
-  List<ResponseSample> _mockSamples() {
-    final now = DateTime.now();
-    const values = [
-      245,
-      312,
-      198,
-      267,
-      1245,
-      356,
-      289,
-      234,
-      278,
-      301,
-      245,
-      267,
-      223,
-      198,
-      312,
-      289,
-      256,
-      234,
-      278,
-      245,
-    ];
-    return [
-      for (var i = 0; i < values.length; i++)
-        ResponseSample(
-          timestamp: now.subtract(Duration(minutes: (values.length - i) * 3)),
-          responseMs: values[i],
-          status: values[i] > 1000 ? MonitorStatus.degraded : MonitorStatus.up,
-        ),
-    ];
-  }
-
-  List<Widget> _mockChecks() {
-    final now = DateTime.now();
-    return [
-      CheckRow(
-        status: MonitorStatus.up,
-        statusCode: 200,
-        responseMs: 245,
-        region: 'eu-west-1',
-        checkedAt: now.subtract(const Duration(minutes: 2)),
-      ),
-      CheckRow(
-        status: MonitorStatus.up,
-        statusCode: 200,
-        responseMs: 312,
-        region: 'us-east-1',
-        checkedAt: now.subtract(const Duration(minutes: 5)),
-      ),
-      CheckRow(
-        status: MonitorStatus.degraded,
-        statusCode: 200,
-        responseMs: 1245,
-        region: 'ap-southeast-1',
-        checkedAt: now.subtract(const Duration(minutes: 8)),
-      ),
-      CheckRow(
-        status: MonitorStatus.down,
-        statusCode: 500,
-        errorMessage: 'Connection timeout after 30s',
-        region: 'eu-central-1',
-        checkedAt: now.subtract(const Duration(minutes: 11)),
-      ),
-      CheckRow(
-        status: MonitorStatus.up,
-        statusCode: 200,
-        responseMs: 198,
-        region: 'eu-central-1',
-        checkedAt: now.subtract(const Duration(minutes: 14)),
-      ),
-    ];
-  }
+  final String label;
+  final bool good;
 }

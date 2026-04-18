@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
-import '../../../../app/models/mock/status_page.dart';
+import '../../../../app/enums/monitor_status.dart';
+import '../../../../app/models/monitor.dart';
 
 /// Flat checkbox list of monitors that may be assigned to a status page.
 class MonitorAssignList extends StatelessWidget {
@@ -12,7 +13,7 @@ class MonitorAssignList extends StatelessWidget {
     required this.onToggle,
   });
 
-  final List<StatusPageMonitorOption> options;
+  final List<Monitor> options;
   final Set<String> selected;
   final ValueChanged<String> onToggle;
 
@@ -33,14 +34,12 @@ class MonitorAssignList extends StatelessWidget {
     );
   }
 
-  Widget _row(StatusPageMonitorOption option, {required bool isLast}) {
+  Widget _row(Monitor option, {required bool isLast}) {
     final isChecked = selected.contains(option.id);
+    final tone = (option.lastStatus ?? MonitorStatus.paused).toneKey;
     return WButton(
       onTap: () => onToggle(option.id),
-      states: {
-        if (isChecked) 'checked',
-        if (isLast) 'last',
-      },
+      states: {if (isChecked) 'checked', if (isLast) 'last'},
       className: '''
         px-4 py-3
         border-b border-gray-100 dark:border-gray-900/60
@@ -63,14 +62,11 @@ class MonitorAssignList extends StatelessWidget {
               flex items-center justify-center
             ''',
             child: isChecked
-                ? WIcon(
-                    Icons.check_rounded,
-                    className: 'text-xs text-white',
-                  )
+                ? WIcon(Icons.check_rounded, className: 'text-xs text-white')
                 : const WDiv(className: 'w-0 h-0'),
           ),
           WDiv(
-            states: {option.statusTone},
+            states: {tone},
             className: '''
               w-2 h-2 rounded-full
               up:bg-up-500 dark:up:bg-up-400
@@ -83,7 +79,7 @@ class MonitorAssignList extends StatelessWidget {
             className: 'flex-1 flex flex-col gap-0.5 min-w-0',
             children: [
               WText(
-                option.name,
+                option.name ?? '',
                 className: '''
                   text-sm font-semibold
                   text-gray-900 dark:text-white
@@ -91,7 +87,7 @@ class MonitorAssignList extends StatelessWidget {
                 ''',
               ),
               WText(
-                option.url,
+                option.url ?? '',
                 className: '''
                   text-xs font-mono
                   text-gray-500 dark:text-gray-400
@@ -114,8 +110,9 @@ class MonitorAssignList extends StatelessWidget {
         rounded-b-lg
       ''',
       child: WText(
-        trans('status_page.create.assign.count')
-            .replaceAll(':count', '${selected.length}'),
+        trans(
+          'status_page.create.assign.count',
+        ).replaceAll(':count', '${selected.length}'),
         className: '''
           text-xs font-semibold
           text-gray-600 dark:text-gray-300

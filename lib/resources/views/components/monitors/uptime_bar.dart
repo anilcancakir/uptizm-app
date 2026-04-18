@@ -16,11 +16,7 @@ class UptimeDay {
 /// Segments grow with `flex-1` so the strip always spans the parent width,
 /// independent of the number of days passed in.
 class UptimeBar extends StatelessWidget {
-  const UptimeBar({
-    super.key,
-    required this.days,
-    required this.uptimePercent,
-  });
+  const UptimeBar({super.key, required this.days, required this.uptimePercent});
 
   final List<UptimeDay> days;
   final double uptimePercent;

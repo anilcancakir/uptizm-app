@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
+import '../../../app/controllers/monitors/monitor_controller.dart';
+import '../../../app/controllers/status_pages/status_pages_controller.dart';
 import '../../../app/helpers/slugify.dart';
-import '../../../app/models/mock/status_page.dart';
 import '../components/common/app_back_button.dart';
 import '../components/common/form_field_label.dart';
 import '../components/common/form_section_card.dart';
@@ -31,8 +32,10 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
   String _primaryColor = '#2563EB';
   String? _logoPath;
   final Set<String> _selectedMonitors = {};
+  bool _submitting = false;
 
-  late final _monitorOptions = StatusPageMonitorOption.mockAll();
+  MonitorController get _monitors => MonitorController.instance;
+  StatusPagesController get _pages => StatusPagesController.instance;
 
   static const _inputClass = '''
     w-full px-3 py-2.5 rounded-lg
@@ -46,6 +49,7 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
   void initState() {
     super.initState();
     _titleCtrl.addListener(_syncSlugFromTitle);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _monitors.loadList());
   }
 
   @override
@@ -197,14 +201,11 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
           WDiv(
             className: 'flex flex-col',
             children: [
-              const FormFieldLabel(
-                labelKey: 'status_page.create.fields.logo',
-              ),
+              const FormFieldLabel(labelKey: 'status_page.create.fields.logo'),
               LogoUploadZone(
                 logoPath: _logoPath,
-                onPick: () => setState(
-                  () => _logoPath = 'mock://logo/uploaded.png',
-                ),
+                onPick: () =>
+                    setState(() => _logoPath = 'mock://logo/uploaded.png'),
                 onClear: () => setState(() => _logoPath = null),
               ),
             ],
@@ -219,14 +220,17 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
       titleKey: 'status_page.create.assign.title',
       subtitleKey: 'status_page.create.assign.subtitle',
       icon: Icons.monitor_heart_outlined,
-      child: MonitorAssignList(
-        options: _monitorOptions,
-        selected: _selectedMonitors,
-        onToggle: (id) => setState(() {
-          if (!_selectedMonitors.remove(id)) {
-            _selectedMonitors.add(id);
-          }
-        }),
+      child: ValueListenableBuilder(
+        valueListenable: _monitors.list,
+        builder: (_, options, _) => MonitorAssignList(
+          options: options,
+          selected: _selectedMonitors,
+          onToggle: (id) => setState(() {
+            if (!_selectedMonitors.remove(id)) {
+              _selectedMonitors.add(id);
+            }
+          }),
+        ),
       ),
     );
   }
@@ -244,13 +248,15 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
         PrimaryButton(
           labelKey: 'status_page.create.submit',
           icon: Icons.check_rounded,
+          isLoading: _submitting,
           onTap: _submit,
         ),
       ],
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_submitting) return;
     final slugError = validateSlug(_slugCtrl.text);
     if (_titleCtrl.text.trim().isEmpty) {
       Magic.toast(trans('status_page.validation.title_required'));
@@ -260,7 +266,22 @@ class _StatusPageCreateViewState extends State<StatusPageCreateView> {
       Magic.toast(trans(slugError));
       return;
     }
+    setState(() => _submitting = true);
+    final created = await _pages.store({
+      'title': _titleCtrl.text.trim(),
+      'slug': _slugCtrl.text.trim(),
+      'primary_color': _primaryColor,
+      'is_public': _isPublic,
+      'monitor_ids': _selectedMonitors.toList(),
+      if (_logoPath != null) 'logo_path': _logoPath,
+    });
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    if (created == null) {
+      Magic.toast(trans('status_page.errors.generic_create'));
+      return;
+    }
     Magic.toast(trans('status_page.create.toast_created'));
-    MagicRoute.to('/status-pages/sample');
+    MagicRoute.to('/status-pages/${created.id}');
   }
 }

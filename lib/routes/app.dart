@@ -1,11 +1,9 @@
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
+import '../app/controllers/monitors/monitor_controller.dart';
 import '../resources/views/dashboard_view.dart';
-import '../resources/views/monitors/monitor_create_view.dart';
-import '../resources/views/monitors/monitor_edit_view.dart';
-import '../resources/views/monitors/monitor_list_view.dart';
-import '../resources/views/monitors/monitor_show_view.dart';
+import '../resources/views/settings/settings_ai_activity_view.dart';
 import '../resources/views/settings/settings_ai_view.dart';
 import '../resources/views/settings/settings_appearance_view.dart';
 import '../resources/views/settings/settings_hub_view.dart';
@@ -25,15 +23,18 @@ void registerAppRoutes() {
     routes: () {
       MagicRoute.page('/', () => const DashboardView());
 
-      MagicRoute.page('/monitors', () => const MonitorListView());
-      MagicRoute.page('/monitors/create', () => const MonitorCreateView());
+      MagicRoute.page('/monitors', () => MonitorController.instance.index());
       MagicRoute.page(
-        '/monitors/sample',
-        () => const MonitorShowView(monitorId: 'sample'),
+        '/monitors/create',
+        () => MonitorController.instance.create(),
       );
       MagicRoute.page(
-        '/monitors/sample/edit',
-        () => const MonitorEditView(monitorId: 'sample'),
+        '/monitors/:id/edit',
+        (id) => MonitorController.instance.edit(id),
+      );
+      MagicRoute.page(
+        '/monitors/:id',
+        (id) => MonitorController.instance.show(id),
       );
 
       MagicRoute.page('/status-pages', () => const StatusPageListView());
@@ -48,6 +49,10 @@ void registerAppRoutes() {
 
       MagicRoute.page('/settings', () => const SettingsHubView());
       MagicRoute.page('/settings/ai', () => const SettingsAiView());
+      MagicRoute.page(
+        '/settings/ai/activity',
+        () => const SettingsAiActivityView(),
+      );
       MagicRoute.page(
         '/settings/metrics-library',
         () => const SettingsMetricsLibraryView(),

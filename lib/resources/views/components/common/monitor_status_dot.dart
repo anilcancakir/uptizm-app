@@ -5,11 +5,7 @@ import 'package:magic/magic.dart';
 ///
 /// `toneKey` drives the color via `states` (up/down/degraded/paused).
 class MonitorStatusDot extends StatelessWidget {
-  const MonitorStatusDot({
-    super.key,
-    required this.toneKey,
-    this.size = 'sm',
-  });
+  const MonitorStatusDot({super.key, required this.toneKey, this.size = 'sm'});
 
   final String toneKey;
 
@@ -25,7 +21,8 @@ class MonitorStatusDot extends StatelessWidget {
     };
     return WDiv(
       states: {toneKey},
-      className: '''
+      className:
+          '''
         $dim rounded-full
         bg-gray-400 dark:bg-gray-500
         up:bg-up-500 dark:up:bg-up-400

@@ -17,12 +17,14 @@ enum ThresholdDirection {
     double critical,
   ) {
     return switch (dir) {
-      ThresholdDirection.highBad => warn < critical
-          ? null
-          : 'monitor.metric_form.direction_validation.high_bad',
-      ThresholdDirection.lowBad => warn > critical
-          ? null
-          : 'monitor.metric_form.direction_validation.low_bad',
+      ThresholdDirection.highBad =>
+        warn < critical
+            ? null
+            : 'monitor.metric_form.direction_validation.high_bad',
+      ThresholdDirection.lowBad =>
+        warn > critical
+            ? null
+            : 'monitor.metric_form.direction_validation.low_bad',
     };
   }
 }

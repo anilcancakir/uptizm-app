@@ -46,7 +46,8 @@ class ChecksFilterBar extends StatelessWidget {
               ),
               _pill(
                 labelKey: 'monitor.checks_filter.status.failing',
-                active: statusFilter == MonitorStatus.down ||
+                active:
+                    statusFilter == MonitorStatus.down ||
                     statusFilter == MonitorStatus.degraded,
                 icon: Icons.warning_amber_rounded,
                 tone: 'down',
@@ -54,9 +55,7 @@ class ChecksFilterBar extends StatelessWidget {
                   statusFilter == null ? MonitorStatus.down : null,
                 ),
               ),
-              WDiv(
-                className: 'w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1',
-              ),
+              WDiv(className: 'w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1'),
               for (final r in regions)
                 _regionPill(
                   region: r,
@@ -119,10 +118,7 @@ class ChecksFilterBar extends StatelessWidget {
               ''',
             )
           else
-            WText(
-              _flagFor(region),
-              className: 'text-sm leading-none',
-            ),
+            WText(_flagFor(region), className: 'text-sm leading-none'),
           WText(
             label,
             states: active ? {'active'} : {},
@@ -200,10 +196,7 @@ class ChecksFilterBar extends StatelessWidget {
     final label = labelKey != null ? trans(labelKey) : rawLabel ?? '';
     return WButton(
       onTap: onTap,
-      states: {
-        if (active) 'active',
-        ?tone,
-      },
+      states: {if (active) 'active', ?tone},
       className: '''
         px-3 py-1.5 rounded-full
         border border-gray-200 dark:border-gray-700
@@ -221,10 +214,7 @@ class ChecksFilterBar extends StatelessWidget {
           if (icon != null)
             WIcon(
               icon,
-              states: {
-                if (active) 'active',
-                ?tone,
-              },
+              states: {if (active) 'active', ?tone},
               className: '''
                 text-xs
                 text-gray-500 dark:text-gray-400
@@ -234,10 +224,7 @@ class ChecksFilterBar extends StatelessWidget {
             ),
           WText(
             label,
-            states: {
-              if (active) 'active',
-              ?tone,
-            },
+            states: {if (active) 'active', ?tone},
             className: '''
               text-xs font-semibold
               text-gray-700 dark:text-gray-200

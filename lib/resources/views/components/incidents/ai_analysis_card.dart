@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
-import '../../../../app/models/mock/incident.dart';
+import '../../../../app/models/incident.dart';
 import '../ai/ai_avatar.dart';
 import '../ai/ai_confidence_badge.dart';
 
@@ -187,7 +187,8 @@ class AiAnalysisCard extends StatelessWidget {
                 children: [
                   WIcon(
                     Icons.bolt_rounded,
-                    className: 'text-xs text-degraded-500 dark:text-degraded-400 mt-0.5',
+                    className:
+                        'text-xs text-degraded-500 dark:text-degraded-400 mt-0.5',
                   ),
                   WDiv(
                     className: 'flex-1 flex flex-col gap-0.5 min-w-0',
@@ -245,7 +246,8 @@ class AiAnalysisCard extends StatelessWidget {
                   children: [
                     WIcon(
                       Icons.history_rounded,
-                      className: 'text-xs text-gray-400 dark:text-gray-500 mt-0.5',
+                      className:
+                          'text-xs text-gray-400 dark:text-gray-500 mt-0.5',
                     ),
                     WDiv(
                       className: 'flex-1 flex flex-col gap-0.5 min-w-0',
@@ -330,10 +332,7 @@ class AiAnalysisCard extends StatelessWidget {
           child: WDiv(
             className: 'flex flex-row items-center gap-1.5',
             children: [
-              WIcon(
-                Icons.thumb_up_rounded,
-                className: 'text-xs text-white',
-              ),
+              WIcon(Icons.thumb_up_rounded, className: 'text-xs text-white'),
               WText(
                 trans('ai.analysis.accept'),
                 className: 'text-xs font-semibold text-white',
