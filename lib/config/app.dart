@@ -5,6 +5,12 @@ import '../app/providers/route_service_provider.dart';
 import 'package:magic_starter/magic_starter.dart';
 
 /// Application Configuration.
+///
+/// Evaluated lazily through [configFactories] in `main.dart` so environment
+/// variables resolved by `Env.load()` are in scope. The `providers` list is
+/// ordered — core framework providers boot first, domain providers last, and
+/// `MagicStarterServiceProvider` always registers AFTER `AppServiceProvider`
+/// so that starter can consume our overridden auth + navigation config.
 Map<String, dynamic> get appConfig => {
   'app': {
     'name': env('APP_NAME', 'My App'),
