@@ -5,6 +5,7 @@ import '../../../resources/views/status_pages/status_page_create_view.dart';
 import '../../../resources/views/status_pages/status_page_list_view.dart';
 import '../../../resources/views/status_pages/status_page_show_view.dart';
 import '../../models/status_page.dart';
+import '../../requests/store_status_page_request.dart';
 
 /// Status page CRUD + publish controller.
 ///
@@ -79,14 +80,15 @@ class StatusPagesController extends MagicController
     _isSubmitting = true;
     refreshUI();
     try {
-      return await store({
-        'title': title.trim(),
-        'slug': slug.trim(),
+      final payload = const StoreStatusPageRequest().validate({
+        'title': title,
+        'slug': slug,
         'primary_color': primaryColor,
         'is_public': isPublic,
         'monitor_ids': monitorIds,
-        'logo_path': ?logoPath,
+        'logo_path': logoPath,
       });
+      return await store(payload);
     } finally {
       _isSubmitting = false;
       refreshUI();

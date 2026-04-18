@@ -1,6 +1,9 @@
+import 'package:flutter/widgets.dart';
 import 'package:magic/magic.dart';
 
+import '../../../resources/views/settings/settings_appearance_view.dart';
 import '../../models/appearance_settings.dart';
+import '../../requests/update_appearance_request.dart';
 
 /// Workspace appearance (primary color + logo) controller.
 ///
@@ -10,9 +13,32 @@ class AppearanceController extends MagicController with ValidatesRequests {
   static AppearanceController get instance =>
       Magic.findOrPut(AppearanceController.new);
 
+  /// Route entry point for `/settings/appearance`.
+  Widget index() => const SettingsAppearanceView();
+
   AppearanceSettings? _settings;
+  bool _isSubmitting = false;
 
   AppearanceSettings? get settings => _settings;
+  bool get isSubmitting => _isSubmitting;
+
+  /// Typed submit wrapper used by [SettingsAppearanceView]. Trims inputs,
+  /// normalizes the optional logo, and guards concurrent submits.
+  Future<bool> submit({required String primaryColor, String? logoPath}) async {
+    if (_isSubmitting) return false;
+    _isSubmitting = true;
+    refreshUI();
+    try {
+      final payload = const UpdateAppearanceRequest().validate({
+        'appearance_primary_color': primaryColor,
+        'appearance_logo_path': logoPath,
+      });
+      return await update(payload);
+    } finally {
+      _isSubmitting = false;
+      refreshUI();
+    }
+  }
 
   Future<void> load() async {
     clearErrors();

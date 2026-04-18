@@ -1,5 +1,7 @@
+import 'package:flutter/widgets.dart';
 import 'package:magic/magic.dart';
 
+import '../../../resources/views/settings/settings_ai_activity_view.dart';
 import '../../models/ai_agent_run.dart';
 
 /// Audit-log controller for AI agent runs.
@@ -10,6 +12,9 @@ class AiAgentRunController extends MagicController
     with MagicStateMixin<List<AiAgentRun>>, ValidatesRequests {
   static AiAgentRunController get instance =>
       Magic.findOrPut(AiAgentRunController.new);
+
+  /// Route entry point for `/settings/ai/activity`.
+  Widget index() => const SettingsAiActivityView();
 
   List<AiAgentRun> get runs => rxState ?? const [];
 

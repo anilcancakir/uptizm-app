@@ -1,6 +1,8 @@
 import 'package:magic/magic.dart';
 
+import '../../enums/incident_severity.dart';
 import '../../models/incident.dart';
+import '../../requests/store_incident_request.dart';
 
 /// Workspace-scoped incident controller.
 ///
@@ -14,9 +16,40 @@ class IncidentController extends MagicController
       Magic.findOrPut(IncidentController.new);
 
   Incident? _detail;
+  bool _isSubmitting = false;
 
   List<Incident> get incidents => rxState ?? const [];
   Incident? get detail => _detail;
+  bool get isSubmitting => _isSubmitting;
+
+  /// Typed create wrapper used by the incident composer sheet. Builds the
+  /// API payload, guards concurrent submits, and flips [isSubmitting].
+  Future<Incident?> submitCreate({
+    required String monitorId,
+    required String title,
+    required IncidentSeverity severity,
+    String description = '',
+    String? metricKey,
+    bool notifyTeam = true,
+  }) async {
+    if (_isSubmitting) return null;
+    _isSubmitting = true;
+    refreshUI();
+    try {
+      final payload = const StoreIncidentRequest().validate({
+        'monitor_id': monitorId,
+        'title': title,
+        'severity': severity,
+        'description': description,
+        'metric_key': metricKey,
+        'notify_team': notifyTeam,
+      });
+      return await store(payload);
+    } finally {
+      _isSubmitting = false;
+      refreshUI();
+    }
+  }
 
   Future<void> load({String? monitorId, String? status}) async {
     clearErrors();
