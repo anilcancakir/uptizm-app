@@ -8,6 +8,7 @@ import '../app/controllers/metrics/metrics_library_controller.dart';
 import '../app/controllers/monitors/monitor_controller.dart';
 import '../app/controllers/settings/settings_controller.dart';
 import '../app/controllers/status_pages/status_pages_controller.dart';
+import '../resources/views/incidents/incident_show_view.dart';
 import '../resources/views/incidents/incidents_index_view.dart';
 import '../resources/views/incidents/maintenance_index_view.dart';
 import '../resources/views/settings/settings_appearance_view.dart';
@@ -35,6 +36,10 @@ void registerAppRoutes() {
       // `incidents` table, but the admin surface keeps them on separate
       // top-level routes for cognitive separation.
       MagicRoute.page('/incidents', () => const IncidentsIndexView());
+      MagicRoute.page(
+        '/incidents/:id',
+        (String id) => IncidentShowView(id: id),
+      );
       MagicRoute.page('/maintenance', () => const MaintenanceIndexView());
 
       // Settings hub + sub-screens. The hub sits at `/settings` directly;

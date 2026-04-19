@@ -208,6 +208,7 @@
       "body_placeholder": "What's the latest? Markdown is supported.",
       "empty": "No updates have been posted yet."
     },
+    "affected_monitors": "Affected components",
     "postmortem": {
       "title": "Postmortem",
       "write": "Write postmortem",
