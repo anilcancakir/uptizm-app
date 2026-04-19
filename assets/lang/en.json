@@ -648,6 +648,7 @@
     "show": {
       "open": "Open",
       "edit": "Edit",
+      "subscribers": "Subscribers",
       "publish": "Publish",
       "unpublish": "Unpublish",
       "unpublish_success": "Status page unpublished",

@@ -110,6 +110,12 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
               icon: Icons.edit_rounded,
               onTap: () => MagicRoute.to('/status-pages/${page.id}/edit'),
             ),
+            SecondaryButton(
+              labelKey: 'status_page.show.subscribers',
+              icon: Icons.mark_email_read_outlined,
+              onTap: () =>
+                  MagicRoute.to('/status-pages/${page.id}/subscribers'),
+            ),
             if (!page.isPublic && page.previewUrl != null)
               SecondaryButton(
                 labelKey: 'status_page.show.open_preview',
