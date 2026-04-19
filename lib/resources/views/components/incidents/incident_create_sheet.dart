@@ -5,6 +5,7 @@ import '../../../../app/controllers/incidents/incident_controller.dart';
 import '../../../../app/enums/incident_severity.dart';
 import '../../../../app/models/incident.dart';
 import '../../../../app/models/monitor_metric.dart';
+import '../common/form_field_error.dart';
 import '../common/form_field_label.dart';
 import '../common/segmented_choice.dart';
 
@@ -190,6 +191,7 @@ class _IncidentCreateSheetState
             focus:border-primary-500 dark:focus:border-primary-400
           ''',
         ),
+        FormFieldError(message: controller.getError('title')),
       ],
     );
   }

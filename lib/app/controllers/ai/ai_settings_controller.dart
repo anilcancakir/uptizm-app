@@ -28,16 +28,23 @@ class AiSettingsController extends MagicController with ValidatesRequests {
   /// `isSubmitting` guard so the view only needs to read the flag.
   Future<bool> submit({
     required AiMode aiMode,
-    required bool dailyDigest,
+    required bool weeklyDigest,
   }) async {
     if (_isSubmitting) return false;
     _isSubmitting = true;
     refreshUI();
     try {
-      final payload = const UpdateAiSettingsRequest().validate({
-        'ai_mode': aiMode,
-        'ai_daily_digest_enabled': dailyDigest,
-      });
+      final Map<String, dynamic> payload;
+      try {
+        payload = const UpdateAiSettingsRequest().validate({
+          'ai_mode': aiMode,
+          'ai_weekly_digest_enabled': weeklyDigest,
+        });
+      } on ValidationException catch (e) {
+        validationErrors = Map<String, String>.from(e.errors);
+        refreshUI();
+        return false;
+      }
       return await update(payload);
     } finally {
       _isSubmitting = false;

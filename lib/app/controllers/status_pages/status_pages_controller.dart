@@ -70,6 +70,33 @@ class StatusPagesController extends MagicController
     setState(pages, status: RxStatus.success(), notify: true);
   }
 
+  /// Uploads a logo image and returns the stored disk path. The caller
+  /// stashes the returned path and submits it as `logo_path` on the
+  /// next create/update. Returns null on failure and surfaces a toast
+  /// so the view never needs to own the error text.
+  Future<String?> uploadLogo(MagicFile file) async {
+    clearErrors();
+    final response = await Http.upload(
+      '/status-pages/logos',
+      data: const {},
+      files: {'logo': file},
+    );
+    if (!response.successful) {
+      handleApiError(
+        response,
+        fallback: trans('status_page.errors.generic_logo_upload'),
+      );
+      Magic.toast(
+        response.errorMessage ??
+            trans('status_page.errors.generic_logo_upload'),
+      );
+      return null;
+    }
+    final data = response.data?['data'];
+    if (data is! Map<String, dynamic>) return null;
+    return data['logo_path'] as String?;
+  }
+
   /// Typed create wrapper used by [StatusPageCreateView]. Builds the API
   /// payload, guards concurrent submits, and flips [isSubmitting] so the
   /// view can render a loading button without owning any flag.
@@ -85,14 +112,21 @@ class StatusPagesController extends MagicController
     _isSubmitting = true;
     refreshUI();
     try {
-      final payload = const StoreStatusPageRequest().validate({
-        'title': title,
-        'slug': slug,
-        'primary_color': primaryColor,
-        'is_public': isPublic,
-        'monitor_ids': monitorIds,
-        'logo_path': logoPath,
-      });
+      final Map<String, dynamic> payload;
+      try {
+        payload = const StoreStatusPageRequest().validate({
+          'title': title,
+          'slug': slug,
+          'primary_color': primaryColor,
+          'is_public': isPublic,
+          'monitor_ids': monitorIds,
+          'logo_path': logoPath,
+        });
+      } on ValidationException catch (e) {
+        validationErrors = Map<String, String>.from(e.errors);
+        refreshUI();
+        return null;
+      }
       return await store(payload);
     } finally {
       _isSubmitting = false;

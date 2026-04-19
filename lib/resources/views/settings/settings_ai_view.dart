@@ -3,6 +3,7 @@ import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
 import '../../../app/controllers/ai/ai_settings_controller.dart';
+import '../../../app/enums/ai_gate_reason.dart';
 import '../../../app/enums/ai_mode.dart';
 import '../components/ai/ai_mode_selector.dart';
 import '../components/common/app_back_button.dart';
@@ -13,7 +14,7 @@ import '../components/common/setting_toggle_row.dart';
 
 /// Workspace-level AI settings.
 ///
-/// Drives the default AI autonomy mode and the daily digest flag. Backed by
+/// Drives the default AI autonomy mode and the weekly digest flag. Backed by
 /// `AiSettingsController` which mirrors the `/settings/ai` endpoint; the view
 /// only holds the transient form snapshot and delegates submit to the
 /// controller.
@@ -39,7 +40,7 @@ class _SettingsAiViewState
       if (!mounted || loaded == null) return;
       setState(() {
         _default = loaded.aiMode;
-        _digest = loaded.dailyDigestEnabled;
+        _digest = loaded.weeklyDigestEnabled;
         _hydrated = true;
       });
     });
@@ -66,6 +67,7 @@ class _SettingsAiViewState
         _defaultModeSection(),
         _behaviorSection(),
         _previewSection(),
+        _gatingSection(),
         _footer(),
       ],
     );
@@ -173,6 +175,76 @@ class _SettingsAiViewState
     );
   }
 
+  /// "When does AI run?" block. Explains the 5 skip reasons (plus the
+  /// healthy ok case) so users understand why budget isn't burned on
+  /// every check. Mirrors `AnomalyGate::decide()` on the backend.
+  Widget _gatingSection() {
+    const reasons = <AiGateReason>[
+      AiGateReason.ok,
+      AiGateReason.modeOff,
+      AiGateReason.belowFailThreshold,
+      AiGateReason.activeAiIncident,
+      AiGateReason.stateUnchanged,
+      AiGateReason.cooldown,
+    ];
+    return FormSectionCard(
+      titleKey: 'settings.ai.gating.title',
+      subtitleKey: 'settings.ai.gating.subtitle',
+      icon: Icons.traffic_rounded,
+      child: WDiv(
+        className: 'flex flex-col gap-2',
+        children: [for (final reason in reasons) _gatingRow(reason)],
+      ),
+    );
+  }
+
+  Widget _gatingRow(AiGateReason reason) {
+    final isOk = reason == AiGateReason.ok;
+    return WDiv(
+      states: {isOk ? 'ok' : 'skip'},
+      className: '''
+        rounded-lg p-3
+        flex flex-row items-start gap-3
+        bg-gray-50 dark:bg-gray-900
+        border border-gray-200 dark:border-gray-700
+        ok:bg-up-50 dark:ok:bg-up-900/20
+        ok:border-up-200 dark:ok:border-up-800
+      ''',
+      children: [
+        WIcon(
+          isOk
+              ? Icons.check_circle_outline_rounded
+              : Icons.pause_circle_outline,
+          states: {isOk ? 'ok' : 'skip'},
+          className: '''
+            text-sm
+            text-gray-500 dark:text-gray-400
+            ok:text-up-600 dark:ok:text-up-300
+          ''',
+        ),
+        WDiv(
+          className: 'flex-1 flex flex-col gap-0.5 min-w-0',
+          children: [
+            WText(
+              trans(reason.settingsTitleKey),
+              className: '''
+                text-xs font-semibold
+                text-gray-900 dark:text-white
+              ''',
+            ),
+            WText(
+              trans(reason.settingsHintKey),
+              className: '''
+                text-xs leading-relaxed
+                text-gray-600 dark:text-gray-300
+              ''',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   String _previewKeyForMode(AiMode mode) {
     return switch (mode) {
       AiMode.off => 'settings.ai.preview.sample_off',
@@ -198,7 +270,7 @@ class _SettingsAiViewState
 
   Future<void> _submit() async {
     if (controller.isSubmitting) return;
-    final ok = await controller.submit(aiMode: _default, dailyDigest: _digest);
+    final ok = await controller.submit(aiMode: _default, weeklyDigest: _digest);
     if (!mounted) return;
     if (ok) {
       Magic.toast(trans('settings.ai.toast_saved'));

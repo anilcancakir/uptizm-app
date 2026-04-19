@@ -5,16 +5,16 @@ import '../enums/ai_mode.dart';
 /// Mirrors `AiSettingsResource` on the API. Narrow by design: per-monitor
 /// overrides live on the `Monitor` row, not here.
 class AiSettings {
-  const AiSettings({required this.aiMode, required this.dailyDigestEnabled});
+  const AiSettings({required this.aiMode, required this.weeklyDigestEnabled});
 
   final AiMode aiMode;
-  final bool dailyDigestEnabled;
+  final bool weeklyDigestEnabled;
 
   /// Returns a copy with the given fields swapped.
-  AiSettings copyWith({AiMode? aiMode, bool? dailyDigestEnabled}) {
+  AiSettings copyWith({AiMode? aiMode, bool? weeklyDigestEnabled}) {
     return AiSettings(
       aiMode: aiMode ?? this.aiMode,
-      dailyDigestEnabled: dailyDigestEnabled ?? this.dailyDigestEnabled,
+      weeklyDigestEnabled: weeklyDigestEnabled ?? this.weeklyDigestEnabled,
     );
   }
 
@@ -23,7 +23,7 @@ class AiSettings {
   static AiSettings fromMap(Map<String, dynamic> map) {
     return AiSettings(
       aiMode: _mode(map['ai_mode']),
-      dailyDigestEnabled: map['ai_daily_digest_enabled'] == true,
+      weeklyDigestEnabled: map['ai_weekly_digest_enabled'] == true,
     );
   }
 

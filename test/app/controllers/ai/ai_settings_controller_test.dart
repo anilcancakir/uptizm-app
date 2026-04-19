@@ -100,7 +100,7 @@ void main() {
     test('load GETs /settings/ai and hydrates settings', () async {
       driver.response = MagicResponse(
         data: {
-          'data': {'ai_mode': 'suggest', 'ai_daily_digest_enabled': true},
+          'data': {'ai_mode': 'suggest', 'ai_weekly_digest_enabled': true},
         },
         statusCode: 200,
       );
@@ -110,27 +110,27 @@ void main() {
       expect(driver.lastMethod, 'GET');
       expect(driver.lastUrl, '/settings/ai');
       expect(controller.settings?.aiMode, AiMode.suggest);
-      expect(controller.settings?.dailyDigestEnabled, isTrue);
+      expect(controller.settings?.weeklyDigestEnabled, isTrue);
     });
 
     test('update PUTs and stores returned values', () async {
       driver.response = MagicResponse(
         data: {
-          'data': {'ai_mode': 'auto', 'ai_daily_digest_enabled': false},
+          'data': {'ai_mode': 'auto', 'ai_weekly_digest_enabled': false},
         },
         statusCode: 200,
       );
 
       final ok = await controller.update({
         'ai_mode': 'auto',
-        'ai_daily_digest_enabled': false,
+        'ai_weekly_digest_enabled': false,
       });
 
       expect(ok, isTrue);
       expect(driver.lastMethod, 'PUT');
       expect(driver.lastUrl, '/settings/ai');
       expect(controller.settings?.aiMode, AiMode.auto);
-      expect(controller.settings?.dailyDigestEnabled, isFalse);
+      expect(controller.settings?.weeklyDigestEnabled, isFalse);
     });
 
     test('update surfaces 422 field errors', () async {
@@ -157,13 +157,16 @@ void main() {
     test('submit builds typed payload and toggles isSubmitting', () async {
       driver.response = MagicResponse(
         data: {
-          'data': {'ai_mode': 'auto', 'ai_daily_digest_enabled': false},
+          'data': {'ai_mode': 'auto', 'ai_weekly_digest_enabled': false},
         },
         statusCode: 200,
       );
 
       expect(controller.isSubmitting, isFalse);
-      final future = controller.submit(aiMode: AiMode.auto, dailyDigest: false);
+      final future = controller.submit(
+        aiMode: AiMode.auto,
+        weeklyDigest: false,
+      );
       expect(controller.isSubmitting, isTrue);
       final ok = await future;
 
@@ -172,7 +175,7 @@ void main() {
       expect(driver.lastMethod, 'PUT');
       expect(driver.lastUrl, '/settings/ai');
       expect((driver.lastData as Map)['ai_mode'], 'auto');
-      expect((driver.lastData as Map)['ai_daily_digest_enabled'], false);
+      expect((driver.lastData as Map)['ai_weekly_digest_enabled'], false);
     });
 
     test('submit returns false and surfaces 422 via getError', () async {
@@ -188,7 +191,7 @@ void main() {
 
       final ok = await controller.submit(
         aiMode: AiMode.suggest,
-        dailyDigest: true,
+        weeklyDigest: true,
       );
 
       expect(ok, isFalse);

@@ -392,9 +392,12 @@ class _MonitorShowViewState
             (m) => m.name == rawOverride,
             orElse: () => workspaceDefault,
           );
+    final monitor = controller.monitor;
     return MonitorAiModeCard(
       workspaceDefault: workspaceDefault,
       initialOverride: initial,
+      aiStatus: monitor?.aiStatus,
+      incidentThreshold: monitor?.getAttribute('incident_threshold') as int?,
       onChanged: (mode) => _onAiModeChanged(id, mode),
     );
   }

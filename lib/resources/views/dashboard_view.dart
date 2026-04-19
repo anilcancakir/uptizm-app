@@ -307,13 +307,21 @@ class _DashboardViewState extends State<DashboardView>
   }
 
   Future<void> _onAccept(String id) async {
+    // 1. Snapshot the source suggestion's monitorId before the controller
+    //    drops it from rxState — we need it to route the user to the right
+    //    monitor's incidents tab after the promotion succeeds.
+    final matches = _suggestions.suggestions.where((s) => s.id == id).toList();
+    final monitorId = matches.isEmpty ? null : matches.first.monitorId;
     final incidentId = await _suggestions.accept(id);
     if (!mounted) return;
     if (incidentId == null) {
       Magic.toast(trans('ai.suggestions.errors.generic_accept'));
       return;
     }
-    MagicRoute.to('/monitors');
+    Magic.toast(trans('dashboard.ai_inbox.accepted_toast'));
+    if (monitorId != null && monitorId.isNotEmpty) {
+      MagicRoute.to('/monitors/$monitorId?tab=incidents');
+    }
   }
 
   Future<void> _onSkip(String id) async {
@@ -321,7 +329,9 @@ class _DashboardViewState extends State<DashboardView>
     if (!mounted) return;
     if (!ok) {
       Magic.toast(trans('ai.suggestions.errors.generic_skip'));
+      return;
     }
+    Magic.toast(trans('dashboard.ai_inbox.skipped_toast'));
   }
 
   String _relativeTime(DateTime at) {

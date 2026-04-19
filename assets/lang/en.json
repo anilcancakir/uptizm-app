@@ -44,6 +44,14 @@
       "empty_subtitle": "Once monitors start calling the AI, runs will show up here.",
       "errors": {
         "generic_load": "Could not load AI activity."
+      },
+      "details": {
+        "structured_output": "Structured output",
+        "prompt": "Prompt",
+        "response": "Response",
+        "empty": "No details captured for this run.",
+        "expand": "Show details",
+        "collapse": "Hide details"
       }
     }
   },
@@ -385,7 +393,9 @@
       "accept": "Accept",
       "skip": "Skip",
       "empty_title": "Inbox zero",
-      "empty": "No suggestions waiting for your review."
+      "empty": "No suggestions waiting for your review.",
+      "accepted_toast": "Suggestion promoted to an incident.",
+      "skipped_toast": "Suggestion archived."
     }
   },
   "settings": {
@@ -429,18 +439,7 @@
       "mode_light_subtitle": "Always use the light color scheme.",
       "mode_dark_title": "Dark",
       "mode_dark_subtitle": "Always use the dark color scheme.",
-      "toast_saved": "Theme updated",
-      "section_brand_title": "Workspace branding",
-      "section_brand_subtitle": "Primary color and logo used across status pages.",
-      "brand_color_label": "Primary color",
-      "brand_color_hint": "Hex value, e.g. #2563eb.",
-      "brand_logo_label": "Logo path",
-      "brand_logo_hint": "Relative path of the uploaded logo asset.",
-      "brand_save": "Save branding",
-      "brand_saved": "Branding saved",
-      "errors": {
-        "generic_update": "Could not save appearance settings."
-      }
+      "toast_saved": "Theme updated"
     },
     "help": {
       "title": "Help & support",
@@ -486,8 +485,8 @@
         "subtitle": "Fine-tune what the AI is allowed to do.",
         "auto_resolve_title": "Auto-resolve silent incidents",
         "auto_resolve_subtitle": "Close incidents automatically after 5 healthy checks in a row.",
-        "digest_title": "Summarize daily digest",
-        "digest_subtitle": "AI writes a short recap of incidents and metric trends every morning.",
+        "digest_title": "Summarize weekly digest",
+        "digest_subtitle": "AI writes a short weekly recap of incidents and metric trends every Monday morning.",
         "similarity_title": "Match against past incidents",
         "similarity_subtitle": "Use the 90-day incident history to suggest likely causes and fixes."
       },
@@ -497,6 +496,34 @@
         "sample_off": "AI is off. Uptizm will detect incidents but no analysis, summary, or suggestions will be generated.",
         "sample_suggest": "db.conn_ms crossed the warn band 3 checks in a row. Matches a pattern from 2 prior pool-exhaustion incidents. Would you like me to open an incident and propose actions?",
         "sample_auto": "Opened incident: db.conn_ms degraded. Suggested action queued: raise pool size to 40. Watching next 5 checks; will auto-resolve if it recovers."
+      },
+      "gating": {
+        "title": "When does AI run?",
+        "subtitle": "The checks AI performs before spending tokens on this monitor.",
+        "ok": {
+          "title": "Armed and ready",
+          "hint": "When status or consecutive failures change, AI evaluates the check."
+        },
+        "mode_off": {
+          "title": "Mode is off",
+          "hint": "If effective mode is Off, AI never runs. Enable Suggest or Auto here or on a monitor."
+        },
+        "below_fail_threshold": {
+          "title": "Single-blip filter",
+          "hint": "A single failed check is ignored. AI waits until failures reach the incident threshold to avoid false alarms."
+        },
+        "active_ai_incident": {
+          "title": "One AI incident at a time",
+          "hint": "While an AI-owned incident is open, further runs are paused so we don't pile on suggestions."
+        },
+        "state_unchanged": {
+          "title": "Nothing changed",
+          "hint": "If status and consecutive failures match the previous run, we skip — no new signal to evaluate."
+        },
+        "cooldown": {
+          "title": "Cooldown window",
+          "hint": "A short cool-down (3x check interval, capped between 2 and 15 minutes) spaces out runs so bursts don't burn budget."
+        }
       }
     }
   },
@@ -543,15 +570,18 @@
         "public_title": "Public page",
         "public_subtitle": "Anyone with the URL can view the page.",
         "primary_color": "Primary color",
+        "primary_color_hint": "Hex value, e.g. #2563EB.",
         "logo": "Logo"
       },
       "logo": {
         "hint_empty": "No logo uploaded",
         "hint_set": "Logo ready",
-        "spec": "PNG or SVG, at least 96 × 96 px",
+        "spec": "PNG, JPG, or SVG up to 1 MB",
         "upload": "Upload logo",
+        "uploading": "Uploading…",
         "replace": "Replace",
-        "clear": "Remove"
+        "clear": "Remove",
+        "too_large": "Logo must be 1 MB or smaller."
       }
     },
     "show": {
@@ -587,7 +617,8 @@
       "generic_create": "Could not create status page. Please try again.",
       "generic_update": "Could not update status page. Please try again.",
       "generic_delete": "Could not delete status page. Please try again.",
-      "generic_publish": "Could not change publish state. Please try again."
+      "generic_publish": "Could not change publish state. Please try again.",
+      "generic_logo_upload": "Could not upload logo. Please try again."
     }
   },
   "metric": {
@@ -981,7 +1012,51 @@
       "override_title": "Override workspace default",
       "override_subtitle": "Use a different AI mode just for this monitor.",
       "inherit_line": "Inheriting :mode from workspace default",
-      "open_settings": "Change default"
+      "open_settings": "Change default",
+      "status": {
+        "effective_label": "Effective mode",
+        "source": {
+          "monitor_override": "Per-monitor override",
+          "workspace_default": "From workspace default",
+          "none": "Not configured"
+        },
+        "cooldown_label": "Cooldown",
+        "cooldown_minutes": ":minutes min",
+        "cooldown_seconds": ":seconds sec",
+        "last_run_title": "Last run",
+        "last_run_none": "No AI runs yet for this monitor.",
+        "last_run_meta": ":tokens_in / :tokens_out tokens · $:cost · :duration",
+        "last_run_anomaly": "Anomaly detected (metric: :key)",
+        "last_run_clean": "No anomaly detected",
+        "last_run_when": ":relative",
+        "next_eligible_at": "Next eligible at :time"
+      },
+      "gate": {
+        "ok": {
+          "title": "AI is armed",
+          "hint": "The next check with a state change will be evaluated."
+        },
+        "mode_off": {
+          "title": "AI is disabled",
+          "hint": "Turn on Suggest or Auto to let AI review changes here."
+        },
+        "below_fail_threshold": {
+          "title": "Single-blip filter",
+          "hint": "AI waits for :min consecutive failures before running."
+        },
+        "active_ai_incident": {
+          "title": "Already tracking an AI incident",
+          "hint": "Close or resolve the active incident to re-arm the pipeline."
+        },
+        "state_unchanged": {
+          "title": "Nothing changed",
+          "hint": "AI skips re-runs until status or consecutive fails move."
+        },
+        "cooldown": {
+          "title": "In cooldown",
+          "hint": "Next run is eligible at :time."
+        }
+      }
     },
     "metrics_empty": {
       "title": "Track your own metrics",

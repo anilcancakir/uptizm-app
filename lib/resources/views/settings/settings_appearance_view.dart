@@ -2,72 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
-import '../../../app/controllers/settings/appearance_controller.dart';
 import '../components/common/app_back_button.dart';
 import '../components/common/form_section_card.dart';
-import '../components/common/primary_button.dart';
 
 enum _ThemeMode { system, light, dark }
 
-/// Appearance preferences: theme mode (system / light / dark) and accent
-/// color. Persists via [AppearanceController] and reflects changes
-/// immediately through Wind UI's theme stream.
-class SettingsAppearanceView extends MagicStatefulView<AppearanceController> {
+/// Appearance preferences: theme mode (system / light / dark).
+///
+/// Reads and writes through Wind UI's theme controller — no server-side
+/// state is touched, so this view is stateless.
+class SettingsAppearanceView extends StatelessWidget {
   const SettingsAppearanceView({super.key});
-
-  @override
-  State<SettingsAppearanceView> createState() => _SettingsAppearanceViewState();
-}
-
-class _SettingsAppearanceViewState
-    extends
-        MagicStatefulViewState<AppearanceController, SettingsAppearanceView> {
-  final _color = TextEditingController();
-  final _logo = TextEditingController();
-  bool _hydrated = false;
-
-  @override
-  void onInit() {
-    super.onInit();
-    controller.addListener(_onControllerChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.load().then((_) => _onControllerChanged());
-    });
-  }
-
-  @override
-  void onClose() {
-    controller.removeListener(_onControllerChanged);
-    _color.dispose();
-    _logo.dispose();
-    super.onClose();
-  }
-
-  void _onControllerChanged() {
-    if (!mounted) return;
-    final s = controller.settings;
-    if (s == null || _hydrated) return;
-    _hydrated = true;
-    _color.text = s.primaryColor ?? '';
-    _logo.text = s.logoPath ?? '';
-    setState(() {});
-  }
-
-  Future<void> _save() async {
-    if (controller.isSubmitting) return;
-    final ok = await controller.submit(
-      primaryColor: _color.text,
-      logoPath: _logo.text,
-    );
-    if (!mounted) return;
-    if (ok) {
-      Magic.toast(trans('settings.appearance.brand_saved'));
-      return;
-    }
-    if (!controller.hasErrors) {
-      Magic.toast(trans('settings.appearance.errors.generic_update'));
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,77 +76,6 @@ class _SettingsAppearanceViewState
               ),
             ],
           ),
-        ),
-        FormSectionCard(
-          titleKey: 'settings.appearance.section_brand_title',
-          subtitleKey: 'settings.appearance.section_brand_subtitle',
-          icon: Icons.brush_outlined,
-          child: WDiv(
-            className: 'flex flex-col gap-4',
-            children: [
-              _field(
-                labelKey: 'settings.appearance.brand_color_label',
-                hintKey: 'settings.appearance.brand_color_hint',
-                textController: _color,
-                placeholder: '#2563eb',
-                errorKey: 'appearance_primary_color',
-              ),
-              _field(
-                labelKey: 'settings.appearance.brand_logo_label',
-                hintKey: 'settings.appearance.brand_logo_hint',
-                textController: _logo,
-                placeholder: 'logos/team.png',
-                errorKey: 'appearance_logo_path',
-              ),
-              WDiv(
-                className: 'flex flex-row justify-end',
-                child: PrimaryButton(
-                  labelKey: 'settings.appearance.brand_save',
-                  icon: Icons.save_rounded,
-                  isLoading: controller.isSubmitting,
-                  onTap: _save,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _field({
-    required String labelKey,
-    required String hintKey,
-    required TextEditingController textController,
-    required String placeholder,
-    required String errorKey,
-  }) {
-    final err = controller.getError(errorKey);
-    return WDiv(
-      className: 'flex flex-col gap-1.5',
-      children: [
-        WText(
-          trans(labelKey),
-          className: '''
-            text-xs font-semibold uppercase tracking-wide
-            text-gray-500 dark:text-gray-400
-          ''',
-        ),
-        WInput(
-          controller: textController,
-          placeholder: placeholder,
-          className: '''
-            w-full px-3 py-2.5 rounded-lg text-sm
-            bg-white dark:bg-gray-900
-            border border-gray-200 dark:border-gray-700
-            focus:border-primary-500 dark:focus:border-primary-400
-          ''',
-        ),
-        WText(
-          err ?? trans(hintKey),
-          className: err == null
-              ? 'text-xs text-gray-500 dark:text-gray-400'
-              : 'text-xs text-down-600 dark:text-down-400',
         ),
       ],
     );

@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:app/app/enums/ai_gate_reason.dart';
+import 'package:app/app/enums/ai_mode.dart';
+import 'package:app/app/enums/ai_mode_source.dart';
 import 'package:app/app/enums/monitor_status.dart';
 import 'package:app/app/enums/monitor_type.dart';
 import 'package:app/app/models/monitor.dart';
@@ -66,6 +69,36 @@ void main() {
 
       expect(monitor.exists, isFalse);
       expect(monitor.name, 'Draft');
+    });
+  });
+
+  group('Monitor.aiStatus', () {
+    test('parses the embedded ai sub-object into MonitorAiStatus', () {
+      final monitor = Monitor.fromMap({
+        'id': 'mon_1',
+        'ai_mode': 'auto',
+        'ai': {
+          'effective_mode': 'auto',
+          'mode_source': 'monitor_override',
+          'cooldown_seconds': 180,
+          'current_gate': {'run': false, 'reason': 'cooldown'},
+          'last_run': null,
+          'next_eligible_at': null,
+        },
+      });
+
+      final status = monitor.aiStatus;
+      expect(status, isNotNull);
+      expect(status!.effectiveMode, AiMode.auto);
+      expect(status.modeSource, AiModeSource.monitorOverride);
+      expect(status.cooldownSeconds, 180);
+      expect(status.currentGate.reason, AiGateReason.cooldown);
+    });
+
+    test('returns null when the payload omits the ai key', () {
+      final monitor = Monitor.fromMap({'id': 'mon_2', 'ai_mode': 'off'});
+
+      expect(monitor.aiStatus, isNull);
     });
   });
 }

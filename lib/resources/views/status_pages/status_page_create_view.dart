@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
@@ -11,7 +13,8 @@ import '../components/common/form_section_card.dart';
 import '../components/common/primary_button.dart';
 import '../components/common/secondary_button.dart';
 import '../components/common/setting_toggle_row.dart';
-import '../components/status_pages/color_chip_grid.dart';
+import '../components/common/color_swatch.dart';
+import '../components/common/form_field_error.dart';
 import '../components/status_pages/logo_upload_zone.dart';
 import '../components/status_pages/monitor_assign_list.dart';
 
@@ -36,6 +39,8 @@ class _StatusPageCreateViewState
   bool _isPublic = true;
   String _primaryColor = '#2563EB';
   String? _logoPath;
+  Uint8List? _logoBytes;
+  bool _isUploadingLogo = false;
   final Set<String> _selectedMonitors = {};
 
   MonitorController get _monitors => MonitorController.instance;
@@ -117,6 +122,7 @@ class _StatusPageCreateViewState
                 ),
                 className: _inputClass,
               ),
+              FormFieldError(message: controller.getError('title')),
             ],
           ),
           WDiv(
@@ -141,7 +147,9 @@ class _StatusPageCreateViewState
               WDiv(
                 className: 'mt-1.5 flex flex-col gap-0.5',
                 children: [
-                  if (slugError != null && _slugCtrl.text.isNotEmpty)
+                  if (controller.getError('slug') != null)
+                    FormFieldError(message: controller.getError('slug'))
+                  else if (slugError != null && _slugCtrl.text.isNotEmpty)
                     WText(
                       trans(slugError),
                       className: '''
@@ -195,10 +203,31 @@ class _StatusPageCreateViewState
               const FormFieldLabel(
                 labelKey: 'status_page.create.fields.primary_color',
               ),
-              ColorChipGrid(
-                selected: _primaryColor,
-                onChanged: (hex) => setState(() => _primaryColor = hex),
+              WDiv(
+                className: 'flex flex-row items-center gap-2',
+                children: [
+                  HexSwatch(hex: _primaryColor, size: 'sm', shape: 'square'),
+                  WDiv(
+                    className: 'flex-1',
+                    child: WInput(
+                      value: _primaryColor,
+                      onChanged: (v) => setState(() => _primaryColor = v),
+                      placeholder: '#2563EB',
+                      className: _inputClass,
+                    ),
+                  ),
+                ],
               ),
+              if (controller.getError('primary_color') != null)
+                FormFieldError(message: controller.getError('primary_color'))
+              else
+                WText(
+                  trans('status_page.create.fields.primary_color_hint'),
+                  className: '''
+                    mt-1.5 text-xs
+                    text-gray-500 dark:text-gray-400
+                  ''',
+                ),
             ],
           ),
           WDiv(
@@ -207,9 +236,13 @@ class _StatusPageCreateViewState
               const FormFieldLabel(labelKey: 'status_page.create.fields.logo'),
               LogoUploadZone(
                 logoPath: _logoPath,
-                onPick: () =>
-                    setState(() => _logoPath = 'mock://logo/uploaded.png'),
-                onClear: () => setState(() => _logoPath = null),
+                previewBytes: _logoBytes,
+                isUploading: _isUploadingLogo,
+                onPick: _pickAndUploadLogo,
+                onClear: () => setState(() {
+                  _logoPath = null;
+                  _logoBytes = null;
+                }),
               ),
             ],
           ),
@@ -256,6 +289,40 @@ class _StatusPageCreateViewState
         ),
       ],
     );
+  }
+
+  static const _maxLogoBytes = 1024 * 1024;
+
+  Future<void> _pickAndUploadLogo() async {
+    if (_isUploadingLogo) return;
+    final file = await Pick.image();
+    if (file == null) return;
+
+    final bytes = await file.readAsBytes();
+    if (bytes == null || bytes.isEmpty) {
+      Magic.toast(trans('status_page.errors.generic_logo_upload'));
+      return;
+    }
+    if (bytes.length > _maxLogoBytes) {
+      Magic.toast(trans('status_page.create.logo.too_large'));
+      return;
+    }
+
+    setState(() => _isUploadingLogo = true);
+    try {
+      final path = await controller.uploadLogo(file);
+      if (!mounted) return;
+      if (path != null) {
+        setState(() {
+          _logoPath = path;
+          _logoBytes = bytes;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingLogo = false);
+      }
+    }
   }
 
   Future<void> _submit() async {

@@ -2,7 +2,8 @@
 ///
 /// Mirrors `AiAgentRunResource` on the API. `status` is kept as a raw
 /// string (pending/succeeded/failed); views key off the value without a
-/// dedicated enum.
+/// dedicated enum. `inputPrompt`, `outputText`, and `structuredOutput`
+/// back the expandable detail row in the activity view.
 class AiAgentRun {
   const AiAgentRun({
     required this.id,
@@ -18,6 +19,9 @@ class AiAgentRun {
     this.costUsd,
     this.durationMs,
     this.errorMessage,
+    this.inputPrompt,
+    this.outputText,
+    this.structuredOutput,
     this.startedAt,
     this.completedAt,
   });
@@ -35,8 +39,29 @@ class AiAgentRun {
   final double? costUsd;
   final int? durationMs;
   final String? errorMessage;
+  final String? inputPrompt;
+  final String? outputText;
+  final Map<String, dynamic>? structuredOutput;
   final DateTime? startedAt;
   final DateTime? completedAt;
+
+  /// True when the structured output explicitly says an anomaly was found.
+  /// Null when the agent did not emit the flag (e.g. failed runs).
+  bool? get anomalyDetected => structuredOutput?['anomaly_detected'] as bool?;
+
+  /// Metric key the anomaly was attributed to, sanitized by the backend
+  /// against the monitor's real key list.
+  String? get structuredMetricKey => structuredOutput?['metric_key'] as String?;
+
+  /// Severity the agent assigned to an anomaly (critical / warn / info).
+  String? get structuredSeverity => structuredOutput?['severity'] as String?;
+
+  /// Confidence label the agent emitted (high / medium / low).
+  String? get structuredConfidence =>
+      structuredOutput?['confidence'] as String?;
+
+  /// One-line summary the agent wrote; used for incident title / suggestion blurb.
+  String? get structuredTldr => structuredOutput?['tldr'] as String?;
 
   /// Parses an `AiAgentRunResource` payload. Status defaults to `pending`
   /// when missing; numeric fields silently coerce from numbers or strings.
@@ -55,6 +80,9 @@ class AiAgentRun {
       costUsd: _double(map['cost_usd']),
       durationMs: _int(map['duration_ms']),
       errorMessage: map['error_message'] as String?,
+      inputPrompt: map['input_prompt'] as String?,
+      outputText: map['output_text'] as String?,
+      structuredOutput: _map(map['structured_output']),
       startedAt: _date(map['started_at']),
       completedAt: _date(map['completed_at']),
     );
@@ -76,6 +104,12 @@ class AiAgentRun {
 
   static DateTime? _date(Object? raw) {
     if (raw is String) return DateTime.tryParse(raw);
+    return null;
+  }
+
+  static Map<String, dynamic>? _map(Object? raw) {
+    if (raw is Map<String, dynamic>) return raw;
+    if (raw is Map) return raw.map((k, v) => MapEntry(k.toString(), v));
     return null;
   }
 }

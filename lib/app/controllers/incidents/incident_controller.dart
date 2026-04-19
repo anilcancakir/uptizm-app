@@ -36,14 +36,21 @@ class IncidentController extends MagicController
     _isSubmitting = true;
     refreshUI();
     try {
-      final payload = const StoreIncidentRequest().validate({
-        'monitor_id': monitorId,
-        'title': title,
-        'severity': severity,
-        'description': description,
-        'metric_key': metricKey,
-        'notify_team': notifyTeam,
-      });
+      final Map<String, dynamic> payload;
+      try {
+        payload = const StoreIncidentRequest().validate({
+          'monitor_id': monitorId,
+          'title': title,
+          'severity': severity,
+          'description': description,
+          'metric_key': metricKey,
+          'notify_team': notifyTeam,
+        });
+      } on ValidationException catch (e) {
+        validationErrors = Map<String, String>.from(e.errors);
+        refreshUI();
+        return null;
+      }
       return await store(payload);
     } finally {
       _isSubmitting = false;

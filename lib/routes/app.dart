@@ -6,9 +6,9 @@ import '../app/controllers/ai/ai_settings_controller.dart';
 import '../app/controllers/dashboard/dashboard_controller.dart';
 import '../app/controllers/metrics/metrics_library_controller.dart';
 import '../app/controllers/monitors/monitor_controller.dart';
-import '../app/controllers/settings/appearance_controller.dart';
 import '../app/controllers/settings/settings_controller.dart';
 import '../app/controllers/status_pages/status_pages_controller.dart';
+import '../resources/views/settings/settings_appearance_view.dart';
 
 /// Application route definitions.
 ///
@@ -29,12 +29,12 @@ void registerAppRoutes() {
       MagicRoute.resource('monitors', MonitorController.instance);
       MagicRoute.resource('status-pages', StatusPagesController.instance);
 
-      // Settings hub + sub-screens. Grouped so the `/settings` prefix is
-      // declared once and child URLs read as relative paths.
+      // Settings hub + sub-screens. The hub sits at `/settings` directly;
+      // child URLs share the `/settings` prefix via the nested group.
+      MagicRoute.page('/settings', () => SettingsController.instance.index());
       MagicRoute.group(
         prefix: '/settings',
         routes: () {
-          MagicRoute.page('/', () => SettingsController.instance.index());
           MagicRoute.page('/ai', () => AiSettingsController.instance.index());
           MagicRoute.page(
             '/ai/activity',
@@ -44,10 +44,7 @@ void registerAppRoutes() {
             '/metrics-library',
             () => MetricsLibraryController.instance.index(),
           );
-          MagicRoute.page(
-            '/appearance',
-            () => AppearanceController.instance.index(),
-          );
+          MagicRoute.page('/appearance', () => const SettingsAppearanceView());
         },
       );
     },

@@ -4,6 +4,7 @@ import 'package:magic/magic.dart';
 
 import '../enums/monitor_status.dart';
 import '../enums/monitor_type.dart';
+import 'monitor_ai_status.dart';
 
 /// Monitor model.
 ///
@@ -36,6 +37,7 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
     'auth_config',
     'assertion_rules',
     'ai_mode',
+    'ai',
     'incident_threshold',
     'ssl_tracking',
     'alert_on_down',
@@ -80,6 +82,21 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
   }
 
   int? get lastResponseMs => getAttribute('last_response_ms') as int?;
+
+  /// Parsed AI status block embedded by `MonitorResource` under the `ai`
+  /// key. Null only when the backend omits the field (older payload or a
+  /// locally-constructed monitor); callers should fall back to the
+  /// standalone `ai_mode` scalar when that happens.
+  MonitorAiStatus? get aiStatus {
+    final raw = getAttribute('ai');
+    if (raw is Map<String, dynamic>) return MonitorAiStatus.fromMap(raw);
+    if (raw is Map) {
+      return MonitorAiStatus.fromMap(
+        raw.map((k, v) => MapEntry(k.toString(), v)),
+      );
+    }
+    return null;
+  }
 
   int? get checkInterval => getAttribute('check_interval') as int?;
   int? get timeoutSeconds => getAttribute('timeout_seconds') as int?;

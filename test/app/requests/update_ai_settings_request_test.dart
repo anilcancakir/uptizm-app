@@ -9,17 +9,17 @@ void main() {
     test('accepts enum instance and serializes to wire name', () {
       final payload = const UpdateAiSettingsRequest().validate({
         'ai_mode': AiMode.suggest,
-        'ai_daily_digest_enabled': true,
+        'ai_weekly_digest_enabled': true,
       });
 
       expect(payload['ai_mode'], 'suggest');
-      expect(payload['ai_daily_digest_enabled'], true);
+      expect(payload['ai_weekly_digest_enabled'], true);
     });
 
     test('accepts wire string for ai_mode', () {
       final payload = const UpdateAiSettingsRequest().validate({
         'ai_mode': 'auto',
-        'ai_daily_digest_enabled': false,
+        'ai_weekly_digest_enabled': false,
       });
 
       expect(payload['ai_mode'], 'auto');
@@ -29,7 +29,7 @@ void main() {
       expect(
         () => const UpdateAiSettingsRequest().validate({
           'ai_mode': 'overlord',
-          'ai_daily_digest_enabled': true,
+          'ai_weekly_digest_enabled': true,
         }),
         throwsA(isA<ValidationException>()),
       );

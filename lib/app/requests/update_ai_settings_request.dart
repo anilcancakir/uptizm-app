@@ -5,7 +5,7 @@ import '../enums/ai_mode.dart';
 /// Form request for `PUT /settings/ai`.
 ///
 /// Accepts either an [AiMode] instance or the wire string (`off`, `suggest`,
-/// `auto`) and always emits the normalized wire name. `ai_daily_digest_enabled`
+/// `auto`) and always emits the normalized wire name. `ai_weekly_digest_enabled`
 /// must be a bool; server-side typing rejects anything else regardless.
 class UpdateAiSettingsRequest extends FormRequest {
   const UpdateAiSettingsRequest();
@@ -31,6 +31,6 @@ class UpdateAiSettingsRequest extends FormRequest {
   @override
   Map<String, List<Rule>> rules() => {
     'ai_mode': [Required(), InList<AiMode>(AiMode.values)],
-    'ai_daily_digest_enabled': [],
+    'ai_weekly_digest_enabled': [],
   };
 }
