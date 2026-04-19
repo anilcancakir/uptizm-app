@@ -169,6 +169,12 @@
       "resolved": "Resolved",
       "all": "All"
     },
+    "lane": {
+      "active": "Active",
+      "scheduled": "Scheduled",
+      "history": "History",
+      "drafts": "Drafts"
+    },
     "filter": {
       "ai_owned": "AI-owned only"
     },
@@ -256,6 +262,8 @@
       "subtitle": "Pick a row on the left to see the AI analysis and timeline."
     },
     "list": {
+      "title": "Incidents",
+      "subtitle": "Realtime incidents, scheduled maintenance, and drafts in one place.",
       "source_tooltip": {
         "user_threshold": "Opened because a threshold was crossed",
         "ai_anomaly": "Opened by AI anomaly detection",
@@ -1309,6 +1317,10 @@
     }
   },
   "maintenance": {
+    "list": {
+      "title": "Maintenance",
+      "subtitle": "Schedule changes ahead of time so the status page tells the story for you."
+    },
     "schedule": {
       "title": "Schedule maintenance",
       "scheduled_for": "Starts at",
