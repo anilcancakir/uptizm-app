@@ -2,6 +2,7 @@ import 'package:magic/magic.dart';
 
 import '../enums/metric_source.dart';
 import '../enums/metric_type.dart';
+import '../enums/metric_unit.dart';
 import '../enums/threshold_direction.dart';
 import 'monitor_metric_value.dart';
 
@@ -33,6 +34,7 @@ class MonitorMetric extends Model with HasTimestamps, InteractsWithPersistence {
     'source',
     'extraction_path',
     'unit',
+    'unit_kind',
     'threshold_direction',
     'warn_bound',
     'critical_bound',
@@ -55,6 +57,13 @@ class MonitorMetric extends Model with HasTimestamps, InteractsWithPersistence {
   String? get key => getAttribute('key') as String?;
   String? get extractionPath => getAttribute('extraction_path') as String?;
   String? get unit => getAttribute('unit') as String?;
+
+  /// Formatting strategy for numeric values. Defaults to [MetricUnit.custom]
+  /// so legacy rows without the column still render (freetext suffix from
+  /// [unit] takes over in the formatter).
+  MetricUnit get unitKind =>
+      MetricUnit.fromWire(getAttribute('unit_kind') as String?) ??
+      MetricUnit.custom;
 
   MetricType? get type => getAttribute('type') as MetricType?;
 

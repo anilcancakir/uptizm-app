@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/app/enums/metric_type.dart';
+import 'package:app/app/enums/metric_unit.dart';
 import 'package:app/app/models/monitor_metric.dart';
 
 void main() {
@@ -12,6 +13,19 @@ void main() {
     test('returns null for unknown MetricType values', () {
       final metric = MonitorMetric.fromMap({'id': 'met_1', 'type': 'mystery'});
       expect(metric.type, isNull);
+    });
+
+    test('hydrates unit_kind wire values', () {
+      final metric = MonitorMetric.fromMap({
+        'id': 'met_1',
+        'unit_kind': 'bytes_auto',
+      });
+      expect(metric.unitKind, MetricUnit.bytesAuto);
+    });
+
+    test('falls back to custom when unit_kind is absent', () {
+      final metric = MonitorMetric.fromMap({'id': 'met_1'});
+      expect(metric.unitKind, MetricUnit.custom);
     });
   });
 

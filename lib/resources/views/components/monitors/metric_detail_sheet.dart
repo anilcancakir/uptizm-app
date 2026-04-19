@@ -324,6 +324,7 @@ class _MetricDetailSheetState extends State<MetricDetailSheet> {
                 group: widget.metric.groupName ?? '',
                 path: widget.metric.extractionPath ?? '',
                 unit: widget.metric.unit ?? '',
+                unitKind: widget.metric.unitKind,
               ),
             );
           },

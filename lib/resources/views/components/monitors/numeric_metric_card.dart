@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
 import '../../../../app/enums/metric_type.dart';
+import '../../../../app/helpers/metric_unit_formatter.dart';
 import '../../../../app/models/monitor_metric.dart';
 import 'metric_band_strip.dart';
 
@@ -29,7 +30,15 @@ class NumericMetricCard extends StatelessWidget {
     final critical = metric.criticalBound;
     final sample = metric.latestValue?.numericValue;
     final band = metric.latestValue?.band;
-    final valueText = sample == null ? '--' : _fmt(sample);
+    final formatted = sample == null
+        ? null
+        : MetricUnitFormatter.format(
+            sample,
+            metric.unitKind,
+            customLabel: metric.unit,
+          );
+    final valueText = formatted?.value ?? '--';
+    final suffix = formatted?.suffix ?? metric.unit ?? '';
     final bandStates = band == null ? <String>{} : {band.name};
 
     return WButton(
@@ -67,9 +76,9 @@ class NumericMetricCard extends StatelessWidget {
                   critical:text-down-600 dark:critical:text-down-400
                 ''',
               ),
-              if (metric.unit != null)
+              if (suffix.isNotEmpty)
                 WText(
-                  metric.unit!,
+                  suffix,
                   className: '''
                     text-xs font-semibold
                     text-gray-500 dark:text-gray-400
@@ -79,7 +88,7 @@ class NumericMetricCard extends StatelessWidget {
           ),
           if (warn != null || critical != null)
             WText(
-              _thresholdLabel(warn, critical, metric.unit),
+              _thresholdLabel(warn, critical),
               className: '''
                 text-[10px] font-mono
                 text-gray-500 dark:text-gray-400
@@ -100,14 +109,24 @@ class NumericMetricCard extends StatelessWidget {
     );
   }
 
-  String _thresholdLabel(double? warn, double? critical, String? unit) {
+  String _thresholdLabel(double? warn, double? critical) {
     final parts = <String>[];
-    final suffix = unit == null ? '' : ' $unit';
-    if (warn != null) parts.add('warn ${_fmt(warn)}$suffix');
-    if (critical != null) parts.add('crit ${_fmt(critical)}$suffix');
+    if (warn != null) {
+      final f = MetricUnitFormatter.format(
+        warn,
+        metric.unitKind,
+        customLabel: metric.unit,
+      );
+      parts.add('warn ${f.combined}');
+    }
+    if (critical != null) {
+      final f = MetricUnitFormatter.format(
+        critical,
+        metric.unitKind,
+        customLabel: metric.unit,
+      );
+      parts.add('crit ${f.combined}');
+    }
     return parts.join(' · ');
   }
-
-  String _fmt(double v) =>
-      v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 }

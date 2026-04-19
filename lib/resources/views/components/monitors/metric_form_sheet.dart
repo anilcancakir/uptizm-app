@@ -4,6 +4,7 @@ import 'package:magic/magic.dart';
 import '../../../../app/controllers/metrics/monitor_metric_controller.dart';
 import '../../../../app/enums/metric_source.dart';
 import '../../../../app/enums/metric_type.dart';
+import '../../../../app/enums/metric_unit.dart';
 import '../../../../app/enums/threshold_direction.dart';
 import '../../../../app/models/metric_preview_result.dart';
 import '../../../../app/models/monitor_metric.dart';
@@ -27,6 +28,7 @@ class MetricFormInitial {
     this.fallback = '',
     this.type = MetricType.numeric,
     this.unit = '',
+    this.unitKind = MetricUnit.custom,
     this.direction = ThresholdDirection.highBad,
     this.warn = '',
     this.critical = '',
@@ -40,6 +42,7 @@ class MetricFormInitial {
   final String fallback;
   final MetricType type;
   final String unit;
+  final MetricUnit unitKind;
   final ThresholdDirection direction;
   final String warn;
   final String critical;
@@ -105,6 +108,7 @@ class _MetricFormSheetState extends State<MetricFormSheet> {
 
   late MetricSource _source;
   late MetricType _type;
+  late MetricUnit _unitKind;
   late ThresholdDirection _direction;
   bool _keyManuallyEdited = false;
   bool _groupDropdownOpen = false;
@@ -144,6 +148,7 @@ class _MetricFormSheetState extends State<MetricFormSheet> {
     _critical = TextEditingController(text: i.critical);
     _source = i.source;
     _type = i.type;
+    _unitKind = i.unitKind;
     _direction = i.direction;
     _keyManuallyEdited = i.key.isNotEmpty;
 
@@ -253,6 +258,7 @@ class _MetricFormSheetState extends State<MetricFormSheet> {
       'source': MonitorMetric.sourceToWire(_source),
       'extraction_path': _path.text.trim(),
       'unit': _unit.text.trim().isEmpty ? null : _unit.text.trim(),
+      'unit_kind': _unitKind.wire,
       if (_type == MetricType.numeric) ...{
         'threshold_direction': MonitorMetric.directionToWire(_direction),
         'warn_bound': warn,
@@ -729,7 +735,8 @@ class _MetricFormSheetState extends State<MetricFormSheet> {
               ),
             ],
           ),
-          if (_type == MetricType.numeric)
+          if (_type == MetricType.numeric) _unitKindField(),
+          if (_type == MetricType.numeric && _unitKind == MetricUnit.custom)
             WDiv(
               className: 'flex flex-col',
               children: [
@@ -750,6 +757,66 @@ class _MetricFormSheetState extends State<MetricFormSheet> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _unitKindField() {
+    return WDiv(
+      className: 'flex flex-col',
+      children: [
+        const FormFieldLabel(
+          labelKey: 'monitor.metric_form.fields.unit_kind',
+          hintKey: 'monitor.metric_form.fields.unit_kind_hint',
+        ),
+        WDiv(
+          className: '''
+            bg-white dark:bg-gray-900/40
+            border border-gray-200 dark:border-gray-700
+            rounded-lg
+          ''',
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<MetricUnit>(
+              value: _unitKind,
+              isExpanded: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              items: [
+                for (final kind in MetricUnitKind.values) ...[
+                  DropdownMenuItem<MetricUnit>(
+                    enabled: false,
+                    child: WText(
+                      trans(kind.labelKey),
+                      className: '''
+                        text-xs font-semibold uppercase
+                        text-gray-400 dark:text-gray-500
+                      ''',
+                    ),
+                  ),
+                  ...MetricUnit.values
+                      .where((u) => u.kind == kind)
+                      .map(
+                        (u) => DropdownMenuItem<MetricUnit>(
+                          value: u,
+                          child: WText(
+                            trans(u.labelKey),
+                            className: '''
+                              text-sm pl-3
+                              text-gray-700 dark:text-gray-200
+                            ''',
+                          ),
+                        ),
+                      ),
+                ],
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                _clearError('unit_kind');
+                setState(() => _unitKind = v);
+              },
+            ),
+          ),
+        ),
+        FormFieldError(message: _errorFor('unit_kind')),
+      ],
     );
   }
 

@@ -891,8 +891,38 @@
         "fallback": "Fallback (optional)",
         "fallback_hint": "Value to use if the parser finds nothing.",
         "type": "Value type",
-        "unit": "Unit",
-        "unit_hint": "Displayed next to the value (ms, MB, %, ...)."
+        "unit": "Custom unit label",
+        "unit_hint": "Displayed next to the value (ms, MB, %, ...).",
+        "unit_kind": "Unit format",
+        "unit_kind_hint": "How the raw number is scaled and labeled."
+      },
+      "unit_kind": {
+        "kind": {
+          "size": "Size",
+          "duration": "Duration",
+          "percent": "Percent",
+          "ratio": "Ratio",
+          "count": "Count",
+          "custom": "Custom"
+        },
+        "unit": {
+          "bytesAuto": "Bytes (auto B/KB/MB/GB/TB)",
+          "byte": "Bytes (B)",
+          "kilobyte": "Kilobytes (KB)",
+          "megabyte": "Megabytes (MB)",
+          "gigabyte": "Gigabytes (GB)",
+          "terabyte": "Terabytes (TB)",
+          "durationAuto": "Duration (auto ms/s/min/hr)",
+          "millisecond": "Milliseconds (ms)",
+          "second": "Seconds (s)",
+          "minute": "Minutes (min)",
+          "hour": "Hours (hr)",
+          "percent": "Percent (%, value is already %)",
+          "ratio": "Ratio (0-1, shown as %)",
+          "count": "Count (plain number)",
+          "countShort": "Count short (1.2k, 3M, ...)",
+          "custom": "Custom label"
+        }
       },
       "source": {
         "jsonPath": "JSONPath",
