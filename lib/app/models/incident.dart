@@ -1,5 +1,8 @@
 import '../enums/ai_confidence.dart';
 import '../enums/ai_trigger.dart';
+import '../enums/component_status.dart';
+import '../enums/incident_impact.dart';
+import '../enums/incident_kind.dart';
 import '../enums/incident_severity.dart';
 import '../enums/incident_status.dart';
 import '../enums/signal_source.dart';
@@ -29,6 +32,17 @@ class Incident {
     this.aiAnalysis,
     this.events = const [],
     this.similarIncidents = const [],
+    this.kind = IncidentKind.incident,
+    this.impact = IncidentImpact.none,
+    this.impactOverride = false,
+    this.isPublished = false,
+    this.shortlink,
+    this.scheduledFor,
+    this.scheduledUntil,
+    this.postmortemBody,
+    this.postmortemPublishedAt,
+    this.affectedMonitors = const [],
+    this.updates = const [],
   });
 
   final String id;
@@ -53,6 +67,18 @@ class Incident {
   final List<IncidentEvent> events;
   final List<SimilarIncident> similarIncidents;
 
+  final IncidentKind kind;
+  final IncidentImpact impact;
+  final bool impactOverride;
+  final bool isPublished;
+  final String? shortlink;
+  final DateTime? scheduledFor;
+  final DateTime? scheduledUntil;
+  final String? postmortemBody;
+  final DateTime? postmortemPublishedAt;
+  final List<IncidentAffectedMonitor> affectedMonitors;
+  final List<IncidentUpdate> updates;
+
   /// Wall-clock elapsed time since [startedAt]. Uses [resolvedAt] when set,
   /// otherwise the current time so live incidents report an ongoing duration.
   Duration get duration {
@@ -70,6 +96,14 @@ class Incident {
     List<IncidentEvent>? events,
     List<SimilarIncident>? similarIncidents,
     AiAnalysis? aiAnalysis,
+    IncidentKind? kind,
+    IncidentImpact? impact,
+    bool? impactOverride,
+    bool? isPublished,
+    String? postmortemBody,
+    DateTime? postmortemPublishedAt,
+    List<IncidentAffectedMonitor>? affectedMonitors,
+    List<IncidentUpdate>? updates,
   }) {
     return Incident(
       id: id,
@@ -88,6 +122,18 @@ class Incident {
       aiAnalysis: aiAnalysis ?? this.aiAnalysis,
       events: events ?? this.events,
       similarIncidents: similarIncidents ?? this.similarIncidents,
+      kind: kind ?? this.kind,
+      impact: impact ?? this.impact,
+      impactOverride: impactOverride ?? this.impactOverride,
+      isPublished: isPublished ?? this.isPublished,
+      shortlink: shortlink,
+      scheduledFor: scheduledFor,
+      scheduledUntil: scheduledUntil,
+      postmortemBody: postmortemBody ?? this.postmortemBody,
+      postmortemPublishedAt:
+          postmortemPublishedAt ?? this.postmortemPublishedAt,
+      affectedMonitors: affectedMonitors ?? this.affectedMonitors,
+      updates: updates ?? this.updates,
     );
   }
 
@@ -96,6 +142,8 @@ class Incident {
   /// stale client never crashes on new backend values.
   static Incident fromMap(Map<String, dynamic> map) {
     final rawEvents = map['events'];
+    final rawAffected = map['affected_monitors'];
+    final rawUpdates = map['updates'];
     return Incident(
       id: map['id']?.toString() ?? '',
       monitorId: map['monitor_id']?.toString() ?? '',
@@ -116,6 +164,27 @@ class Incident {
                 .map(IncidentEvent.fromMap)
                 .toList()
           : const [],
+      kind: IncidentKind.fromWire(map['kind']),
+      impact: IncidentImpact.fromWire(map['impact']),
+      impactOverride: map['impact_override'] == true,
+      isPublished: map['is_published'] == true,
+      shortlink: map['shortlink'] as String?,
+      scheduledFor: _date(map['scheduled_for']),
+      scheduledUntil: _date(map['scheduled_until']),
+      postmortemBody: map['postmortem_body'] as String?,
+      postmortemPublishedAt: _date(map['postmortem_published_at']),
+      affectedMonitors: rawAffected is List
+          ? rawAffected
+                .whereType<Map<String, dynamic>>()
+                .map(IncidentAffectedMonitor.fromMap)
+                .toList()
+          : const [],
+      updates: rawUpdates is List
+          ? rawUpdates
+                .whereType<Map<String, dynamic>>()
+                .map(IncidentUpdate.fromMap)
+                .toList()
+          : const [],
     );
   }
 
@@ -127,13 +196,7 @@ class Incident {
     );
   }
 
-  static IncidentStatus _status(Object? raw) {
-    if (raw is! String) return IncidentStatus.detected;
-    return IncidentStatus.values.firstWhere(
-      (v) => v.name == raw,
-      orElse: () => IncidentStatus.detected,
-    );
-  }
+  static IncidentStatus _status(Object? raw) => IncidentStatus.fromWire(raw);
 
   static SignalSource _source(Object? raw) {
     if (raw is! String) return SignalSource.manual;
@@ -268,6 +331,77 @@ class SimilarIncident {
   }
 
   static DateTime? _date(Object? raw) {
+    if (raw is DateTime) return raw;
+    if (raw is String) return DateTime.tryParse(raw);
+    return null;
+  }
+}
+
+/// N:M affected component on an incident. Carries the pivot snapshot so
+/// operators see both the starting state and the live state.
+class IncidentAffectedMonitor {
+  const IncidentAffectedMonitor({
+    required this.monitorId,
+    required this.name,
+    required this.statusAtStart,
+    required this.statusCurrent,
+  });
+
+  final String monitorId;
+  final String name;
+  final ComponentStatus statusAtStart;
+  final ComponentStatus statusCurrent;
+
+  static IncidentAffectedMonitor fromMap(Map<String, dynamic> map) {
+    return IncidentAffectedMonitor(
+      monitorId: map['monitor_id']?.toString() ?? map['id']?.toString() ?? '',
+      name: (map['name'] as String?) ?? '',
+      statusAtStart: ComponentStatus.fromWire(map['component_status_at_start']),
+      statusCurrent: ComponentStatus.fromWire(map['component_status_current']),
+    );
+  }
+}
+
+/// One entry on the public incident update stream. Append-only; every
+/// post is an [IncidentUpdate] row.
+class IncidentUpdate {
+  const IncidentUpdate({
+    required this.id,
+    required this.incidentId,
+    required this.status,
+    required this.body,
+    required this.displayAt,
+    this.deliverNotifications = true,
+    this.authorLabel,
+    this.affectedComponentsSnapshot = const [],
+  });
+
+  final String id;
+  final String incidentId;
+  final IncidentStatus status;
+  final String body;
+  final DateTime displayAt;
+  final bool deliverNotifications;
+  final String? authorLabel;
+  final List<Map<String, dynamic>> affectedComponentsSnapshot;
+
+  static IncidentUpdate fromMap(Map<String, dynamic> map) {
+    final rawSnapshot = map['affected_components_snapshot'];
+    return IncidentUpdate(
+      id: map['id']?.toString() ?? '',
+      incidentId: map['incident_id']?.toString() ?? '',
+      status: IncidentStatus.fromWire(map['status']),
+      body: (map['body'] as String?) ?? '',
+      displayAt: _parseDate(map['display_at']) ?? DateTime.now(),
+      deliverNotifications: map['deliver_notifications'] == true,
+      authorLabel: map['author_label'] as String?,
+      affectedComponentsSnapshot: rawSnapshot is List
+          ? rawSnapshot.whereType<Map<String, dynamic>>().toList()
+          : const [],
+    );
+  }
+
+  static DateTime? _parseDate(Object? raw) {
     if (raw is DateTime) return raw;
     if (raw is String) return DateTime.tryParse(raw);
     return null;
