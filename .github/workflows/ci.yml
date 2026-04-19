@@ -178,27 +178,10 @@ jobs:
 
       - name: Deploy to server
         run: |
-          # Retry only on SSH connection failures (exit 255). Any other
-          # exit code is a rsync/remote failure — surface it immediately.
-          for attempt in 1 2 3 4 5; do
-            echo "Attempt $attempt/5..."
-            rsync -avz --delete \
-              -e "ssh -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -p ${{ secrets.SSH_PORT }}" \
-              build/web/ \
-              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/htdocs/dev-app.uptizm.com/
-            status=$?
-            if [ $status -eq 0 ]; then
-              exit 0
-            fi
-            if [ $status -ne 255 ]; then
-              echo "rsync failed (exit $status). Not retrying."
-              exit $status
-            fi
-            echo "SSH connection failed (exit 255), retrying in $((attempt * 20))s..."
-            sleep $((attempt * 20))
-          done
-          echo "SSH unreachable after 5 attempts"
-          exit 1
+          rsync -avz --delete \
+            -e "ssh -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -p ${{ secrets.SSH_PORT }}" \
+            build/web/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/htdocs/dev-app.uptizm.com/
 
       - name: Notify deployment success
         if: success() && vars.DEPLOYMENT_WEBHOOK_URL != ''
