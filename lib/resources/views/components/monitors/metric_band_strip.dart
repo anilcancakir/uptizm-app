@@ -11,7 +11,11 @@ import '../../../../app/models/monitor_metric_value.dart';
 /// optional % delta chip. Colors each tick by its band (ok / warn /
 /// critical / unknown). The delta compares latest vs first sample in
 /// the fetched window; good/bad polarity follows [MonitorMetric.thresholdDirection].
-class MetricBandStrip extends StatefulWidget {
+///
+/// Samples come from the shared [MonitorMetricController.seriesByKey] map
+/// populated by [MonitorMetricController.loadSeries] — one batch request
+/// per tab open, not one XHR per card.
+class MetricBandStrip extends StatelessWidget {
   const MetricBandStrip({
     super.key,
     required this.monitorId,
@@ -24,41 +28,23 @@ class MetricBandStrip extends StatefulWidget {
   final int limit;
 
   @override
-  State<MetricBandStrip> createState() => _MetricBandStripState();
-}
-
-class _MetricBandStripState extends State<MetricBandStrip> {
-  List<MonitorMetricValue>? _samples;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void didUpdateWidget(covariant MetricBandStrip oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.metric.id != widget.metric.id ||
-        oldWidget.monitorId != widget.monitorId) {
-      _load();
-    }
-  }
-
-  Future<void> _load() async {
-    if (widget.metric.id.isEmpty) return;
-    final samples = await MonitorMetricController.instance.series(
-      widget.monitorId,
-      widget.metric.id,
-    );
-    if (!mounted) return;
-    setState(() => _samples = samples);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final samples = _samples;
-    if (samples == null) return WDiv(className: 'h-2');
+    final controller = MonitorMetricController.instance;
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (_, _) => _render(controller.seriesByKey[metric.key]),
+    );
+  }
+
+  Widget _render(List<MonitorMetricValue>? samples) {
+    if (samples == null) {
+      return WDiv(
+        className: '''
+          h-2 rounded-sm
+          bg-gray-100 dark:bg-gray-800
+        ''',
+      );
+    }
     if (samples.isEmpty) {
       return WDiv(
         className: '''
@@ -67,10 +53,10 @@ class _MetricBandStripState extends State<MetricBandStrip> {
         ''',
       );
     }
-    // series() returns newest-first; reverse for left-to-right chronology.
-    final ordered = samples.reversed.toList();
-    final trimmed = ordered.length > widget.limit
-        ? ordered.sublist(ordered.length - widget.limit)
+    // batchSeries returns oldest-first already; keep chronological order.
+    final ordered = samples;
+    final trimmed = ordered.length > limit
+        ? ordered.sublist(ordered.length - limit)
         : ordered;
     final delta = _computeDelta(trimmed);
 
@@ -102,7 +88,7 @@ class _MetricBandStripState extends State<MetricBandStrip> {
   }
 
   _Delta? _computeDelta(List<MonitorMetricValue> ordered) {
-    if (widget.metric.type != MetricType.numeric) return null;
+    if (metric.type != MetricType.numeric) return null;
     if (ordered.length < 2) return null;
     final firstNumeric = ordered
         .firstWhere(
@@ -120,7 +106,7 @@ class _MetricBandStripState extends State<MetricBandStrip> {
     if (firstNumeric == 0) return null;
     final pct = ((lastNumeric - firstNumeric) / firstNumeric.abs()) * 100;
     if (pct.abs() < 0.1) return const _Delta(percent: 0, isGood: true);
-    final direction = widget.metric.thresholdDirection;
+    final direction = metric.thresholdDirection;
     final increased = pct > 0;
     final isGood = switch (direction) {
       ThresholdDirection.highBad => !increased,

@@ -19,11 +19,16 @@ class MonitorMetricController extends MagicController
   String? _currentMonitorId;
   bool _isSubmitting = false;
   bool _isDeleting = false;
+  Map<String, List<MonitorMetricValue>> _seriesByKey = const {};
 
   String? get currentMonitorId => _currentMonitorId;
   List<MonitorMetric> get metrics => rxState ?? const [];
   bool get isSubmitting => _isSubmitting;
   bool get isDeleting => _isDeleting;
+
+  /// Most recent batch-loaded sparkline samples keyed by `metric_key`.
+  /// Band strips read from here instead of firing one request per card.
+  Map<String, List<MonitorMetricValue>> get seriesByKey => _seriesByKey;
 
   /// Groups the current metric list by `groupName` for the grouped rendering
   /// on the monitor Metrics tab. Ungrouped metrics land under the empty key.
@@ -38,6 +43,9 @@ class MonitorMetricController extends MagicController
 
   /// Loads the metric list for a monitor into `rxState`.
   Future<void> load(String monitorId) async {
+    if (_currentMonitorId != monitorId) {
+      _seriesByKey = const {};
+    }
     _currentMonitorId = monitorId;
     clearErrors();
     await fetchList('/monitors/$monitorId/metrics', MonitorMetric.fromMap);
@@ -240,6 +248,33 @@ class MonitorMetricController extends MagicController
     final data = response.data;
     if (data is! Map<String, dynamic>) return null;
     return MetricPreviewResult.fromMap(data);
+  }
+
+  /// Batch-fetches recent time-series samples for every metric owned by the
+  /// monitor in a single request, so the Metrics tab can render N sparklines
+  /// without firing N XHRs. Failures leave the last-good map intact.
+  Future<void> loadSeries(
+    String monitorId, {
+    String range = '24h',
+    int limit = 60,
+  }) async {
+    final response = await Http.get(
+      '/monitors/$monitorId/metrics/series',
+      query: {'range': range, 'limit': limit},
+    );
+    if (!response.successful) return;
+    final raw = response.data?['data'];
+    if (raw is! Map<String, dynamic>) return;
+    final next = <String, List<MonitorMetricValue>>{};
+    raw.forEach((key, value) {
+      if (value is! List) return;
+      next[key] = value
+          .whereType<Map<String, dynamic>>()
+          .map(MonitorMetricValue.fromMap)
+          .toList();
+    });
+    _seriesByKey = next;
+    refreshUI();
   }
 
   /// Loads the time-series values for a single metric, scoped to the range.

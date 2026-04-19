@@ -153,6 +153,10 @@ class _MonitorShowViewState
     final metrics = MonitorMetricController.instance;
     if (metrics.currentMonitorId == id) {
       await metrics.reload(id);
+      // Refresh the batch-loaded sparkline samples too, so band strips in
+      // the Metrics tab stay in sync with incoming probe data during live
+      // mode without firing one XHR per metric card.
+      await metrics.loadSeries(id);
     }
     final checks = MonitorCheckController.instance;
     if (checks.currentMonitorId == id) {

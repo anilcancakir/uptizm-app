@@ -396,6 +396,74 @@ void main() {
       expect(values.first.numericValue, 123.4);
     });
 
+    test(
+      'loadSeries batch-populates seriesByKey from /metrics/series',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': {
+              'latency_ms': [
+                {
+                  'recorded_at': '2026-04-17T10:00:00Z',
+                  'numeric_value': 120.0,
+                  'band': 'ok',
+                },
+                {
+                  'recorded_at': '2026-04-17T10:01:00Z',
+                  'numeric_value': 135.0,
+                  'band': 'ok',
+                },
+              ],
+              'orders': [
+                {
+                  'recorded_at': '2026-04-17T10:00:00Z',
+                  'numeric_value': 42.0,
+                  'band': 'warn',
+                },
+              ],
+            },
+            'meta': {'range': '24h', 'limit': 60},
+          },
+          statusCode: 200,
+        );
+
+        await controller.loadSeries('mon_1', range: '24h', limit: 60);
+
+        expect(driver.lastMethod, 'GET');
+        expect(driver.lastUrl, '/monitors/mon_1/metrics/series');
+        expect(driver.lastQuery, {'range': '24h', 'limit': 60});
+        expect(
+          controller.seriesByKey.keys,
+          containsAll(['latency_ms', 'orders']),
+        );
+        expect(controller.seriesByKey['latency_ms']!.length, 2);
+        expect(controller.seriesByKey['latency_ms']!.first.numericValue, 120.0);
+      },
+    );
+
+    test('loadSeries leaves previous map intact on non-2xx', () async {
+      driver.enqueue(
+        MagicResponse(
+          data: {
+            'data': {
+              'latency_ms': [
+                {'recorded_at': '2026-04-17T10:00:00Z', 'numeric_value': 120.0},
+              ],
+            },
+          },
+          statusCode: 200,
+        ),
+      );
+      driver.enqueue(MagicResponse(data: {'message': 'boom'}, statusCode: 500));
+
+      await controller.loadSeries('mon_1');
+      expect(controller.seriesByKey.length, 1);
+
+      await controller.loadSeries('mon_1');
+      expect(controller.seriesByKey.length, 1);
+      expect(controller.seriesByKey['latency_ms']!.first.numericValue, 120.0);
+    });
+
     test('reorder PUTs sequential display_order and reloads list', () async {
       driver.enqueue(MagicResponse(data: {}, statusCode: 204));
       driver.enqueue(

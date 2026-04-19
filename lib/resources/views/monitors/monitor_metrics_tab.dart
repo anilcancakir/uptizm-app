@@ -34,6 +34,9 @@ class _MonitorMetricsTabState
     if (controller.currentMonitorId != widget.monitorId) {
       controller.load(widget.monitorId);
     }
+    // Batch-load the sparkline samples for every metric in one request so
+    // the N band strips don't each fire their own XHR.
+    controller.loadSeries(widget.monitorId);
   }
 
   @override
