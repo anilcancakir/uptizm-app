@@ -402,19 +402,36 @@ class _MonitorAiModeCardState extends State<MonitorAiModeCard> {
           })
         : trans('monitor.ai.status.last_run_clean');
 
+    final when = run.completedAt ?? run.startedAt;
+    final relative = when == null
+        ? null
+        : Carbon.fromDateTime(when).diffForHumans();
+
     return WDiv(
-      className: '''
-        flex flex-col gap-0.5
-        -mx-3 px-3 pt-2
-        border-t border-gray-200 dark:border-gray-700
-      ''',
+      className: 'w-full flex flex-col gap-0.5',
       children: [
-        WText(
-          trans('monitor.ai.status.last_run_title'),
-          className: '''
-            text-[10px] font-semibold uppercase tracking-wide
-            text-gray-500 dark:text-gray-400
-          ''',
+        WDiv(
+          className: 'flex flex-row items-baseline gap-2',
+          children: [
+            WText(
+              trans('monitor.ai.status.last_run_title'),
+              className: '''
+                text-[10px] font-semibold uppercase tracking-wide
+                text-gray-500 dark:text-gray-400
+              ''',
+            ),
+            ?(relative == null
+                ? null
+                : WText(
+                    trans('monitor.ai.status.last_run_when', {
+                      'relative': relative,
+                    }),
+                    className: '''
+                      text-[10px]
+                      text-gray-500 dark:text-gray-400
+                    ''',
+                  )),
+          ],
         ),
         WText(
           meta,
