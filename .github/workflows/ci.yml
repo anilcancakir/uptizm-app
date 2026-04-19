@@ -1,0 +1,214 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - production
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.41.6'
+  SENTRY_ORG: kodizm-sentry
+  SENTRY_PROJECT: uptizm-app
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create .env for analyzer
+        run: cp .env.example .env
+
+      - name: Run analyzer
+        run: flutter analyze --no-fatal-infos
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create .env for asset bundle
+        run: cp .env.example .env
+
+      - name: Run tests
+        run: flutter test
+
+  # --------------------------------------------------------------------------
+  # Deploy (develop only, after analyze + test pass)
+  # --------------------------------------------------------------------------
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [analyze, test]
+    if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+    environment: ${{ inputs.environment || 'development' }}
+    concurrency:
+      group: deploy-app-${{ inputs.environment || 'development' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Write .env
+        run: envsubst < .env.ci.tmpl > .env
+        env:
+          APP_NAME: ${{ vars.APP_NAME || 'Uptizm' }}
+          APP_ENV: ${{ vars.APP_ENV || 'development' }}
+          APP_DEBUG: ${{ vars.APP_DEBUG || 'false' }}
+          APP_KEY: ${{ secrets.APP_KEY }}
+          API_URL: ${{ vars.API_URL }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_SAMPLE_RATE: ${{ vars.SENTRY_SAMPLE_RATE || '1.0' }}
+          SENTRY_TRACES_SAMPLE_RATE: ${{ vars.SENTRY_TRACES_SAMPLE_RATE || '1.0' }}
+          SENTRY_PROFILES_SAMPLE_RATE: ${{ vars.SENTRY_PROFILES_SAMPLE_RATE || '1.0' }}
+          SENTRY_REPLAY_SESSION_RATE: ${{ vars.SENTRY_REPLAY_SESSION_RATE || '1.0' }}
+          SENTRY_REPLAY_ERROR_RATE: ${{ vars.SENTRY_REPLAY_ERROR_RATE || '1.0' }}
+
+      - name: Inject build metadata
+        run: |
+          echo "APP_BUILD_HASH=$(git rev-parse --short=7 HEAD)" >> .env
+          echo "APP_BUILD_DATE=$(git log -1 --format=%cI HEAD)" >> .env
+
+      - name: Build web
+        run: |
+          SENTRY_RELEASE="app@${{ github.sha }}"
+          ENV="${{ inputs.environment || 'development' }}"
+
+          BUILD_ARGS=(
+            --release
+            --base-href=/
+            --source-maps
+            --no-web-resources-cdn
+            "--dart-define=SENTRY_RELEASE=${SENTRY_RELEASE}"
+            "--dart-define=SENTRY_DIST=1"
+          )
+
+          # Development: JS-only — Sentry source maps work with dart2js.
+          # Wasm binary lacks DWARF→Sentry mapping, so stack traces are opaque.
+          # Production: enable --wasm once Sentry adds Wasm source-map support.
+          if [ "$ENV" = "production" ]; then
+            BUILD_ARGS+=(--wasm)
+          fi
+
+          flutter build web "${BUILD_ARGS[@]}"
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
+      - name: Cache-bust static assets
+        run: |
+          BUILD_TS=$(date +%s)
+          sed -i "s|flutter_bootstrap.js|flutter_bootstrap.js?v=${BUILD_TS}|g" build/web/index.html
+
+      - name: Upload source maps to Sentry
+        run: |
+          RELEASE="app@${{ github.sha }}"
+          npx @sentry/cli@latest sourcemaps inject build/web/
+          npx @sentry/cli@latest sourcemaps upload \
+            --release="$RELEASE" \
+            --dist=1 \
+            --url-prefix='~/' \
+            build/web/
+          npx @sentry/cli@latest releases set-commits "$RELEASE" --local
+          npx @sentry/cli@latest releases finalize "$RELEASE"
+          npx @sentry/cli@latest releases deploys "$RELEASE" new \
+            -e ${{ inputs.environment || 'development' }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          # Retry only on SSH connection failures (exit 255). Any other
+          # exit code is a rsync/remote failure — surface it immediately.
+          for attempt in 1 2 3 4 5; do
+            echo "Attempt $attempt/5..."
+            rsync -avz --delete \
+              -e "ssh -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -p ${{ secrets.SSH_PORT }}" \
+              build/web/ \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/htdocs/dev-app.uptizm.com/
+            status=$?
+            if [ $status -eq 0 ]; then
+              exit 0
+            fi
+            if [ $status -ne 255 ]; then
+              echo "rsync failed (exit $status). Not retrying."
+              exit $status
+            fi
+            echo "SSH connection failed (exit 255), retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "SSH unreachable after 5 attempts"
+          exit 1
+
+      - name: Notify deployment success
+        if: success() && vars.DEPLOYMENT_WEBHOOK_URL != ''
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.DEPLOYMENT_WEBHOOK_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"app\":\"app\",\"status\":\"success\",\"commit_sha\":\"${{ github.sha }}\",\"ref\":\"${{ github.ref_name }}\",\"actor\":\"${{ github.actor }}\"}" \
+            ${{ vars.DEPLOYMENT_WEBHOOK_URL }} || true
+
+      - name: Notify deployment failure
+        if: failure() && vars.DEPLOYMENT_WEBHOOK_URL != ''
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.DEPLOYMENT_WEBHOOK_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"app\":\"app\",\"status\":\"failure\",\"commit_sha\":\"${{ github.sha }}\",\"ref\":\"${{ github.ref_name }}\",\"actor\":\"${{ github.actor }}\"}" \
+            ${{ vars.DEPLOYMENT_WEBHOOK_URL }} || true

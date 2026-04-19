@@ -46,6 +46,8 @@ app.*.map.json
 
 # Environment
 .env
+.env.dev
+.env.prod
 
 # Claude Code personal settings (shared settings.json is committed)
 .claude/settings.local.json

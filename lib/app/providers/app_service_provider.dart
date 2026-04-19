@@ -1,6 +1,9 @@
-import 'package:magic/magic.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
+import 'package:sentry_dio/sentry_dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../controllers/metrics/metrics_library_controller.dart';
 import '../controllers/metrics/monitor_metric_controller.dart';
 import '../models/user.dart';
@@ -157,9 +160,40 @@ class AppServiceProvider extends ServiceProvider {
 
     // Magic Starter: Logout callback.
     MagicStarter.useLogout(() async {
+      await Sentry.configureScope((scope) => scope.clear());
       await Auth.logout();
       MagicRoute.to(MagicStarterConfig.loginRoute());
     });
+
+    // Sentry: Set user context after auth session restoration.
+    if (Auth.check()) {
+      final user = Auth.user<User>();
+      await Sentry.configureScope((scope) {
+        scope.setUser(
+          SentryUser(
+            id: Auth.id(),
+            email: user?.email,
+            username: user?.name,
+            data: {'team_id': user?.currentTeam?.id ?? ''},
+          ),
+        );
+        scope.setTag('team_id', user?.currentTeam?.id ?? '');
+        scope.setTag('platform', kIsWeb ? 'web' : 'mobile');
+        scope.setContexts('team', {
+          'id': user?.currentTeam?.id ?? '',
+          'name': user?.currentTeam?.name ?? '',
+        });
+      });
+    }
+
+    // Sentry Dio integration — automatic HTTP performance spans, detailed
+    // breadcrumbs (method, URL, status code, duration), and error capture.
+    final driver = Magic.make<NetworkDriver>('network');
+    if (driver is DioNetworkDriver) {
+      driver.configureDriver((dio) {
+        dio.addSentry(captureFailedRequests: true);
+      });
+    }
 
     // Magic Starter: Supported locale options for profile settings.
     MagicStarter.useLocaleOptions({'en': 'English'});
