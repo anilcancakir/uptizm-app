@@ -718,12 +718,39 @@ class _MonitorShowViewState
   }
 
   Widget _uptimeStrip(List<ResponseTimeSample> samples) {
+    // Downsample into ~60 equal segments so each bar gets enough pixel
+    // width to render; rendering N=2000 flex-1 children collapses every
+    // segment to sub-pixel width and the strip disappears.
+    const segmentCount = 60;
+    final buckets = <MonitorStatus>[];
+    if (samples.isEmpty) return const SizedBox.shrink();
+    if (samples.length <= segmentCount) {
+      for (final s in samples) {
+        buckets.add(s.status);
+      }
+    } else {
+      final step = samples.length / segmentCount;
+      for (var i = 0; i < segmentCount; i++) {
+        final start = (i * step).floor();
+        final end = ((i + 1) * step).floor().clamp(start + 1, samples.length);
+        var worst = MonitorStatus.up;
+        for (var j = start; j < end; j++) {
+          final s = samples[j].status;
+          if (s == MonitorStatus.down) {
+            worst = MonitorStatus.down;
+            break;
+          }
+          if (s == MonitorStatus.degraded) worst = MonitorStatus.degraded;
+        }
+        buckets.add(worst);
+      }
+    }
     return WDiv(
       className: 'flex flex-row gap-0.5 h-8 items-stretch',
       children: [
-        for (final s in samples)
+        for (final status in buckets)
           WDiv(
-            states: {s.status.name},
+            states: {status.name},
             className: '''
               flex-1 rounded-sm
               bg-gray-300 dark:bg-gray-700

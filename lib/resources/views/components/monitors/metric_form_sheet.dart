@@ -761,6 +761,13 @@ class _MetricFormSheetState extends State<MetricFormSheet> {
   }
 
   Widget _unitKindField() {
+    final options = <SelectOption<MetricUnit>>[
+      for (final u in MetricUnit.values)
+        SelectOption<MetricUnit>(
+          value: u,
+          label: '${trans(u.kind.labelKey)} · ${trans(u.labelKey)}',
+        ),
+    ];
     return WDiv(
       className: 'flex flex-col',
       children: [
@@ -768,52 +775,24 @@ class _MetricFormSheetState extends State<MetricFormSheet> {
           labelKey: 'monitor.metric_form.fields.unit_kind',
           hintKey: 'monitor.metric_form.fields.unit_kind_hint',
         ),
-        WDiv(
+        WSelect<MetricUnit>(
+          value: _unitKind,
+          options: options,
+          onChange: (v) {
+            _clearError('unit_kind');
+            setState(() => _unitKind = v);
+          },
           className: '''
             bg-white dark:bg-gray-900/40
             border border-gray-200 dark:border-gray-700
-            rounded-lg
+            rounded-lg px-3 py-2
           ''',
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<MetricUnit>(
-              value: _unitKind,
-              isExpanded: true,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              items: [
-                for (final kind in MetricUnitKind.values) ...[
-                  DropdownMenuItem<MetricUnit>(
-                    enabled: false,
-                    child: WText(
-                      trans(kind.labelKey),
-                      className: '''
-                        text-xs font-semibold uppercase
-                        text-gray-400 dark:text-gray-500
-                      ''',
-                    ),
-                  ),
-                  ...MetricUnit.values
-                      .where((u) => u.kind == kind)
-                      .map(
-                        (u) => DropdownMenuItem<MetricUnit>(
-                          value: u,
-                          child: WText(
-                            trans(u.labelKey),
-                            className: '''
-                              text-sm pl-3
-                              text-gray-700 dark:text-gray-200
-                            ''',
-                          ),
-                        ),
-                      ),
-                ],
-              ],
-              onChanged: (v) {
-                if (v == null) return;
-                _clearError('unit_kind');
-                setState(() => _unitKind = v);
-              },
-            ),
-          ),
+          menuClassName: '''
+            bg-white dark:bg-gray-900
+            border border-gray-200 dark:border-gray-700
+            rounded-lg shadow-lg
+          ''',
+          maxMenuHeight: 280,
         ),
         FormFieldError(message: _errorFor('unit_kind')),
       ],
