@@ -14,6 +14,7 @@ import '../resources/views/incidents/maintenance_create_view.dart';
 import '../resources/views/incidents/maintenance_index_view.dart';
 import '../resources/views/incidents/maintenance_show_view.dart';
 import '../resources/views/settings/settings_appearance_view.dart';
+import '../resources/views/status_pages/status_page_subscribers_view.dart';
 
 /// Application route definitions.
 ///
@@ -33,6 +34,10 @@ void registerAppRoutes() {
       // CRUD resources.
       MagicRoute.resource('monitors', MonitorController.instance);
       MagicRoute.resource('status-pages', StatusPagesController.instance);
+      MagicRoute.page(
+        '/status-pages/:id/subscribers',
+        (String id) => StatusPageSubscribersView(statusPageId: id),
+      );
 
       // Incidents + scheduled maintenance. Both feeds share the backend
       // `incidents` table, but the admin surface keeps them on separate

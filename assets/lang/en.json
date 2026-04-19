@@ -1378,7 +1378,12 @@
     "unsubscribe": "Unsubscribe"
   },
   "subscriber": {
+    "list": {
+      "title": "Subscribers",
+      "subtitle": "People who receive email notifications for this status page."
+    },
     "errors": {
+      "load": "Could not load subscribers.",
       "remove": "Could not remove the subscriber."
     },
     "state": {
@@ -1386,6 +1391,18 @@
       "active": "Active",
       "unsubscribed": "Unsubscribed",
       "quarantined": "Quarantined"
+    },
+    "confirmed_at": "Confirmed",
+    "scope": {
+      "all": "All components",
+      "filtered": "Filtered (:count)"
+    },
+    "actions": {
+      "remove": "Remove",
+      "confirm_remove": "Remove this subscriber? They won't receive further notifications."
+    },
+    "toast": {
+      "removed": "Subscriber removed"
     },
     "empty": "No subscribers yet."
   },
