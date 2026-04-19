@@ -291,6 +291,7 @@ class CheckDetailSheet extends StatelessWidget {
           className: 'flex-1 min-w-0',
           child: WText(
             v,
+            selectable: true,
             className: '''
               text-xs font-mono
               text-gray-800 dark:text-gray-100
@@ -316,6 +317,7 @@ class CheckDetailSheet extends StatelessWidget {
             children: [
               WText(
                 '${e.key}:',
+                selectable: true,
                 className: '''
                   text-xs font-mono font-semibold
                   text-gray-600 dark:text-gray-300
@@ -325,6 +327,7 @@ class CheckDetailSheet extends StatelessWidget {
                 className: 'flex-1 min-w-0',
                 child: WText(
                   e.value,
+                  selectable: true,
                   className: '''
                     text-xs font-mono
                     text-gray-800 dark:text-gray-100
@@ -344,7 +347,11 @@ class CheckDetailSheet extends StatelessWidget {
         bg-gray-900 dark:bg-black
         flex flex-col
       ''',
-      child: WText(body, className: 'text-xs font-mono text-gray-100'),
+      child: WText(
+        body,
+        selectable: true,
+        className: 'text-xs font-mono text-gray-100',
+      ),
     );
   }
 
