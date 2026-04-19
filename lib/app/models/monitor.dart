@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:magic/magic.dart';
 
+import '../enums/component_status.dart';
 import '../enums/monitor_status.dart';
 import '../enums/monitor_type.dart';
 import 'monitor_ai_status.dart';
@@ -47,6 +48,11 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
     'last_status',
     'last_checked_at',
     'last_response_ms',
+    'component_status',
+    'parent_id',
+    'show_on_status_page',
+    'only_show_if_degraded',
+    'is_group',
     'created_at',
     'updated_at',
   ];
@@ -82,6 +88,26 @@ class Monitor extends Model with HasTimestamps, InteractsWithPersistence {
   }
 
   int? get lastResponseMs => getAttribute('last_response_ms') as int?;
+
+  /// Public-facing component status rolled up from active incidents and
+  /// probe health. Falls back to [ComponentStatus.operational] when the
+  /// API omits the field (legacy payload).
+  ComponentStatus get componentStatus =>
+      ComponentStatus.fromWire(getAttribute('component_status'));
+
+  String? get parentId => getAttribute('parent_id')?.toString();
+
+  /// When false, the monitor is privately tracked and never rendered on
+  /// the public status page.
+  bool get showOnStatusPage => getAttribute('show_on_status_page') != false;
+
+  /// Hides the monitor from the public page while operational; reveals
+  /// only when [componentStatus] degrades.
+  bool get onlyShowIfDegraded => getAttribute('only_show_if_degraded') == true;
+
+  /// Group header rows aggregate their children's worst-case status and
+  /// skip their own probe execution.
+  bool get isGroup => getAttribute('is_group') == true;
 
   /// Parsed AI status block embedded by `MonitorResource` under the `ai`
   /// key. Null only when the backend omits the field (older payload or a
