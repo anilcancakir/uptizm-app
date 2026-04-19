@@ -10,7 +10,9 @@ import '../app/controllers/settings/settings_controller.dart';
 import '../app/controllers/status_pages/status_pages_controller.dart';
 import '../resources/views/incidents/incident_show_view.dart';
 import '../resources/views/incidents/incidents_index_view.dart';
+import '../resources/views/incidents/maintenance_create_view.dart';
 import '../resources/views/incidents/maintenance_index_view.dart';
+import '../resources/views/incidents/maintenance_show_view.dart';
 import '../resources/views/settings/settings_appearance_view.dart';
 
 /// Application route definitions.
@@ -41,6 +43,14 @@ void registerAppRoutes() {
         (String id) => IncidentShowView(id: id),
       );
       MagicRoute.page('/maintenance', () => const MaintenanceIndexView());
+      MagicRoute.page(
+        '/maintenance/create',
+        () => const MaintenanceCreateView(),
+      );
+      MagicRoute.page(
+        '/maintenance/:id',
+        (String id) => MaintenanceShowView(id: id),
+      );
 
       // Settings hub + sub-screens. The hub sits at `/settings` directly;
       // child URLs share the `/settings` prefix via the nested group.

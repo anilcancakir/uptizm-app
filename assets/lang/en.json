@@ -1324,12 +1324,26 @@
     },
     "schedule": {
       "title": "Schedule maintenance",
+      "subtitle": "Plan the window ahead so the status page tells the story for you.",
+      "title_field": "Title",
+      "title_placeholder": "Short headline visible to subscribers",
       "scheduled_for": "Starts at",
       "scheduled_until": "Ends at",
+      "pick_date": "Pick date",
+      "pick_time": "Pick time",
+      "body_field": "Details",
+      "body_placeholder": "What will change? Markdown is supported.",
+      "monitors_field": "Affected components",
+      "monitors_empty": "Create a monitor first.",
       "auto_transition": "Auto-transition component status",
       "notify_start": "Notify subscribers at start",
       "notify_end": "Notify subscribers at end",
       "submit": "Schedule"
+    },
+    "show": {
+      "title": "Maintenance window",
+      "details_heading": "Details",
+      "no_details": "No details posted."
     },
     "tab": {
       "upcoming": "Upcoming",

@@ -51,6 +51,18 @@ class _MaintenanceIndexViewState
             subtitle: trans('maintenance.list.subtitle'),
             inlineActions: true,
             actions: [
+              WButton(
+                onTap: () => MagicRoute.to('/maintenance/create'),
+                className: '''
+                  px-3 py-2 rounded-lg
+                  bg-primary-600 dark:bg-primary-500
+                  hover:bg-primary-700 dark:hover:bg-primary-400
+                ''',
+                child: WText(
+                  trans('maintenance.schedule.submit'),
+                  className: 'text-xs font-semibold text-white',
+                ),
+              ),
               RefreshIconButton(
                 onTap: controller.load,
                 isRefreshing: controller.rxStatus.isLoading,
@@ -142,38 +154,43 @@ class _MaintenanceIndexViewState
   }
 
   Widget _row(Incident window) {
-    return WDiv(
+    return WButton(
+      onTap: () => MagicRoute.to('/maintenance/${window.id}'),
       className: '''
         px-4 py-3 rounded-lg border
         bg-white dark:bg-gray-900
         border-gray-200 dark:border-gray-700
-        flex flex-col gap-2
+        hover:border-primary-300 dark:hover:border-primary-600
+        flex flex-col gap-2 items-stretch
       ''',
-      children: [
-        WDiv(
-          className: 'flex flex-row items-center justify-between gap-2',
-          children: [
-            IncidentStatusPill(status: window.status),
-            if (window.scheduledFor != null)
-              WText(
-                Carbon.parse(
-                  window.scheduledFor!.toIso8601String(),
-                ).diffForHumans(),
-                className: '''
+      child: WDiv(
+        className: 'flex flex-col gap-2 w-full',
+        children: [
+          WDiv(
+            className: 'flex flex-row items-center justify-between gap-2',
+            children: [
+              IncidentStatusPill(status: window.status),
+              if (window.scheduledFor != null)
+                WText(
+                  Carbon.parse(
+                    window.scheduledFor!.toIso8601String(),
+                  ).diffForHumans(),
+                  className: '''
                   text-xs
                   text-muted dark:text-muted-dark
                 ''',
-              ),
-          ],
-        ),
-        WText(
-          window.title,
-          className: '''
+                ),
+            ],
+          ),
+          WText(
+            window.title,
+            className: '''
             text-sm font-semibold
             text-gray-900 dark:text-white
           ''',
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
