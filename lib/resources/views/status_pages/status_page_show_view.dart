@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
@@ -104,7 +103,7 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
             SecondaryButton(
               labelKey: 'status_page.show.open',
               icon: Icons.open_in_new_rounded,
-              onTap: () => Magic.toast('https://${page.subdomain}'),
+              onTap: () => Launch.url(page.publicUrl),
             ),
             SecondaryButton(
               labelKey: 'status_page.show.edit',
@@ -113,9 +112,9 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
             ),
             if (!page.isPublic && page.previewUrl != null)
               SecondaryButton(
-                labelKey: 'status_page.show.preview_link_label',
-                icon: Icons.link_rounded,
-                onTap: () => _copyPreviewLink(page),
+                labelKey: 'status_page.show.open_preview',
+                icon: Icons.visibility_outlined,
+                onTap: () => Launch.url(page.previewUrl!),
               ),
             if (Gate.allows('status-pages.publish', page))
               PrimaryButton(
@@ -161,13 +160,6 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
             : 'status_page.show.published_toast',
       ),
     );
-  }
-
-  Future<void> _copyPreviewLink(StatusPage page) async {
-    final url = page.previewUrl;
-    if (url == null) return;
-    await Clipboard.setData(ClipboardData(text: url));
-    Magic.toast(trans('status_page.show.preview_link_copied'));
   }
 
   Widget _previewBanner() {

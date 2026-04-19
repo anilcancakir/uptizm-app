@@ -74,10 +74,7 @@ void main() {
         ],
       });
       expect(page.previewToken, 'tok_abc');
-      expect(
-        page.previewUrl,
-        'https://cloud.uptizm.com/?preview_token=tok_abc',
-      );
+      expect(page.previewUrl, 'https://cloud.uptizm.com?preview_token=tok_abc');
       expect(page.metrics, hasLength(1));
       expect(page.metrics.first.latestNumericValue, 42.5);
       expect(page.metrics.first.displayLabel, 'Latency');

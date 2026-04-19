@@ -1,3 +1,5 @@
+import 'package:magic/magic.dart';
+
 import '../enums/metric_type.dart';
 import '../enums/monitor_status.dart';
 
@@ -40,15 +42,37 @@ class StatusPage {
   final String? previewToken;
 
   /// Public-facing hostname derived from [slug]. Rendered on the status
-  /// page card header; no networking is performed by this getter.
-  String get subdomain => '$slug.uptizm.com';
+  /// page card header; falls back to the legacy `<slug>.uptizm.com` shape
+  /// when the env template is subdomain-based. For path-based dev envs
+  /// (`https://dev.uptizm.com/status/:slug`) the host+path is returned so
+  /// the UI label is always copy-able back into the same URL.
+  String get subdomain {
+    final uri = Uri.parse(publicUrl);
+    final path = uri.path.isEmpty || uri.path == '/' ? '' : uri.path;
+    return '${uri.host}$path';
+  }
 
-  /// Full preview URL including the token, suitable for clipboard share.
-  /// Returns null when no token is available (foreign-team read).
+  /// Canonical public URL for the status page. Resolves the
+  /// `PUBLIC_STATUS_URL_TEMPLATE` env entry, replacing `:slug` with the
+  /// current slug. Prod defaults to the subdomain shape; dev typically
+  /// overrides to a path-based URL.
+  String get publicUrl {
+    final template = env<String>(
+      'PUBLIC_STATUS_URL_TEMPLATE',
+      'https://:slug.uptizm.com',
+    );
+    return template.replaceAll(':slug', slug);
+  }
+
+  /// Full preview URL including the token, suitable for clipboard share or
+  /// `Launch.url` open. Returns null when no token is available
+  /// (foreign-team read).
   String? get previewUrl {
     final token = previewToken;
     if (token == null || token.isEmpty) return null;
-    return 'https://$subdomain/?preview_token=$token';
+    final base = publicUrl;
+    final joiner = base.contains('?') ? '&' : '?';
+    return '$base${joiner}preview_token=$token';
   }
 
   /// Two-letter initials for the logo fallback.
