@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:magic/magic.dart';
 import 'package:app/app/controllers/status_pages/status_pages_controller.dart';
 import 'package:app/resources/views/status_pages/status_page_create_view.dart';
+import 'package:app/resources/views/status_pages/status_page_edit_view.dart';
 import 'package:app/resources/views/status_pages/status_page_list_view.dart';
 import 'package:app/resources/views/status_pages/status_page_show_view.dart';
 
@@ -276,6 +277,69 @@ void main() {
         expect(payload['logo_path'], 'logos/c.png');
       },
     );
+
+    test('edit(id) forwards id to StatusPageEditView', () {
+      final view = controller.edit('sample') as StatusPageEditView;
+      expect(view.statusPageId, 'sample');
+    });
+
+    test('unpublish POSTs and flips is_public', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': [_pagePayload(id: 'sp_1', isPublic: true)],
+        },
+        statusCode: 200,
+      );
+      await controller.load();
+
+      driver.response = MagicResponse(
+        data: {'data': _pagePayload(id: 'sp_1', isPublic: false)},
+        statusCode: 200,
+      );
+      final ok = await controller.unpublish('sp_1');
+      expect(ok, isTrue);
+      expect(driver.lastMethod, 'POST');
+      expect(driver.lastUrl, '/status-pages/sp_1/unpublish');
+      expect(controller.pages.single.isPublic, isFalse);
+    });
+
+    test('submitUpdate builds partial payload and PATCHes', () async {
+      driver.response = MagicResponse(
+        data: {'data': _pagePayload(id: 'sp_1', title: 'New')},
+        statusCode: 200,
+      );
+      final result = await controller.submitUpdate(
+        id: 'sp_1',
+        title: '  New  ',
+        slug: 'cloud',
+        primaryColor: '#111111',
+        logoPath: null,
+        isPublic: true,
+        monitorIds: const ['m1'],
+        metricIds: const ['k1', 'k2'],
+      );
+      expect(result?.title, 'New');
+      expect(driver.lastMethod, 'PUT');
+      expect(driver.lastUrl, '/status-pages/sp_1');
+      final payload = driver.lastData as Map;
+      expect(payload['title'], 'New');
+      expect(payload['monitor_ids'], ['m1']);
+      expect(payload['metric_ids'], ['k1', 'k2']);
+      expect(payload.containsKey('logo_path'), isFalse);
+    });
+
+    test('rotatePreviewToken POSTs to rotate endpoint', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': {..._pagePayload(id: 'sp_1'), 'preview_token': 'fresh-token'},
+        },
+        statusCode: 200,
+      );
+      final token = await controller.rotatePreviewToken('sp_1');
+      expect(token, 'fresh-token');
+      expect(driver.lastMethod, 'POST');
+      expect(driver.lastUrl, '/status-pages/sp_1/preview-token/rotate');
+    });
 
     test('submitCreate omits logo_path when null', () async {
       driver.response = MagicResponse(

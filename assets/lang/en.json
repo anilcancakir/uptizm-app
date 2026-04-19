@@ -561,6 +561,13 @@
         "subtitle": "Pick which monitors this page will surface.",
         "count": ":count monitor(s) selected"
       },
+      "metrics_section": {
+        "title": "Assign custom metrics",
+        "subtitle": "Pin per-monitor metrics to display on the public page.",
+        "empty_monitors": "Select at least one monitor to pick metrics.",
+        "empty_monitor": "No custom metrics on this monitor.",
+        "loading": "Loading metrics…"
+      },
       "fields": {
         "title": "Page title",
         "title_placeholder": "e.g. Uptizm Cloud",
@@ -584,12 +591,22 @@
         "too_large": "Logo must be 1 MB or smaller."
       }
     },
+    "edit": {
+      "title": "Edit status page",
+      "subtitle": "Update branding, subdomain, and assigned monitors or metrics.",
+      "submit": "Save changes",
+      "save_success": "Status page updated"
+    },
     "show": {
       "open": "Open",
       "edit": "Edit",
       "publish": "Publish",
       "unpublish": "Unpublish",
+      "unpublish_success": "Status page unpublished",
       "published_toast": "Status page published",
+      "preview_link_label": "Preview link",
+      "preview_link_copied": "Preview link copied",
+      "preview_mode_banner": "This page is unpublished. Only members with the preview link can see it.",
       "missing_title": "Status page not found",
       "missing_subtitle": "It may have been deleted or you lack permission to view it.",
       "components": {
@@ -597,6 +614,10 @@
         "subtitle": "30-day availability of every assigned monitor.",
         "empty_title": "No components",
         "empty": "No monitors assigned to this page yet."
+      },
+      "metrics": {
+        "title": "Custom metrics",
+        "subtitle": "Latest value of every pinned metric."
       },
       "incidents_30d": {
         "title": "Incidents (30d)",
@@ -618,6 +639,7 @@
       "generic_update": "Could not update status page. Please try again.",
       "generic_delete": "Could not delete status page. Please try again.",
       "generic_publish": "Could not change publish state. Please try again.",
+      "generic_unpublish": "Could not unpublish status page. Please try again.",
       "generic_logo_upload": "Could not upload logo. Please try again."
     }
   },

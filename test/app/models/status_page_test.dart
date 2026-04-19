@@ -53,6 +53,47 @@ void main() {
       expect(page.monitors, isEmpty);
     });
 
+    test('parses preview_token and metrics list', () {
+      final page = StatusPage.fromMap({
+        'id': 'sp_1',
+        'title': 'Cloud',
+        'slug': 'cloud',
+        'is_public': false,
+        'preview_token': 'tok_abc',
+        'metrics': [
+          {
+            'id': 'k1',
+            'monitor_id': 'm1',
+            'key': 'latency_ms',
+            'label': 'Latency',
+            'type': 'numeric',
+            'unit': 'ms',
+            'display_order': 0,
+            'latest_numeric_value': 42.5,
+          },
+        ],
+      });
+      expect(page.previewToken, 'tok_abc');
+      expect(
+        page.previewUrl,
+        'https://cloud.uptizm.com/?preview_token=tok_abc',
+      );
+      expect(page.metrics, hasLength(1));
+      expect(page.metrics.first.latestNumericValue, 42.5);
+      expect(page.metrics.first.displayLabel, 'Latency');
+      expect(page.metricIds, ['k1']);
+    });
+
+    test('previewUrl is null when token is absent', () {
+      final page = StatusPage.fromMap({
+        'id': 'x',
+        'title': 't',
+        'slug': 's',
+        'is_public': false,
+      });
+      expect(page.previewUrl, isNull);
+    });
+
     test('initials fallback renders two-letter label', () {
       final one = StatusPage.fromMap({
         'id': '1',

@@ -40,6 +40,7 @@ class StoreStatusPageRequest extends FormRequest {
     'primary_color': [Required()],
     'is_public': [],
     'monitor_ids': [],
+    'metric_ids': [],
     'logo_path': [],
   };
 }

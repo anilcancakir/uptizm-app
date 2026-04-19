@@ -2,10 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:magic/magic.dart';
 
 import '../../../resources/views/status_pages/status_page_create_view.dart';
+import '../../../resources/views/status_pages/status_page_edit_view.dart';
 import '../../../resources/views/status_pages/status_page_list_view.dart';
 import '../../../resources/views/status_pages/status_page_show_view.dart';
 import '../../models/status_page.dart';
 import '../../requests/store_status_page_request.dart';
+import '../../requests/update_status_page_request.dart';
 
 /// Status page CRUD + publish controller.
 ///
@@ -20,10 +22,8 @@ class StatusPagesController extends MagicController
   static StatusPagesController get instance =>
       Magic.findOrPut(StatusPagesController.new);
 
-  /// Only `index`, `create`, and `show` are wired today; the edit screen
-  /// is not implemented yet.
   @override
-  Set<String> get resourceMethods => const {'index', 'create', 'show'};
+  Set<String> get resourceMethods => const {'index', 'create', 'show', 'edit'};
 
   /// Route entry points. Kept alongside the data methods so the controller
   /// stays the single entry point for the status-pages resource.
@@ -33,6 +33,8 @@ class StatusPagesController extends MagicController
   Widget create() => const StatusPageCreateView();
   @override
   Widget show(String id) => StatusPageShowView(statusPageId: id);
+  @override
+  Widget edit(String id) => StatusPageEditView(statusPageId: id);
 
   StatusPage? _detail;
   bool _isSubmitting = false;
@@ -107,6 +109,7 @@ class StatusPagesController extends MagicController
     String? logoPath,
     required bool isPublic,
     required List<String> monitorIds,
+    List<String> metricIds = const [],
   }) async {
     if (_isSubmitting) return null;
     _isSubmitting = true;
@@ -120,6 +123,7 @@ class StatusPagesController extends MagicController
           'primary_color': primaryColor,
           'is_public': isPublic,
           'monitor_ids': monitorIds,
+          'metric_ids': metricIds,
           'logo_path': logoPath,
         });
       } on ValidationException catch (e) {
@@ -211,6 +215,46 @@ class StatusPagesController extends MagicController
     return true;
   }
 
+  /// Typed update wrapper used by [StatusPageEditView]. Validates through
+  /// [UpdateStatusPageRequest] so absent keys stay absent (partial patch),
+  /// guards concurrent submits, and returns the refreshed page on success.
+  Future<StatusPage?> submitUpdate({
+    required String id,
+    required String title,
+    required String slug,
+    required String primaryColor,
+    String? logoPath,
+    required bool isPublic,
+    required List<String> monitorIds,
+    required List<String> metricIds,
+  }) async {
+    if (_isSubmitting) return null;
+    _isSubmitting = true;
+    refreshUI();
+    try {
+      final Map<String, dynamic> payload;
+      try {
+        payload = const UpdateStatusPageRequest().validate({
+          'title': title,
+          'slug': slug,
+          'primary_color': primaryColor,
+          'is_public': isPublic,
+          'monitor_ids': monitorIds,
+          'metric_ids': metricIds,
+          'logo_path': ?logoPath,
+        });
+      } on ValidationException catch (e) {
+        validationErrors = Map<String, String>.from(e.errors);
+        refreshUI();
+        return null;
+      }
+      return await update(id, payload);
+    } finally {
+      _isSubmitting = false;
+      refreshUI();
+    }
+  }
+
   /// Publishes a status page (flips visibility + snapshots the current
   /// monitor selection server-side). Returns true even when the response
   /// omits the updated record so the UI can optimistically advance.
@@ -239,5 +283,54 @@ class StatusPagesController extends MagicController
       _detail = updated;
     }
     return true;
+  }
+
+  /// Unpublishes a status page (flips `is_public` to false). Mirrors
+  /// [publish] — same response shape, same optimistic list refresh.
+  Future<bool> unpublish(String id) async {
+    clearErrors();
+    final previous = List<StatusPage>.from(pages);
+    final response = await Http.post('/status-pages/$id/unpublish');
+    if (!response.successful) {
+      handleApiError(
+        response,
+        fallback: trans('status_page.errors.generic_unpublish'),
+      );
+      return false;
+    }
+    final data = response.data?['data'];
+    if (data is! Map<String, dynamic>) {
+      return true;
+    }
+    final updated = StatusPage.fromMap(data);
+    final next = [
+      for (final item in previous)
+        if (item.id == updated.id) updated else item,
+    ];
+    setSuccess(next);
+    if (_detail?.id == updated.id) {
+      _detail = updated;
+    }
+    return true;
+  }
+
+  /// Rotates the preview token server-side, returning the fresh value.
+  /// Callers (the show screen) refresh the detail afterwards so the new
+  /// token is reflected in the copy-link button.
+  Future<String?> rotatePreviewToken(String id) async {
+    clearErrors();
+    final response = await Http.post('/status-pages/$id/preview-token/rotate');
+    if (!response.successful) {
+      handleApiError(response, fallback: trans('errors.unexpected'));
+      return null;
+    }
+    final data = response.data?['data'];
+    if (data is! Map<String, dynamic>) return null;
+    final updated = StatusPage.fromMap(data);
+    if (_detail?.id == updated.id) {
+      _detail = updated;
+      refreshUI();
+    }
+    return updated.previewToken;
   }
 }

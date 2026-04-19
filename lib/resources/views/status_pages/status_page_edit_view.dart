@@ -6,46 +6,50 @@ import 'package:magic_starter/magic_starter.dart';
 
 import '../../../app/controllers/monitors/monitor_controller.dart';
 import '../../../app/controllers/status_pages/status_pages_controller.dart';
-import '../../../app/helpers/slugify.dart';
+import '../../../app/models/status_page.dart';
 import '../components/common/app_back_button.dart';
+import '../components/common/color_swatch.dart';
+import '../components/common/error_banner.dart';
+import '../components/common/form_field_error.dart';
 import '../components/common/form_field_label.dart';
 import '../components/common/form_section_card.dart';
 import '../components/common/primary_button.dart';
 import '../components/common/secondary_button.dart';
 import '../components/common/setting_toggle_row.dart';
-import '../components/common/color_swatch.dart';
-import '../components/common/form_field_error.dart';
+import '../components/common/skeleton_block.dart';
 import '../components/status_pages/logo_upload_zone.dart';
 import '../components/status_pages/metric_assign_list.dart';
 import '../components/status_pages/monitor_assign_list.dart';
 
-/// Create a new status page.
+/// Edit an existing status page.
 ///
-/// Holds only the transient field values; [StatusPagesController.submitCreate]
-/// builds the payload, owns the `isSubmitting` flag, and surfaces 422 field
-/// errors via `getError`.
-class StatusPageCreateView extends MagicStatefulView<StatusPagesController> {
-  const StatusPageCreateView({super.key});
+/// Preloads detail via [StatusPagesController.loadOne] and seeds form state
+/// from the fetched record. Submits through
+/// [StatusPagesController.submitUpdate] which mirrors the server-side
+/// partial-update semantics.
+class StatusPageEditView extends StatefulWidget {
+  const StatusPageEditView({super.key, required this.statusPageId});
+
+  final String statusPageId;
 
   @override
-  State<StatusPageCreateView> createState() => _StatusPageCreateViewState();
+  State<StatusPageEditView> createState() => _StatusPageEditViewState();
 }
 
-class _StatusPageCreateViewState
-    extends
-        MagicStatefulViewState<StatusPagesController, StatusPageCreateView> {
+class _StatusPageEditViewState extends State<StatusPageEditView> {
+  StatusPagesController get _c => StatusPagesController.instance;
+  MonitorController get _monitors => MonitorController.instance;
+
   final _titleCtrl = TextEditingController();
   final _slugCtrl = TextEditingController();
-  bool _slugTouched = false;
-  bool _isPublic = true;
+  bool _isPublic = false;
   String _primaryColor = '#2563EB';
   String? _logoPath;
   Uint8List? _logoBytes;
   bool _isUploadingLogo = false;
   final Set<String> _selectedMonitors = {};
   final Set<String> _selectedMetrics = {};
-
-  MonitorController get _monitors => MonitorController.instance;
+  bool _seeded = false;
 
   static const _inputClass = '''
     w-full px-3 py-2.5 rounded-lg
@@ -56,53 +60,99 @@ class _StatusPageCreateViewState
   ''';
 
   @override
-  void onInit() {
-    super.onInit();
-    _titleCtrl.addListener(_syncSlugFromTitle);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _monitors.loadList());
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _c.loadOne(widget.statusPageId);
+      await _monitors.loadList();
+      _seedFromDetail();
+    });
   }
 
   @override
-  void onClose() {
+  void dispose() {
     _titleCtrl.dispose();
     _slugCtrl.dispose();
-    super.onClose();
+    super.dispose();
   }
 
-  void _syncSlugFromTitle() {
-    if (_slugTouched) return;
-    final s = slugify(_titleCtrl.text);
-    if (s != _slugCtrl.text) {
-      _slugCtrl.value = _slugCtrl.value.copyWith(
-        text: s,
-        selection: TextSelection.collapsed(offset: s.length),
-      );
-    }
-    setState(() {});
+  void _seedFromDetail() {
+    final page = _c.detail;
+    if (page == null || _seeded) return;
+    _seeded = true;
+    _titleCtrl.text = page.title;
+    _slugCtrl.text = page.slug;
+    _primaryColor = page.primaryColor;
+    _logoPath = page.logoPath;
+    _isPublic = page.isPublic;
+    _selectedMonitors
+      ..clear()
+      ..addAll(page.monitorIds);
+    _selectedMetrics
+      ..clear()
+      ..addAll(page.metricIds);
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, _) {
+        final page = _c.detail;
+        if (_c.rxStatus.isError && page == null) {
+          return WDiv(
+            className: 'p-4 lg:p-6',
+            child: ErrorBanner(
+              message: _c.rxStatus.message,
+              onRetry: () => _c.loadOne(widget.statusPageId),
+            ),
+          );
+        }
+        if (!_seeded && page != null) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _seedFromDetail(),
+          );
+        }
+        if (page == null) {
+          return _skeleton();
+        }
+        return _body(page);
+      },
+    );
+  }
+
+  Widget _skeleton() {
+    return WDiv(
+      className: 'p-4 lg:p-6 flex flex-col gap-6',
+      children: const [
+        SkeletonBlock(className: 'w-1/3 h-6'),
+        SkeletonBlock(className: 'w-full h-32 rounded-xl'),
+        SkeletonBlock(className: 'w-full h-40 rounded-xl'),
+      ],
+    );
+  }
+
+  Widget _body(StatusPage page) {
     return WDiv(
       className: 'p-4 lg:p-6 flex flex-col gap-6',
       children: [
         MagicStarterPageHeader(
-          leading: const AppBackButton(fallbackPath: '/status-pages'),
-          title: trans('status_page.create.title'),
-          subtitle: trans('status_page.create.subtitle'),
+          leading: AppBackButton(fallbackPath: '/status-pages/${page.id}'),
+          title: trans('status_page.edit.title'),
+          subtitle: trans('status_page.edit.subtitle'),
           inlineActions: true,
         ),
         _basicsSection(),
         _brandingSection(),
         _assignSection(),
         _metricsSection(),
-        _footer(),
+        _footer(page.id),
       ],
     );
   }
 
   Widget _basicsSection() {
-    final slugError = validateSlug(_slugCtrl.text);
     return FormSectionCard(
       titleKey: 'status_page.create.basics.title',
       subtitleKey: 'status_page.create.basics.subtitle',
@@ -119,13 +169,13 @@ class _StatusPageCreateViewState
               ),
               WInput(
                 value: _titleCtrl.text,
-                onChanged: (v) => _titleCtrl.text = v,
+                onChanged: (v) => setState(() => _titleCtrl.text = v),
                 placeholder: trans(
                   'status_page.create.fields.title_placeholder',
                 ),
                 className: _inputClass,
               ),
-              FormFieldError(message: controller.getError('title')),
+              FormFieldError(message: _c.getError('title')),
             ],
           ),
           WDiv(
@@ -137,47 +187,13 @@ class _StatusPageCreateViewState
               ),
               WInput(
                 value: _slugCtrl.text,
-                onChanged: (v) {
-                  _slugTouched = true;
-                  _slugCtrl.text = v;
-                  setState(() {});
-                },
+                onChanged: (v) => setState(() => _slugCtrl.text = v),
                 placeholder: trans(
                   'status_page.create.fields.slug_placeholder',
                 ),
                 className: _inputClass,
               ),
-              WDiv(
-                className: 'mt-1.5 flex flex-col gap-0.5',
-                children: [
-                  if (controller.getError('slug') != null)
-                    FormFieldError(message: controller.getError('slug'))
-                  else if (slugError != null && _slugCtrl.text.isNotEmpty)
-                    WText(
-                      trans(slugError),
-                      className: '''
-                        text-xs
-                        text-down-600 dark:text-down-400
-                      ''',
-                    )
-                  else if (_slugCtrl.text.isNotEmpty)
-                    WText(
-                      '${_slugCtrl.text}.uptizm.com',
-                      className: '''
-                        text-xs font-mono
-                        text-gray-500 dark:text-gray-400
-                      ''',
-                    )
-                  else
-                    WText(
-                      trans('status_page.create.fields.slug_hint'),
-                      className: '''
-                        text-xs
-                        text-gray-500 dark:text-gray-400
-                      ''',
-                    ),
-                ],
-              ),
+              FormFieldError(message: _c.getError('slug')),
             ],
           ),
           SettingToggleRow(
@@ -221,16 +237,7 @@ class _StatusPageCreateViewState
                   ),
                 ],
               ),
-              if (controller.getError('primary_color') != null)
-                FormFieldError(message: controller.getError('primary_color'))
-              else
-                WText(
-                  trans('status_page.create.fields.primary_color_hint'),
-                  className: '''
-                    mt-1.5 text-xs
-                    text-gray-500 dark:text-gray-400
-                  ''',
-                ),
+              FormFieldError(message: _c.getError('primary_color')),
             ],
           ),
           WDiv(
@@ -268,6 +275,7 @@ class _StatusPageCreateViewState
             if (!_selectedMonitors.remove(id)) {
               _selectedMonitors.add(id);
             }
+            _selectedMetrics.removeWhere((_) => false);
           }),
         ),
       ),
@@ -295,7 +303,7 @@ class _StatusPageCreateViewState
     );
   }
 
-  Widget _footer() {
+  Widget _footer(String id) {
     return WDiv(
       className: '''
         w-full flex flex-row items-center justify-end gap-3 pt-2
@@ -303,13 +311,13 @@ class _StatusPageCreateViewState
       children: [
         SecondaryButton(
           labelKey: 'common.cancel',
-          onTap: () => MagicRoute.to('/status-pages'),
+          onTap: () => MagicRoute.to('/status-pages/$id'),
         ),
         PrimaryButton(
-          labelKey: 'status_page.create.submit',
+          labelKey: 'status_page.edit.submit',
           icon: Icons.check_rounded,
-          isLoading: controller.isSubmitting,
-          onTap: _submit,
+          isLoading: _c.isSubmitting,
+          onTap: () => _submit(id),
         ),
       ],
     );
@@ -334,7 +342,7 @@ class _StatusPageCreateViewState
 
     setState(() => _isUploadingLogo = true);
     try {
-      final path = await controller.uploadLogo(file);
+      final path = await _c.uploadLogo(file);
       if (!mounted) return;
       if (path != null) {
         setState(() {
@@ -349,9 +357,10 @@ class _StatusPageCreateViewState
     }
   }
 
-  Future<void> _submit() async {
-    if (controller.isSubmitting) return;
-    final created = await controller.submitCreate(
+  Future<void> _submit(String id) async {
+    if (_c.isSubmitting) return;
+    final updated = await _c.submitUpdate(
+      id: id,
       title: _titleCtrl.text,
       slug: _slugCtrl.text,
       primaryColor: _primaryColor,
@@ -361,16 +370,15 @@ class _StatusPageCreateViewState
       metricIds: _selectedMetrics.toList(),
     );
     if (!mounted) return;
-    if (created == null) {
-      if (!controller.hasErrors) {
+    if (updated == null) {
+      if (!_c.hasErrors) {
         Magic.toast(
-          controller.rxStatus.message ??
-              trans('status_page.errors.generic_create'),
+          _c.rxStatus.message ?? trans('status_page.errors.generic_update'),
         );
       }
       return;
     }
-    Magic.toast(trans('status_page.create.toast_created'));
-    MagicRoute.to('/status-pages/${created.id}');
+    Magic.toast(trans('status_page.edit.save_success'));
+    MagicRoute.to('/status-pages/$id');
   }
 }

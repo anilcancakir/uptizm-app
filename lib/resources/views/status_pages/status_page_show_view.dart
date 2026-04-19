@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:magic/magic.dart';
 import 'package:magic_starter/magic_starter.dart';
 
@@ -105,6 +106,17 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
               icon: Icons.open_in_new_rounded,
               onTap: () => Magic.toast('https://${page.subdomain}'),
             ),
+            SecondaryButton(
+              labelKey: 'status_page.show.edit',
+              icon: Icons.edit_rounded,
+              onTap: () => MagicRoute.to('/status-pages/${page.id}/edit'),
+            ),
+            if (!page.isPublic && page.previewUrl != null)
+              SecondaryButton(
+                labelKey: 'status_page.show.preview_link_label',
+                icon: Icons.link_rounded,
+                onTap: () => _copyPreviewLink(page),
+              ),
             if (Gate.allows('status-pages.publish', page))
               PrimaryButton(
                 labelKey: page.isPublic
@@ -112,27 +124,110 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
                     : 'status_page.show.publish',
                 icon: Icons.public_rounded,
                 isLoading: _publishing,
-                onTap: () => _onPublish(page),
+                onTap: () => _onPublishToggle(page),
               ),
           ],
         ),
+        if (!page.isPublic) _previewBanner(),
         _hero(page),
         _componentsSection(page.monitors),
+        if (page.metrics.isNotEmpty) _metricsSection(page.metrics),
       ],
     );
   }
 
-  Future<void> _onPublish(StatusPage page) async {
+  Future<void> _onPublishToggle(StatusPage page) async {
     if (_publishing) return;
     setState(() => _publishing = true);
-    final ok = await _c.publish(page.id);
+    final ok = page.isPublic
+        ? await _c.unpublish(page.id)
+        : await _c.publish(page.id);
     if (!mounted) return;
     setState(() => _publishing = false);
     if (!ok) {
-      Magic.toast(trans('status_page.errors.generic_publish'));
+      Magic.toast(
+        trans(
+          page.isPublic
+              ? 'status_page.errors.generic_unpublish'
+              : 'status_page.errors.generic_publish',
+        ),
+      );
       return;
     }
-    Magic.toast(trans('status_page.show.published_toast'));
+    Magic.toast(
+      trans(
+        page.isPublic
+            ? 'status_page.show.unpublish_success'
+            : 'status_page.show.published_toast',
+      ),
+    );
+  }
+
+  Future<void> _copyPreviewLink(StatusPage page) async {
+    final url = page.previewUrl;
+    if (url == null) return;
+    await Clipboard.setData(ClipboardData(text: url));
+    Magic.toast(trans('status_page.show.preview_link_copied'));
+  }
+
+  Widget _previewBanner() {
+    return WDiv(
+      className: '''
+        rounded-lg px-4 py-3
+        bg-amber-50 dark:bg-amber-900/20
+        border border-amber-200 dark:border-amber-800
+      ''',
+      child: WText(
+        trans('status_page.show.preview_mode_banner'),
+        className: '''
+          text-sm font-semibold
+          text-amber-800 dark:text-amber-200
+        ''',
+      ),
+    );
+  }
+
+  Widget _metricsSection(List<StatusPageMetric> metrics) {
+    return FormSectionCard(
+      titleKey: 'status_page.show.metrics.title',
+      subtitleKey: 'status_page.show.metrics.subtitle',
+      icon: Icons.insights_rounded,
+      child: WDiv(
+        className: 'flex flex-col gap-3',
+        children: [for (final m in metrics) _metricRow(m)],
+      ),
+    );
+  }
+
+  Widget _metricRow(StatusPageMetric m) {
+    final value = m.latestNumericValue != null
+        ? '${m.latestNumericValue}${m.unit ?? ''}'
+        : m.latestStringValue ?? '—';
+    return WDiv(
+      className: '''
+        flex flex-row items-center gap-3
+      ''',
+      children: [
+        WDiv(
+          className: 'flex-1 min-w-0',
+          child: WText(
+            m.displayLabel,
+            className: '''
+              text-sm font-semibold
+              text-gray-900 dark:text-white
+              truncate
+            ''',
+          ),
+        ),
+        WText(
+          value,
+          className: '''
+            text-sm font-mono
+            text-gray-700 dark:text-gray-200
+          ''',
+        ),
+      ],
+    );
   }
 
   Widget _hero(StatusPage page) {
