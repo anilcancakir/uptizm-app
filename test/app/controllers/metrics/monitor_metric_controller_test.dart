@@ -8,6 +8,7 @@ class _MockNetworkDriver implements NetworkDriver {
   String? lastUrl;
   Map<String, dynamic>? lastQuery;
   dynamic lastData;
+  final List<({String method, String url, dynamic data})> calls = [];
   final List<MagicResponse> _queue = [];
   MagicResponse _default = MagicResponse(data: {}, statusCode: 500);
 
@@ -24,6 +25,7 @@ class _MockNetworkDriver implements NetworkDriver {
     lastUrl = url;
     lastData = data;
     lastQuery = query;
+    calls.add((method: method, url: url, data: data));
     return _queue.isNotEmpty ? _queue.removeAt(0) : _default;
   }
 
@@ -392,6 +394,39 @@ void main() {
       expect(driver.lastQuery, {'range': '7d'});
       expect(values.length, 1);
       expect(values.first.numericValue, 123.4);
+    });
+
+    test('reorder PUTs sequential display_order and reloads list', () async {
+      driver.enqueue(MagicResponse(data: {}, statusCode: 204));
+      driver.enqueue(
+        MagicResponse(
+          data: {
+            'data': [_metricPayload()],
+          },
+          statusCode: 200,
+        ),
+      );
+
+      final ok = await controller.reorder('mon_1', ['a', 'b', 'c']);
+
+      expect(ok, isTrue);
+      final putCall = driver.calls.firstWhere((c) => c.method == 'PUT');
+      expect(putCall.url, '/monitors/mon_1/metrics/reorder');
+      final order = (putCall.data as Map<String, dynamic>)['order'] as List;
+      expect(order.length, 3);
+      expect(order[0], {'id': 'a', 'display_order': 0});
+      expect(order[2], {'id': 'c', 'display_order': 2});
+      expect(driver.calls.any((c) => c.method == 'GET'), isTrue);
+    });
+
+    test('reorder returns false on non-2xx', () async {
+      driver.response = MagicResponse(
+        data: {'message': 'nope'},
+        statusCode: 500,
+      );
+
+      final ok = await controller.reorder('mon_1', ['a']);
+      expect(ok, isFalse);
     });
   });
 }

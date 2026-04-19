@@ -842,6 +842,11 @@
       "delete_confirm_message": "Checks, metrics and incidents for this monitor will be removed. This cannot be undone.",
       "delete_confirm_confirm": "Delete monitor"
     },
+    "metric_group": {
+      "reorder_save": "Save order",
+      "reorder_cancel": "Cancel",
+      "reorder_success": "Metric order saved"
+    },
     "metric_form": {
       "title": {
         "create": "Add custom metric",

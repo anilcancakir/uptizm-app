@@ -181,6 +181,45 @@ class MonitorMetricController extends MagicController
     }
   }
 
+  /// Applies a new display order for a batch of metric ids.
+  ///
+  /// Caller passes ids in the desired visual order; this method assigns
+  /// sequential `display_order` values (0..n) and PATCHes the reorder
+  /// endpoint, then reloads so the UI reflects server-confirmed ordering.
+  Future<bool> reorder(String monitorId, List<String> orderedIds) async {
+    if (_isSubmitting) return false;
+    _isSubmitting = true;
+    refreshUI();
+    clearErrors();
+    final previous = rxState;
+    try {
+      final response = await Http.put(
+        '/monitors/$monitorId/metrics/reorder',
+        data: {
+          'order': [
+            for (var i = 0; i < orderedIds.length; i++)
+              {'id': orderedIds[i], 'display_order': i},
+          ],
+        },
+      );
+      if (!response.successful) {
+        handleApiError(response, fallback: trans('errors.unexpected'));
+        setState(previous, status: rxStatus, notify: false);
+        return false;
+      }
+      await load(monitorId);
+      return true;
+    } catch (e, stackTrace) {
+      Log.error('[MonitorMetricController.reorder] $e\n$stackTrace');
+      setError(trans('errors.unexpected'));
+      setState(previous, status: rxStatus, notify: false);
+      return false;
+    } finally {
+      _isSubmitting = false;
+      refreshUI();
+    }
+  }
+
   /// Dispatch a draft extraction rule to the server and receive a fresh
   /// fetch + extracted value back. Used by the form's live preview
   /// before the metric is persisted. Returns null on network or
