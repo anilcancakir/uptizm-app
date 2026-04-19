@@ -175,8 +175,47 @@
     "status": {
       "detected": "Detected",
       "investigating": "Investigating",
+      "identified": "Identified",
+      "monitoring": "Monitoring",
       "mitigated": "Mitigated",
-      "resolved": "Resolved"
+      "resolved": "Resolved",
+      "scheduled": "Scheduled",
+      "in_progress": "In progress",
+      "verifying": "Verifying",
+      "completed": "Completed"
+    },
+    "impact": {
+      "none": "No impact",
+      "minor": "Minor",
+      "major": "Major",
+      "critical": "Critical",
+      "maintenance": "Maintenance"
+    },
+    "kind": {
+      "incident": "Incident",
+      "maintenance": "Maintenance"
+    },
+    "update": {
+      "compose": "Post update",
+      "notify_subscribers": "Email subscribers",
+      "status_change": "Status",
+      "body_placeholder": "What's the latest? Markdown is supported.",
+      "empty": "No updates have been posted yet."
+    },
+    "postmortem": {
+      "title": "Postmortem",
+      "write": "Write postmortem",
+      "publish": "Publish postmortem",
+      "published_at": "Published {at}",
+      "notify_subscribers": "Email subscribers",
+      "placeholder": "Root cause, timeline, remediation. Markdown is supported.",
+      "locked_hint": "Postmortems can be written after the incident is resolved."
+    },
+    "publish": {
+      "draft": "Draft",
+      "publish_to_status_page": "Publish to status page",
+      "already_public": "Live on the status page",
+      "confirm_publish": "Publish this incident to the public status page?"
     },
     "severity": {
       "critical": "Critical",
@@ -1259,6 +1298,69 @@
     "just_now": "Just now",
     "minutes_ago": ":minutes m ago",
     "date_format": ":day/:month/:year"
+  },
+  "component": {
+    "status": {
+      "operational": "Operational",
+      "degraded_performance": "Degraded performance",
+      "partial_outage": "Partial outage",
+      "major_outage": "Major outage",
+      "under_maintenance": "Under maintenance"
+    }
+  },
+  "maintenance": {
+    "schedule": {
+      "title": "Schedule maintenance",
+      "scheduled_for": "Starts at",
+      "scheduled_until": "Ends at",
+      "auto_transition": "Auto-transition component status",
+      "notify_start": "Notify subscribers at start",
+      "notify_end": "Notify subscribers at end",
+      "submit": "Schedule"
+    },
+    "tab": {
+      "upcoming": "Upcoming",
+      "in_progress": "In progress",
+      "history": "History"
+    },
+    "actions": {
+      "cancel": "Cancel window",
+      "confirm_cancel": "Cancel this maintenance window?"
+    },
+    "toast": {
+      "scheduled": "Maintenance scheduled",
+      "cancelled": "Maintenance cancelled"
+    },
+    "errors": {
+      "load": "Could not load maintenance windows.",
+      "create": "Could not schedule the window.",
+      "cancel": "Could not cancel the window."
+    },
+    "empty": {
+      "title": "No maintenance scheduled",
+      "subtitle": "Plan upgrades ahead of time so customers see them on the status page."
+    }
+  },
+  "subscribe": {
+    "title": "Get status updates",
+    "subtitle": "We'll email you when something breaks or a maintenance window starts.",
+    "email_placeholder": "you@company.com",
+    "submit": "Subscribe",
+    "confirm_sent": "Check your inbox to confirm the subscription.",
+    "filter_components": "Only notify me about specific components",
+    "unsubscribe": "Unsubscribe"
+  },
+  "subscriber": {
+    "errors": {
+      "remove": "Could not remove the subscriber."
+    },
+    "state": {
+      "unconfirmed": "Unconfirmed",
+      "active": "Active",
+      "unsubscribed": "Unsubscribed",
+      "quarantined": "Quarantined"
+    },
+    "empty": "No subscribers yet."
   },
   "validation": {
     "accepted": "The :attribute must be accepted.",

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic/magic.dart';
 import 'package:app/app/controllers/incidents/incident_controller.dart';
+import 'package:app/app/enums/incident_impact.dart';
 import 'package:app/app/enums/incident_severity.dart';
 import 'package:app/app/enums/incident_status.dart';
 
@@ -400,6 +401,109 @@ void main() {
       expect(similar, hasLength(1));
       expect(similar.single.id, 'inc_old');
       expect(similar.single.resolutionNote, 'Bumped pool');
+    });
+
+    test(
+      'postUpdate POSTs /incidents/{id}/updates and appends the row',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': {
+              ..._incidentPayload(id: 'inc_1', status: 'identified'),
+              'updates': const [],
+            },
+          },
+          statusCode: 200,
+        );
+        await controller.loadOne('inc_1');
+
+        driver.response = MagicResponse(
+          data: {
+            'data': {
+              'id': 'upd_1',
+              'incident_id': 'inc_1',
+              'status': 'identified',
+              'body': 'Root cause found',
+              'display_at': '2026-04-18T10:05:00Z',
+              'deliver_notifications': true,
+            },
+          },
+          statusCode: 201,
+        );
+
+        final result = await controller.postUpdate(
+          incidentId: 'inc_1',
+          status: IncidentStatus.identified,
+          body: 'Root cause found',
+        );
+
+        expect(result, isNotNull);
+        expect(driver.lastMethod, 'POST');
+        expect(driver.lastUrl, '/incidents/inc_1/updates');
+        final payload = driver.lastData as Map;
+        expect(payload['status'], 'identified');
+        expect(payload['body'], 'Root cause found');
+        expect(payload['deliver_notifications'], isTrue);
+        expect(controller.detail?.updates, hasLength(1));
+        expect(controller.detail?.status, IncidentStatus.identified);
+      },
+    );
+
+    test('publish POSTs /incidents/{id}/publish and reconciles list', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': [_incidentPayload(id: 'inc_1')],
+        },
+        statusCode: 200,
+      );
+      await controller.load();
+
+      driver.response = MagicResponse(
+        data: {
+          'data': {..._incidentPayload(id: 'inc_1'), 'is_published': true},
+        },
+        statusCode: 200,
+      );
+
+      final ok = await controller.publish('inc_1');
+
+      expect(ok, isTrue);
+      expect(driver.lastMethod, 'POST');
+      expect(driver.lastUrl, '/incidents/inc_1/publish');
+      expect(controller.incidents.single.isPublished, isTrue);
+    });
+
+    test('overrideImpact POSTs /impact with the chosen impact enum', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': [_incidentPayload(id: 'inc_1')],
+        },
+        statusCode: 200,
+      );
+      await controller.load();
+
+      driver.response = MagicResponse(
+        data: {
+          'data': {
+            ..._incidentPayload(id: 'inc_1'),
+            'impact': 'critical',
+            'impact_override': true,
+          },
+        },
+        statusCode: 200,
+      );
+
+      final ok = await controller.overrideImpact(
+        incidentId: 'inc_1',
+        impact: IncidentImpact.critical,
+      );
+
+      expect(ok, isTrue);
+      expect(driver.lastMethod, 'POST');
+      expect(driver.lastUrl, '/incidents/inc_1/impact');
+      expect((driver.lastData as Map)['impact'], 'critical');
+      expect(controller.incidents.single.impact, IncidentImpact.critical);
+      expect(controller.incidents.single.impactOverride, isTrue);
     });
   });
 }

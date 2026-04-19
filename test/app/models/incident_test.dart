@@ -1,8 +1,11 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'package:app/app/enums/component_status.dart';
+import 'package:app/app/enums/incident_impact.dart';
+import 'package:app/app/enums/incident_kind.dart';
 import 'package:app/app/enums/incident_severity.dart';
 import 'package:app/app/enums/incident_status.dart';
 import 'package:app/app/enums/signal_source.dart';
 import 'package:app/app/models/incident.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Incident.fromMap', () {
@@ -81,6 +84,79 @@ void main() {
       expect(incident.severity, IncidentSeverity.info);
       expect(incident.status, IncidentStatus.detected);
       expect(incident.signalSource, SignalSource.manual);
+    });
+  });
+
+  group('Incident Statuspage-parity fields', () {
+    test('parses kind, impact, publish, shortlink, and postmortem', () {
+      final incident = Incident.fromMap({
+        'id': 'inc_1',
+        'monitor_id': 'mon_1',
+        'title': 't',
+        'severity': 'warn',
+        'status': 'in_progress',
+        'signal_source': 'manual',
+        'started_at': '2026-04-18T10:00:00Z',
+        'kind': 'maintenance',
+        'impact': 'major',
+        'impact_override': true,
+        'is_published': true,
+        'shortlink': 'abc123',
+        'scheduled_for': '2026-05-01T10:00:00Z',
+        'scheduled_until': '2026-05-01T11:00:00Z',
+        'postmortem_body': '# Root cause',
+        'postmortem_published_at': '2026-05-02T08:00:00Z',
+      });
+
+      expect(incident.status, IncidentStatus.inProgress);
+      expect(incident.kind, IncidentKind.maintenance);
+      expect(incident.impact, IncidentImpact.major);
+      expect(incident.impactOverride, isTrue);
+      expect(incident.isPublished, isTrue);
+      expect(incident.shortlink, 'abc123');
+      expect(incident.scheduledFor?.year, 2026);
+      expect(incident.scheduledUntil?.hour, 11);
+      expect(incident.postmortemBody, '# Root cause');
+      expect(incident.postmortemPublishedAt?.day, 2);
+    });
+
+    test('hydrates affected_monitors and updates when present', () {
+      final incident = Incident.fromMap({
+        'id': 'inc_1',
+        'monitor_id': 'mon_1',
+        'title': 't',
+        'severity': 'warn',
+        'status': 'identified',
+        'signal_source': 'manual',
+        'started_at': '2026-04-18T10:00:00Z',
+        'affected_monitors': [
+          {
+            'monitor_id': 'mon_1',
+            'name': 'API',
+            'component_status_at_start': 'operational',
+            'component_status_current': 'partial_outage',
+          },
+        ],
+        'updates': [
+          {
+            'id': 'upd_1',
+            'incident_id': 'inc_1',
+            'status': 'investigating',
+            'body': 'looking at it',
+            'display_at': '2026-04-18T10:05:00Z',
+            'deliver_notifications': true,
+          },
+        ],
+      });
+
+      expect(incident.affectedMonitors, hasLength(1));
+      expect(
+        incident.affectedMonitors.first.statusCurrent,
+        ComponentStatus.partialOutage,
+      );
+      expect(incident.updates, hasLength(1));
+      expect(incident.updates.first.status, IncidentStatus.investigating);
+      expect(incident.updates.first.body, 'looking at it');
     });
   });
 
