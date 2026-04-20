@@ -24,6 +24,7 @@ class Incident {
     required this.startedAt,
     required this.signalSource,
     this.teamId,
+    this.description,
     this.triggerRef,
     this.resolvedAt,
     this.metricKey,
@@ -52,6 +53,10 @@ class Incident {
   /// can run tenant-scoped authorization checks via `Gate`.
   final String? teamId;
   final String title;
+
+  /// Free-form operator note. Rendered inside the drawer above the
+  /// timeline; hidden when null or blank.
+  final String? description;
   final IncidentSeverity severity;
   final IncidentStatus status;
   final DateTime startedAt;
@@ -109,6 +114,7 @@ class Incident {
       id: id,
       monitorId: monitorId,
       teamId: teamId,
+      description: description,
       title: title ?? this.title,
       severity: severity ?? this.severity,
       status: status ?? this.status,
@@ -148,6 +154,7 @@ class Incident {
       id: map['id']?.toString() ?? '',
       monitorId: map['monitor_id']?.toString() ?? '',
       teamId: map['team_id']?.toString(),
+      description: map['description'] as String?,
       title: (map['title'] as String?) ?? '',
       severity: _severity(map['severity']),
       status: _status(map['status']),

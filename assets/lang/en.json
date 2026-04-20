@@ -178,6 +178,9 @@
     "filter": {
       "ai_owned": "AI-owned only"
     },
+    "description": {
+      "title": "Description"
+    },
     "status": {
       "detected": "Detected",
       "investigating": "Investigating",

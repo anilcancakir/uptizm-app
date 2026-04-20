@@ -58,6 +58,7 @@ class IncidentDetailPanel extends StatelessWidget {
                     onAccept: onAcceptAi,
                     onReject: onRejectAi,
                   ),
+                _descriptionCard(),
                 _timelineCard(),
               ],
             ),
@@ -136,6 +137,51 @@ class IncidentDetailPanel extends StatelessWidget {
               className: 'text-sm text-gray-600 dark:text-gray-300',
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _descriptionCard() {
+    final body = incident.description?.trim();
+    if (body == null || body.isEmpty) return const SizedBox.shrink();
+    return WDiv(
+      className: '''
+        rounded-xl overflow-hidden
+        bg-white dark:bg-gray-800
+        border border-gray-200 dark:border-gray-700
+        flex flex-col
+      ''',
+      children: [
+        WDiv(
+          className: '''
+            px-4 py-3
+            border-b border-gray-100 dark:border-gray-800
+            flex flex-row items-center gap-2
+          ''',
+          children: [
+            WIcon(
+              Icons.description_outlined,
+              className: 'text-sm text-gray-500 dark:text-gray-400',
+            ),
+            WText(
+              trans('incident.description.title'),
+              className: '''
+                text-xs font-bold uppercase tracking-wider
+                text-gray-500 dark:text-gray-400
+              ''',
+            ),
+          ],
+        ),
+        WDiv(
+          className: 'p-4',
+          child: WText(
+            body,
+            className: '''
+              text-sm leading-relaxed
+              text-gray-800 dark:text-gray-200
+            ''',
+          ),
+        ),
       ],
     );
   }

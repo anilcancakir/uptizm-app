@@ -9,8 +9,6 @@ import '../app/controllers/monitors/monitor_controller.dart';
 import '../app/controllers/settings/settings_controller.dart';
 import '../app/controllers/status_pages/status_page_subscriber_controller.dart';
 import '../app/controllers/status_pages/status_pages_controller.dart';
-import '../resources/views/incidents/incident_show_view.dart';
-import '../resources/views/incidents/incidents_index_view.dart';
 import '../resources/views/incidents/maintenance_create_view.dart';
 import '../resources/views/incidents/maintenance_index_view.dart';
 import '../resources/views/incidents/maintenance_show_view.dart';
@@ -43,14 +41,9 @@ void registerAppRoutes() {
         return StatusPageSubscribersView(statusPageId: id);
       });
 
-      // Incidents + scheduled maintenance. Both feeds share the backend
-      // `incidents` table, but the admin surface keeps them on separate
-      // top-level routes for cognitive separation.
-      MagicRoute.page('/incidents', () => const IncidentsIndexView());
-      MagicRoute.page(
-        '/incidents/:id',
-        (String id) => IncidentShowView(id: id),
-      );
+      // Scheduled maintenance. Incidents share the backend `incidents`
+      // table but live entirely inside the monitor drawer — no full-page
+      // surface. Maintenance keeps its own top-level routes.
       MagicRoute.page('/maintenance', () => const MaintenanceIndexView());
       MagicRoute.page(
         '/maintenance/create',
