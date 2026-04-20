@@ -178,12 +178,26 @@ class IncidentController extends MagicController
       return false;
     }
     final data = response.data?['data'];
-    if (data is Map<String, dynamic> && _detail?.id == id) {
-      _detail = _detail!.copyWith(
-        events: [..._detail!.events, IncidentEvent.fromMap(data)],
-      );
-      refreshUI();
+    if (data is! Map<String, dynamic>) {
+      return true;
     }
+    final event = IncidentEvent.fromMap(data);
+
+    // 1. Detail pane open → push into its stream so /incidents/:id updates.
+    if (_detail?.id == id) {
+      _detail = _detail!.copyWith(events: [..._detail!.events, event]);
+    }
+
+    // 2. Drawer reads from the list, not from _detail. Update the matching
+    //    list entry so monitor tab sheets reflect the new event on rebuild.
+    final list = List<Incident>.from(incidents);
+    final idx = list.indexWhere((i) => i.id == id);
+    if (idx != -1) {
+      list[idx] = list[idx].copyWith(events: [...list[idx].events, event]);
+      setState(list, status: RxStatus.success(), notify: false);
+    }
+
+    refreshUI();
     return true;
   }
 

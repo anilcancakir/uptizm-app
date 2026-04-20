@@ -323,6 +323,47 @@ void main() {
     });
 
     test(
+      'addEvent appends to list entry even when detail is not loaded',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': [
+              {..._incidentPayload(id: 'inc_1'), 'events': []},
+            ],
+          },
+          statusCode: 200,
+        );
+        await controller.load(monitorId: 'mon_1');
+
+        expect(controller.incidents.single.events, isEmpty);
+
+        driver.response = MagicResponse(
+          data: {
+            'data': {
+              'id': 'evt_1',
+              'at': '2026-04-18T10:05:00Z',
+              'actor': 'u-1',
+              'event_type': 'note',
+              'message': 'Drawer note',
+            },
+          },
+          statusCode: 201,
+        );
+        final ok = await controller.addEvent('inc_1', {
+          'event_type': 'note',
+          'message': 'Drawer note',
+        });
+
+        expect(ok, isTrue);
+        expect(controller.incidents.single.events, hasLength(1));
+        expect(
+          controller.incidents.single.events.single.message,
+          'Drawer note',
+        );
+      },
+    );
+
+    test(
       'submitCreate builds typed payload and toggles isSubmitting',
       () async {
         driver.response = MagicResponse(

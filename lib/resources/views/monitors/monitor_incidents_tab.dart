@@ -183,22 +183,34 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         expand: false,
-        builder: (_, _) => IncidentDetailPanel(
-          incident: incident,
-          onClose: () => MagicRoute.back(),
-          onAcknowledge: () {
-            MagicRoute.back();
-            _transitionStatus(incident, IncidentStatus.investigating);
+        builder: (_, _) => AnimatedBuilder(
+          animation: _controller,
+          builder: (_, _) {
+            // Pull the freshest list entry on every rebuild so the sheet
+            // reflects events appended by `addEvent`. Fall back to the
+            // captured closure when the controller has purged the row.
+            final fresh = _controller.incidents.firstWhere(
+              (i) => i.id == incident.id,
+              orElse: () => incident,
+            );
+            return IncidentDetailPanel(
+              incident: fresh,
+              onClose: () => MagicRoute.back(),
+              onAcknowledge: () {
+                MagicRoute.back();
+                _transitionStatus(fresh, IncidentStatus.investigating);
+              },
+              onResolve: () {
+                MagicRoute.back();
+                _transitionStatus(fresh, IncidentStatus.resolved);
+              },
+              onAddNote: () => IncidentNoteComposer.show(
+                ctx,
+                incidentTitle: fresh.title,
+                onSubmit: (text, intent) => _onNoteSubmit(fresh, text, intent),
+              ),
+            );
           },
-          onResolve: () {
-            MagicRoute.back();
-            _transitionStatus(incident, IncidentStatus.resolved);
-          },
-          onAddNote: () => IncidentNoteComposer.show(
-            ctx,
-            incidentTitle: incident.title,
-            onSubmit: (text, intent) => _onNoteSubmit(incident, text, intent),
-          ),
         ),
       ),
     );
