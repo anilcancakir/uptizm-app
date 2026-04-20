@@ -1,31 +1,18 @@
-/// Lifecycle state of an incident or scheduled maintenance.
+/// Lifecycle state of an incident.
 ///
-/// Realtime incidents flow through:
-///   detected -> investigating -> identified -> monitoring -> resolved.
+/// Flow: detected -> investigating -> identified -> monitoring -> resolved.
 /// `mitigated` is retained for back-compat with pre-redesign data.
-///
-/// Scheduled maintenance flows through a parallel lane:
-///   scheduled -> inProgress -> verifying -> completed.
-///
-/// Wire values use snake_case (`in_progress`); round-trip through
-/// [fromWire] / [wireValue] to cross the API boundary.
 enum IncidentStatus {
   detected,
   investigating,
   identified,
   monitoring,
   mitigated,
-  resolved,
-  scheduled,
-  inProgress,
-  verifying,
-  completed;
+  resolved;
 
   String get toneKey => switch (this) {
-    IncidentStatus.resolved || IncidentStatus.completed => 'success',
-    IncidentStatus.monitoring || IncidentStatus.verifying => 'info',
-    IncidentStatus.scheduled => 'info',
-    IncidentStatus.inProgress => 'warn',
+    IncidentStatus.resolved => 'success',
+    IncidentStatus.monitoring => 'info',
     _ => 'warn',
   };
 
@@ -33,22 +20,10 @@ enum IncidentStatus {
 
   bool get isActive => !isTerminal;
 
-  bool get isTerminal =>
-      this == IncidentStatus.resolved || this == IncidentStatus.completed;
-
-  bool get isScheduledLane => switch (this) {
-    IncidentStatus.scheduled ||
-    IncidentStatus.inProgress ||
-    IncidentStatus.verifying ||
-    IncidentStatus.completed => true,
-    _ => false,
-  };
+  bool get isTerminal => this == IncidentStatus.resolved;
 
   /// snake_case wire value used by the API.
-  String get wireValue => switch (this) {
-    IncidentStatus.inProgress => 'in_progress',
-    _ => name,
-  };
+  String get wireValue => name;
 
   /// Parses a snake_case wire value, falling back to [detected] on unknowns.
   static IncidentStatus fromWire(Object? raw) {
@@ -60,10 +35,6 @@ enum IncidentStatus {
       'monitoring' => IncidentStatus.monitoring,
       'mitigated' => IncidentStatus.mitigated,
       'resolved' => IncidentStatus.resolved,
-      'scheduled' => IncidentStatus.scheduled,
-      'in_progress' => IncidentStatus.inProgress,
-      'verifying' => IncidentStatus.verifying,
-      'completed' => IncidentStatus.completed,
       _ => IncidentStatus.detected,
     };
   }

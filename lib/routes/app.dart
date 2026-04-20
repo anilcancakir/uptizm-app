@@ -9,9 +9,6 @@ import '../app/controllers/monitors/monitor_controller.dart';
 import '../app/controllers/settings/settings_controller.dart';
 import '../app/controllers/status_pages/status_page_subscriber_controller.dart';
 import '../app/controllers/status_pages/status_pages_controller.dart';
-import '../resources/views/incidents/maintenance_create_view.dart';
-import '../resources/views/incidents/maintenance_index_view.dart';
-import '../resources/views/incidents/maintenance_show_view.dart';
 import '../resources/views/settings/settings_appearance_view.dart';
 import '../resources/views/status_pages/status_page_subscribers_view.dart';
 
@@ -40,19 +37,6 @@ void registerAppRoutes() {
         StatusPageSubscriberController.instance;
         return StatusPageSubscribersView(statusPageId: id);
       });
-
-      // Scheduled maintenance. Incidents share the backend `incidents`
-      // table but live entirely inside the monitor drawer — no full-page
-      // surface. Maintenance keeps its own top-level routes.
-      MagicRoute.page('/maintenance', () => const MaintenanceIndexView());
-      MagicRoute.page(
-        '/maintenance/create',
-        () => const MaintenanceCreateView(),
-      );
-      MagicRoute.page(
-        '/maintenance/:id',
-        (String id) => MaintenanceShowView(id: id),
-      );
 
       // Settings hub + sub-screens. The hub sits at `/settings` directly;
       // child URLs share the `/settings` prefix via the nested group.

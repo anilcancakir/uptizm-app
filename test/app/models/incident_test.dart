@@ -94,28 +94,24 @@ void main() {
         'monitor_id': 'mon_1',
         'title': 't',
         'severity': 'warn',
-        'status': 'in_progress',
+        'status': 'investigating',
         'signal_source': 'manual',
         'started_at': '2026-04-18T10:00:00Z',
-        'kind': 'maintenance',
+        'kind': 'incident',
         'impact': 'major',
         'impact_override': true,
         'is_published': true,
         'shortlink': 'abc123',
-        'scheduled_for': '2026-05-01T10:00:00Z',
-        'scheduled_until': '2026-05-01T11:00:00Z',
         'postmortem_body': '# Root cause',
         'postmortem_published_at': '2026-05-02T08:00:00Z',
       });
 
-      expect(incident.status, IncidentStatus.inProgress);
-      expect(incident.kind, IncidentKind.maintenance);
+      expect(incident.status, IncidentStatus.investigating);
+      expect(incident.kind, IncidentKind.incident);
       expect(incident.impact, IncidentImpact.major);
       expect(incident.impactOverride, isTrue);
       expect(incident.isPublished, isTrue);
       expect(incident.shortlink, 'abc123');
-      expect(incident.scheduledFor?.year, 2026);
-      expect(incident.scheduledUntil?.hour, 11);
       expect(incident.postmortemBody, '# Root cause');
       expect(incident.postmortemPublishedAt?.day, 2);
     });

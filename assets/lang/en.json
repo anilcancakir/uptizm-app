@@ -197,12 +197,10 @@
       "none": "No impact",
       "minor": "Minor",
       "major": "Major",
-      "critical": "Critical",
-      "maintenance": "Maintenance"
+      "critical": "Critical"
     },
     "kind": {
-      "incident": "Incident",
-      "maintenance": "Maintenance"
+      "incident": "Incident"
     },
     "update": {
       "compose": "Post update",
@@ -1317,59 +1315,7 @@
       "operational": "Operational",
       "degraded_performance": "Degraded performance",
       "partial_outage": "Partial outage",
-      "major_outage": "Major outage",
-      "under_maintenance": "Under maintenance"
-    }
-  },
-  "maintenance": {
-    "list": {
-      "title": "Maintenance",
-      "subtitle": "Schedule changes ahead of time so the status page tells the story for you."
-    },
-    "schedule": {
-      "title": "Schedule maintenance",
-      "subtitle": "Plan the window ahead so the status page tells the story for you.",
-      "title_field": "Title",
-      "title_placeholder": "Short headline visible to subscribers",
-      "scheduled_for": "Starts at",
-      "scheduled_until": "Ends at",
-      "pick_date": "Pick date",
-      "pick_time": "Pick time",
-      "body_field": "Details",
-      "body_placeholder": "What will change? Markdown is supported.",
-      "monitors_field": "Affected components",
-      "monitors_empty": "Create a monitor first.",
-      "auto_transition": "Auto-transition component status",
-      "notify_start": "Notify subscribers at start",
-      "notify_end": "Notify subscribers at end",
-      "submit": "Schedule"
-    },
-    "show": {
-      "title": "Maintenance window",
-      "details_heading": "Details",
-      "no_details": "No details posted."
-    },
-    "tab": {
-      "upcoming": "Upcoming",
-      "in_progress": "In progress",
-      "history": "History"
-    },
-    "actions": {
-      "cancel": "Cancel window",
-      "confirm_cancel": "Cancel this maintenance window?"
-    },
-    "toast": {
-      "scheduled": "Maintenance scheduled",
-      "cancelled": "Maintenance cancelled"
-    },
-    "errors": {
-      "load": "Could not load maintenance windows.",
-      "create": "Could not schedule the window.",
-      "cancel": "Could not cancel the window."
-    },
-    "empty": {
-      "title": "No maintenance scheduled",
-      "subtitle": "Plan upgrades ahead of time so customers see them on the status page."
+      "major_outage": "Major outage"
     }
   },
   "subscribe": {

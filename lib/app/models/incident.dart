@@ -38,8 +38,6 @@ class Incident {
     this.impactOverride = false,
     this.isPublished = false,
     this.shortlink,
-    this.scheduledFor,
-    this.scheduledUntil,
     this.postmortemBody,
     this.postmortemPublishedAt,
     this.affectedMonitors = const [],
@@ -77,8 +75,6 @@ class Incident {
   final bool impactOverride;
   final bool isPublished;
   final String? shortlink;
-  final DateTime? scheduledFor;
-  final DateTime? scheduledUntil;
   final String? postmortemBody;
   final DateTime? postmortemPublishedAt;
   final List<IncidentAffectedMonitor> affectedMonitors;
@@ -133,8 +129,6 @@ class Incident {
       impactOverride: impactOverride ?? this.impactOverride,
       isPublished: isPublished ?? this.isPublished,
       shortlink: shortlink,
-      scheduledFor: scheduledFor,
-      scheduledUntil: scheduledUntil,
       postmortemBody: postmortemBody ?? this.postmortemBody,
       postmortemPublishedAt:
           postmortemPublishedAt ?? this.postmortemPublishedAt,
@@ -176,8 +170,6 @@ class Incident {
       impactOverride: map['impact_override'] == true,
       isPublished: map['is_published'] == true,
       shortlink: map['shortlink'] as String?,
-      scheduledFor: _date(map['scheduled_for']),
-      scheduledUntil: _date(map['scheduled_until']),
       postmortemBody: map['postmortem_body'] as String?,
       postmortemPublishedAt: _date(map['postmortem_published_at']),
       affectedMonitors: rawAffected is List

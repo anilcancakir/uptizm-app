@@ -1,16 +1,9 @@
-/// Discriminator between a realtime incident and a scheduled maintenance
-/// window. Both share the `incidents` table on the API side.
+/// Discriminator flag on an incident row. Kept as an enum for future
+/// incident flavors without reshaping the column.
 enum IncidentKind {
-  incident,
-  maintenance;
+  incident;
 
   String get labelKey => 'incident.kind.$name';
 
-  static IncidentKind fromWire(Object? raw) {
-    if (raw is! String) return IncidentKind.incident;
-    return IncidentKind.values.firstWhere(
-      (v) => v.name == raw,
-      orElse: () => IncidentKind.incident,
-    );
-  }
+  static IncidentKind fromWire(Object? raw) => IncidentKind.incident;
 }
