@@ -37,7 +37,7 @@ dependencies:
 
   fl_chart: ^1.2.0
 
-  sentry_flutter: ^9.16.0
+  sentry_flutter: ^9.19.0
   sentry_dio: ^9.16.1
 
   # The following adds the Cupertino Icons font to your application.
