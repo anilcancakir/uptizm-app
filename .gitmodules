@@ -16,3 +16,6 @@
 [submodule "references/playwright-cli"]
 	path = references/playwright-cli
 	url = https://github.com/microsoft/playwright-cli.git
+[submodule "references/ai-test"]
+	path = references/ai-test
+	url = https://github.com/fluttersdk/ai-test.git
