@@ -18,11 +18,13 @@ Future<bool> Function(String, String, dynamic) _uniqueSlugResolver({
         if (ignoreId != null && ignoreId.isNotEmpty) 'ignore_id': ignoreId,
       },
     );
-    // 422 is the legitimate "not unique" answer from Laravel's validator;
-    // anything else in the failure range (network / 5xx) is a transport
-    // hiccup and gracefully passes so the user is not blocked from typing.
+    // 422 is the legitimate "not unique" answer from Laravel's validator.
+    // Anything else outside the 2xx success range — transport failures
+    // (statusCode 0 when offline), 5xx, redirects — gracefully passes so
+    // a flaky network never blocks the form. Mirrors the default Unique
+    // resolver contract at references/magic/.../unique.dart:118-122.
     if (response.statusCode == 422) return false;
-    if (response.failed) return true;
+    if (!response.successful) return true;
     final body = response.data;
     return body is Map<String, dynamic> && body['unique'] == true;
   };

@@ -131,10 +131,15 @@ class IncidentController extends MagicController
   /// Replaces the matching entry in place (order preserved) and swaps
   /// `_detail` when the updated entity is the one currently displayed.
   Future<Incident?> update(String id, Map<String, dynamic> payload) async {
-    final target = incidents.firstWhere(
-      (i) => i.id == id,
-      orElse: () => throw StateError('Incident $id not in scope'),
-    );
+    // Resolve target from either the drawer (_detail) or the live list so
+    // the gate runs on the same model regardless of how the screen loaded
+    // the incident. Mirrors the postUpdate resolver below.
+    final target = _detail?.id == id
+        ? _detail!
+        : incidents.firstWhere(
+            (i) => i.id == id,
+            orElse: () => throw StateError('Incident $id not in scope'),
+          );
     authorize('incidents.update', target);
     clearErrors();
     final previous = List<Incident>.from(incidents);

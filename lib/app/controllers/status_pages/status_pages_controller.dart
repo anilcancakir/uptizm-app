@@ -295,6 +295,8 @@ class StatusPagesController extends MagicController
   /// Unpublishes a status page (flips `is_public` to false). Mirrors
   /// [publish] — same response shape, same optimistic list refresh.
   Future<bool> unpublish(String id) async {
+    final target = _resolvePage(id);
+    authorize('status-pages.unpublish', target);
     clearErrors();
     final previous = List<StatusPage>.from(pages);
     final response = await Http.post('/status-pages/$id/unpublish');

@@ -158,6 +158,20 @@ void main() {
         },
       );
 
+      test('passes on transport failure (statusCode 0, offline)', () async {
+        // Mirrors the Store request guard: offline users must not be blocked
+        // by a false "slug taken" error when the probe never reaches the
+        // server. The server's submit-time validation remains the source of
+        // truth for uniqueness.
+        driver.response = MagicResponse(data: {}, statusCode: 0);
+
+        final result = await const UpdateStatusPageRequest().validateForUpdate({
+          'slug': 'cloud',
+        }, pageId: 'pg_1');
+
+        expect(result['slug'], 'cloud');
+      });
+
       test(
         'fails when slug collides with a different record (api returns 422)',
         () async {

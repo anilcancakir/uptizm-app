@@ -184,7 +184,7 @@ void main() {
         );
       });
 
-      test('passes on network error (graceful degradation)', () async {
+      test('passes on 5xx (graceful degradation)', () async {
         driver.response = MagicResponse(data: {}, statusCode: 500);
 
         final payload = await const StoreStatusPageRequest().validateAsync({
@@ -196,6 +196,24 @@ void main() {
         });
 
         expect(payload['slug'], 'wobbly');
+      });
+
+      test('passes on transport failure (statusCode 0, offline)', () async {
+        // Dio's _handleError returns statusCode: 0 when the request cannot
+        // reach the server at all (DNS failure, no network, connection
+        // refused). The resolver must treat that as "not authoritative"
+        // and pass, otherwise offline users see false "slug taken" errors.
+        driver.response = MagicResponse(data: {}, statusCode: 0);
+
+        final payload = await const StoreStatusPageRequest().validateAsync({
+          'title': 'Trust',
+          'slug': 'offline-slug',
+          'primary_color': '#111827',
+          'is_public': false,
+          'monitor_ids': const [],
+        });
+
+        expect(payload['slug'], 'offline-slug');
       });
     });
   });

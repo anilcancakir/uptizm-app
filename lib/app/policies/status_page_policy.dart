@@ -30,6 +30,14 @@ class StatusPagePolicy {
       'status-pages.publish',
       (user, page) => _isManager(user) && _sameTeam(user, page),
     );
+    // Unpublish mirrors publish: same managerial intent, same team gate.
+    // Defining it explicitly (rather than piggy-backing on `publish`) keeps
+    // the ability namespace symmetric so future audit / log inspection can
+    // distinguish the two operations.
+    Gate.define(
+      'status-pages.unpublish',
+      (user, page) => _isManager(user) && _sameTeam(user, page),
+    );
   }
 
   bool _authed(dynamic user) => user is User && user.id.isNotEmpty;

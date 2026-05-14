@@ -315,6 +315,26 @@ void main() {
       },
     );
 
+    test(
+      'unpublish throws AuthorizationException when user is not a manager',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': [
+              _pagePayload(id: 'sp_1', teamId: 'team_1', isPublic: true),
+            ],
+          },
+          statusCode: 200,
+        );
+        await controller.load();
+        Auth.fake(user: _memberUser());
+        expect(
+          () => controller.unpublish('sp_1'),
+          throwsA(isA<AuthorizationException>()),
+        );
+      },
+    );
+
     test('index() returns StatusPageListView', () {
       expect(controller.index(), isA<StatusPageListView>());
     });

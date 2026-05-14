@@ -16,11 +16,13 @@ Future<bool> Function(String, String, dynamic) _uniqueSlugResolver({
         if (ignoreId.isNotEmpty) 'ignore_id': ignoreId,
       },
     );
-    // 422 is the legitimate "slug taken by another record" response;
-    // anything else in the failure range is a transport hiccup and
-    // gracefully passes so the form does not block on flaky networks.
+    // 422 is the legitimate "slug taken by another record" response.
+    // Anything else outside 2xx — transport failures (statusCode 0 when
+    // offline), 5xx, redirects — gracefully passes so a flaky network
+    // never blocks the edit submit. Mirrors the default Unique resolver
+    // contract at references/magic/.../unique.dart:118-122.
     if (response.statusCode == 422) return false;
-    if (response.failed) return true;
+    if (!response.successful) return true;
     final body = response.data;
     return body is Map<String, dynamic> && body['unique'] == true;
   };
