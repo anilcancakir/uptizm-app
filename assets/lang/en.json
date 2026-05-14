@@ -181,6 +181,9 @@
     "description": {
       "title": "Description"
     },
+    "public_post": {
+      "title": "Status page post"
+    },
     "status": {
       "detected": "Detected",
       "investigating": "Investigating",
@@ -232,7 +235,7 @@
     },
     "timeline": {
       "title": "Timeline",
-      "add_note": "Add note",
+      "post_update": "Post update",
       "system": "System",
       "detected": "Incident detected"
     },
@@ -242,10 +245,13 @@
     },
     "actions": {
       "acknowledge": "Acknowledge",
-      "resolve": "Resolve"
+      "resolve": "Resolve",
+      "close": "Close"
     },
     "toast": {
       "acknowledged": "Incident acknowledged",
+      "identified": "Root cause identified",
+      "monitoring": "Monitoring the fix",
       "resolved": "Incident resolved",
       "updated": "Incident updated"
     },
@@ -281,6 +287,9 @@
       "title_required": "Please enter a title first.",
       "metric_none": "No specific metric",
       "metric_empty": "No metrics defined on this monitor yet.",
+      "ai_draft_bundle": "Draft title and description with AI",
+      "ai_draft_hint": "Uses monitor telemetry + your hint",
+      "ai_drafting_bundle": "Drafting title and description...",
       "basics": {
         "title": "What went wrong",
         "subtitle": "Describe the problem so teammates and the AI have context."
@@ -308,21 +317,39 @@
         "notify_subtitle": "On-call and all subscribed channels."
       }
     },
-    "note": {
-      "title": "Add a note",
-      "intent_label": "Also update status",
+    "update": {
+      "title": "Post an update",
+      "subtitle_note_only": "Log a note without changing status.",
+      "subtitle_status": "Move the incident to {status} and share what changed.",
+      "status_label": "Status",
       "intent": {
         "none": "Note only",
-        "acknowledge": "Acknowledge",
-        "mitigated": "Mitigated",
+        "investigating": "Investigating",
+        "identified": "Identified",
+        "monitoring": "Monitoring",
         "resolved": "Resolved"
       },
-      "message_label": "Note",
-      "placeholder": "What did you check, change, or notice? Keep it short; future you will thank you.",
-      "ai_hint": "The AI reads every note and uses it for similarity matching on future incidents.",
-      "submit": "Post note",
-      "saved_toast": "Note added",
-      "toast_added": "Note added",
+      "status_name": {
+        "investigating": "Investigating",
+        "identified": "Identified",
+        "monitoring": "Monitoring",
+        "resolved": "Resolved"
+      },
+      "message_label": "Update",
+      "placeholder": "What changed since the last update? This goes to subscribers and the public status page.",
+      "placeholder_note_only": "Internal-flavored note? Leave a short line for the timeline. Subscribers see this too.",
+      "placeholder_resolved": "Short summary of what was fixed and the impact window. Subscribers see this.",
+      "ai_hint": "The AI reads every update and uses it for similarity matching on future incidents.",
+      "ai_draft": "AI draft",
+      "ai_drafting": "Drafting...",
+      "ai_draft_badge": "Drafted with AI",
+      "ai_undo": "Undo",
+      "ai_limit_reached": "AI draft limit reached for this incident. Write the next update manually.",
+      "ai_error": "AI draft failed. Try again or write manually.",
+      "submit": "Post update",
+      "submit_resolve": "Post update & resolve",
+      "saved_toast": "Update posted",
+      "toast_posted": "Update posted",
       "empty_toast": "Write something before posting."
     }
   },
@@ -514,7 +541,8 @@
         "unit": "Unit",
         "group": "Group",
         "usage": "Usage"
-      }
+      },
+      "empty_cta": "Go to monitors"
     },
     "ai": {
       "title": "AI settings",
@@ -649,12 +677,10 @@
     "show": {
       "open": "Open",
       "edit": "Edit",
-      "subscribers": "Subscribers",
       "publish": "Publish",
       "unpublish": "Unpublish",
       "unpublish_success": "Status page unpublished",
       "published_toast": "Status page published",
-      "open_preview": "Open preview",
       "preview_mode_banner": "This page is unpublished. Only members with the preview link can see it.",
       "missing_title": "Status page not found",
       "missing_subtitle": "It may have been deleted or you lack permission to view it.",

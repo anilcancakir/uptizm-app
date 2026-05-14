@@ -8,6 +8,7 @@ import '../../../app/models/monitor_metric.dart';
 import '../components/common/app_back_button.dart';
 import '../components/common/empty_state.dart';
 import '../components/common/error_banner.dart';
+import '../components/common/primary_button.dart';
 import '../components/common/refresh_icon_button.dart';
 import '../components/common/skeleton_row.dart';
 
@@ -279,11 +280,16 @@ class _SettingsMetricsLibraryViewState
   }
 
   Widget _empty() {
-    return const EmptyState(
+    return EmptyState(
       icon: Icons.analytics_outlined,
       titleKey: 'settings.metrics_library.empty_title',
       subtitleKey: 'settings.metrics_library.empty_subtitle',
       tone: 'gray',
+      action: PrimaryButton(
+        labelKey: 'settings.metrics_library.empty_cta',
+        icon: Icons.arrow_forward_rounded,
+        onTap: () => MagicRoute.to('/monitors'),
+      ),
     );
   }
 }

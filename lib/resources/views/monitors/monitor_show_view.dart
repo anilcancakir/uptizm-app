@@ -336,9 +336,13 @@ class _MonitorShowViewState
     );
   }
 
+  /// Hide the post-create welcome banner and drop `?welcome=1` from the URL
+  /// so a refresh does not resurrect it. Stays on the current monitor.
   void _dismissWelcome() {
     setState(() => _showWelcome = false);
-    GoRouter.of(context).go('/monitors/sample');
+    final id = widget.monitorId;
+    if (id == null) return;
+    MagicRoute.replace('/monitors/$id');
   }
 
   Widget _buildTabBody() {
