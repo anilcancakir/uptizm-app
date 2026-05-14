@@ -7,6 +7,7 @@ import 'ai_analysis_card.dart';
 import 'incident_severity_dot.dart';
 import 'incident_status_pill.dart';
 import 'incident_timeline.dart';
+import 'public_status_post.dart';
 
 /// Right-side detail panel for an incident.
 ///
@@ -58,7 +59,7 @@ class IncidentDetailPanel extends StatelessWidget {
                     onAccept: onAcceptAi,
                     onReject: onRejectAi,
                   ),
-                _descriptionCard(),
+                PublicStatusPost(incident: incident),
                 _timelineCard(),
               ],
             ),
@@ -141,51 +142,6 @@ class IncidentDetailPanel extends StatelessWidget {
     );
   }
 
-  Widget _descriptionCard() {
-    final body = incident.description?.trim();
-    if (body == null || body.isEmpty) return const SizedBox.shrink();
-    return WDiv(
-      className: '''
-        rounded-xl overflow-hidden
-        bg-white dark:bg-gray-800
-        border border-gray-200 dark:border-gray-700
-        flex flex-col
-      ''',
-      children: [
-        WDiv(
-          className: '''
-            px-4 py-3
-            border-b border-gray-100 dark:border-gray-800
-            flex flex-row items-center gap-2
-          ''',
-          children: [
-            WIcon(
-              Icons.description_outlined,
-              className: 'text-sm text-gray-500 dark:text-gray-400',
-            ),
-            WText(
-              trans('incident.description.title'),
-              className: '''
-                text-xs font-bold uppercase tracking-wider
-                text-gray-500 dark:text-gray-400
-              ''',
-            ),
-          ],
-        ),
-        WDiv(
-          className: 'p-4',
-          child: WText(
-            body,
-            className: '''
-              text-sm leading-relaxed
-              text-gray-800 dark:text-gray-200
-            ''',
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _timelineCard() {
     return WDiv(
       className: '''
@@ -217,23 +173,19 @@ class IncidentDetailPanel extends StatelessWidget {
             WButton(
               onTap: onAddNote,
               className: '''
-                px-2 py-1 rounded-md
-                hover:bg-gray-100 dark:hover:bg-gray-800
-                flex flex-row items-center gap-1
+                px-3 py-1.5 rounded-lg
+                bg-primary-600 dark:bg-primary-500
+                hover:bg-primary-700 dark:hover:bg-primary-400
+                active:bg-primary-800 dark:active:bg-primary-300
+                flex flex-row items-center gap-1.5
               ''',
               child: WDiv(
-                className: 'flex flex-row items-center gap-1',
+                className: 'flex flex-row items-center gap-1.5',
                 children: [
-                  WIcon(
-                    Icons.add_comment_outlined,
-                    className: 'text-xs text-primary dark:text-primary-300',
-                  ),
+                  WIcon(Icons.send_rounded, className: 'text-xs text-white'),
                   WText(
-                    trans('incident.timeline.add_note'),
-                    className: '''
-                      text-xs font-semibold
-                      text-primary dark:text-primary-300
-                    ''',
+                    trans('incident.timeline.post_update'),
+                    className: 'text-xs font-semibold text-white',
                   ),
                 ],
               ),
@@ -253,6 +205,7 @@ class IncidentDetailPanel extends StatelessWidget {
 
   Widget _footer() {
     final isResolved = incident.status == IncidentStatus.resolved;
+    final isDetected = incident.status == IncidentStatus.detected;
     return WDiv(
       className: '''
         px-4 py-3
@@ -270,14 +223,15 @@ class IncidentDetailPanel extends StatelessWidget {
             className: 'text-[10px] text-gray-500 dark:text-gray-400',
           ),
         ),
-        if (!isResolved && incident.status == IncidentStatus.detected)
+        // Primary: Acknowledge for detected, Resolve after ack. Hidden
+        // once resolved so the drawer cannot reopen the lifecycle.
+        if (!isResolved && isDetected)
           WButton(
             onTap: onAcknowledge,
             className: '''
               px-3 py-2 rounded-lg
-              border border-gray-200 dark:border-gray-700
-              bg-white dark:bg-gray-800
-              hover:bg-gray-100 dark:hover:bg-gray-700
+              bg-primary-600 dark:bg-primary-500
+              hover:bg-primary-700 dark:hover:bg-primary-400
               flex flex-row items-center gap-1.5
             ''',
             child: WDiv(
@@ -285,19 +239,16 @@ class IncidentDetailPanel extends StatelessWidget {
               children: [
                 WIcon(
                   Icons.visibility_rounded,
-                  className: 'text-sm text-gray-600 dark:text-gray-300',
+                  className: 'text-sm text-white',
                 ),
                 WText(
                   trans('incident.actions.acknowledge'),
-                  className: '''
-                    text-xs font-semibold
-                    text-gray-700 dark:text-gray-200
-                  ''',
+                  className: 'text-xs font-semibold text-white',
                 ),
               ],
             ),
           ),
-        if (!isResolved)
+        if (!isResolved && !isDetected)
           WButton(
             onTap: onResolve,
             className: '''
@@ -317,6 +268,34 @@ class IncidentDetailPanel extends StatelessWidget {
               ],
             ),
           ),
+        // Secondary: Close on the far right — always available, defuses
+        // muscle-memory resolves on the primary action.
+        WButton(
+          onTap: onClose,
+          className: '''
+            px-3 py-2 rounded-lg
+            border border-gray-200 dark:border-gray-700
+            bg-white dark:bg-gray-800
+            hover:bg-gray-100 dark:hover:bg-gray-700
+            flex flex-row items-center gap-1.5
+          ''',
+          child: WDiv(
+            className: 'flex flex-row items-center gap-1.5',
+            children: [
+              WIcon(
+                Icons.close_rounded,
+                className: 'text-sm text-gray-600 dark:text-gray-300',
+              ),
+              WText(
+                trans('incident.actions.close'),
+                className: '''
+                  text-xs font-semibold
+                  text-gray-700 dark:text-gray-200
+                ''',
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
