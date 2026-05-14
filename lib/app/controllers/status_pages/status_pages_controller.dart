@@ -117,7 +117,7 @@ class StatusPagesController extends MagicController
     try {
       final Map<String, dynamic> payload;
       try {
-        payload = const StoreStatusPageRequest().validate({
+        payload = await const StoreStatusPageRequest().validateAsync({
           'title': title,
           'slug': slug,
           'primary_color': primaryColor,
@@ -239,7 +239,7 @@ class StatusPagesController extends MagicController
     try {
       final Map<String, dynamic> payload;
       try {
-        payload = const UpdateStatusPageRequest().validate({
+        payload = await const UpdateStatusPageRequest().validateForUpdate({
           'title': title,
           'slug': slug,
           'primary_color': primaryColor,
@@ -247,7 +247,7 @@ class StatusPagesController extends MagicController
           'monitor_ids': monitorIds,
           'metric_ids': metricIds,
           'logo_path': ?logoPath,
-        });
+        }, pageId: id);
       } on ValidationException catch (e) {
         validationErrors = Map<String, String>.from(e.errors);
         refreshUI();

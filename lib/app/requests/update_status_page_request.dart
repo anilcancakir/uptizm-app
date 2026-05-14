@@ -1,5 +1,31 @@
 import 'package:magic/magic.dart';
 
+/// Custom resolver that POSTs the uniqueness probe in the envelope shape
+/// uptizm-api's `UniqueValidationController` expects: `{model, field, value,
+/// ignore_id}` so the edit form does not 422 against the record it is editing.
+Future<bool> Function(String, String, dynamic) _uniqueSlugResolver({
+  required String ignoreId,
+}) {
+  return (String endpoint, String field, dynamic value) async {
+    final response = await Http.post(
+      endpoint,
+      data: {
+        'model': 'status_page',
+        'field': field,
+        'value': value,
+        if (ignoreId.isNotEmpty) 'ignore_id': ignoreId,
+      },
+    );
+    // 422 is the legitimate "slug taken by another record" response;
+    // anything else in the failure range is a transport hiccup and
+    // gracefully passes so the form does not block on flaky networks.
+    if (response.statusCode == 422) return false;
+    if (response.failed) return true;
+    final body = response.data;
+    return body is Map<String, dynamic> && body['unique'] == true;
+  };
+}
+
 /// Form request for `PATCH /status-pages/{id}`.
 ///
 /// Mirrors the `UpdateStatusPageRequest` on the API side: only present
@@ -7,6 +33,31 @@ import 'package:magic/magic.dart';
 /// Keys absent from the submitted map remain untouched on the server.
 class UpdateStatusPageRequest extends FormRequest {
   const UpdateStatusPageRequest();
+
+  /// Run the partial-update validation pipeline including the async slug
+  /// uniqueness probe scoped to [pageId]. Edit flows call this instead of
+  /// the inherited sync `validate(data)` so the `Unique` rule actually
+  /// fires and the controller's POST envelope receives `ignore_id`.
+  Future<Map<String, dynamic>> validateForUpdate(
+    Map<String, dynamic> data, {
+    required String pageId,
+  }) async {
+    if (!authorize()) {
+      throw const AuthorizationException();
+    }
+    final normalized = prepared(data);
+    final rulesWithSlug = {
+      ...rules(),
+      'slug': [
+        Max(63),
+        Unique(
+          '/validate/unique',
+          field: 'slug',
+        ).via(_uniqueSlugResolver(ignoreId: pageId)),
+      ],
+    };
+    return Validator.make(normalized, rulesWithSlug).validateAsync();
+  }
 
   /// Normalizes the incoming [data] before rule validation. Trims string
   /// fields in place and removes the `logo_path` key when blank so the

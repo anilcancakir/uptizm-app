@@ -332,7 +332,13 @@ void main() {
       'submitCreate builds typed payload and toggles isSubmitting',
       () async {
         driver.response = MagicResponse(
-          data: {'data': _pagePayload(id: 'sp_new')},
+          // Same response answers both the Unique probe (unique:true) and
+          // the actual POST /status-pages (data:<page>). The mock driver
+          // returns the single configured response for every URL.
+          data: {
+            'unique': true,
+            'data': _pagePayload(id: 'sp_new'),
+          },
           statusCode: 201,
         );
 
@@ -396,7 +402,11 @@ void main() {
       );
       await controller.load();
       driver.response = MagicResponse(
-        data: {'data': _pagePayload(id: 'sp_1', title: 'New')},
+        // Same response answers Unique probe + the actual PUT call.
+        data: {
+          'unique': true,
+          'data': _pagePayload(id: 'sp_1', title: 'New'),
+        },
         statusCode: 200,
       );
       final result = await controller.submitUpdate(
