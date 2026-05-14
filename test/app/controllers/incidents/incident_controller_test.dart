@@ -194,6 +194,32 @@ void main() {
       expect(controller.detail?.events, hasLength(1));
     });
 
+    test('loadOne preserves the existing list (no state reset)', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': [
+            _incidentPayload(id: 'inc_1'),
+            _incidentPayload(id: 'inc_2'),
+          ],
+        },
+        statusCode: 200,
+      );
+      await controller.load(monitorId: 'mon_1');
+      expect(controller.incidents, hasLength(2));
+
+      driver.response = MagicResponse(
+        data: {
+          'data': {..._incidentPayload(id: 'inc_1'), 'events': []},
+        },
+        statusCode: 200,
+      );
+      await controller.loadOne('inc_1');
+
+      expect(controller.incidents, hasLength(2));
+      expect(controller.incidents.map((i) => i.id), ['inc_1', 'inc_2']);
+      expect(controller.detail?.id, 'inc_1');
+    });
+
     test('store POSTs and prepends the new incident into the list', () async {
       await controller.load();
       driver.response = MagicResponse(
@@ -287,77 +313,87 @@ void main() {
       expect(controller.incidents.single.severity, IncidentSeverity.warn);
     });
 
-    test('addEvent POSTs and reloads detail', () async {
-      driver.response = MagicResponse(
-        data: {
-          'data': {..._incidentPayload(id: 'inc_1'), 'events': []},
-        },
-        statusCode: 200,
-      );
-      await controller.loadOne('inc_1');
-
-      final calls = <(String, String)>[];
-      driver.response = MagicResponse(
-        data: {
-          'data': {
-            'id': 'evt_1',
-            'at': '2026-04-18T10:05:00Z',
-            'actor': 'u-1',
-            'event_type': 'note',
-            'message': 'Looking at it',
+    test(
+      'postUpdate POSTs public update and transitions detail status',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': {..._incidentPayload(id: 'inc_1'), 'updates': []},
           },
-        },
-        statusCode: 201,
-      );
-      final ok = await controller.addEvent('inc_1', {
-        'event_type': 'note',
-        'message': 'Looking at it',
-      });
-      calls.add((driver.lastMethod!, driver.lastUrl!));
+          statusCode: 200,
+        );
+        await controller.loadOne('inc_1');
 
-      expect(ok, isTrue);
-      expect(calls.single.$1, 'POST');
-      expect(calls.single.$2, '/incidents/inc_1/events');
-      expect((driver.lastData as Map)['event_type'], 'note');
-    });
+        driver.response = MagicResponse(
+          data: {
+            'data': {
+              'id': 'upd_1',
+              'incident_id': 'inc_1',
+              'status': 'investigating',
+              'body': 'Looking at it',
+              'display_at': '2026-04-18T10:05:00Z',
+              'deliver_notifications': true,
+            },
+          },
+          statusCode: 201,
+        );
+        final ok = await controller.postUpdate(
+          id: 'inc_1',
+          status: IncidentStatus.investigating,
+          body: 'Looking at it',
+        );
+
+        expect(ok, isTrue);
+        expect(driver.lastMethod, 'POST');
+        expect(driver.lastUrl, '/incidents/inc_1/updates');
+        expect((driver.lastData as Map)['status'], 'investigating');
+        expect((driver.lastData as Map)['body'], 'Looking at it');
+        expect(controller.detail?.status, IncidentStatus.investigating);
+        expect(controller.detail?.updates, hasLength(1));
+        expect(controller.detail?.updates.single.body, 'Looking at it');
+      },
+    );
 
     test(
-      'addEvent appends to list entry even when detail is not loaded',
+      'postUpdate appends to list entry even when detail is not loaded',
       () async {
         driver.response = MagicResponse(
           data: {
             'data': [
-              {..._incidentPayload(id: 'inc_1'), 'events': []},
+              {..._incidentPayload(id: 'inc_1'), 'updates': []},
             ],
           },
           statusCode: 200,
         );
         await controller.load(monitorId: 'mon_1');
 
-        expect(controller.incidents.single.events, isEmpty);
+        expect(controller.incidents.single.updates, isEmpty);
 
         driver.response = MagicResponse(
           data: {
             'data': {
-              'id': 'evt_1',
-              'at': '2026-04-18T10:05:00Z',
-              'actor': 'u-1',
-              'event_type': 'note',
-              'message': 'Drawer note',
+              'id': 'upd_1',
+              'incident_id': 'inc_1',
+              'status': 'resolved',
+              'body': 'Mitigated by rollback',
+              'display_at': '2026-04-18T10:05:00Z',
+              'deliver_notifications': true,
             },
           },
           statusCode: 201,
         );
-        final ok = await controller.addEvent('inc_1', {
-          'event_type': 'note',
-          'message': 'Drawer note',
-        });
+        final ok = await controller.postUpdate(
+          id: 'inc_1',
+          status: IncidentStatus.resolved,
+          body: 'Mitigated by rollback',
+        );
 
         expect(ok, isTrue);
-        expect(controller.incidents.single.events, hasLength(1));
+        expect(controller.incidents.single.status, IncidentStatus.resolved);
+        expect(controller.incidents.single.updates, hasLength(1));
         expect(
-          controller.incidents.single.events.single.message,
-          'Drawer note',
+          controller.incidents.single.updates.single.body,
+          'Mitigated by rollback',
         );
       },
     );

@@ -100,7 +100,6 @@ void main() {
         'kind': 'incident',
         'impact': 'major',
         'impact_override': true,
-        'is_published': true,
         'shortlink': 'abc123',
         'postmortem_body': '# Root cause',
         'postmortem_published_at': '2026-05-02T08:00:00Z',
@@ -110,7 +109,6 @@ void main() {
       expect(incident.kind, IncidentKind.incident);
       expect(incident.impact, IncidentImpact.major);
       expect(incident.impactOverride, isTrue);
-      expect(incident.isPublished, isTrue);
       expect(incident.shortlink, 'abc123');
       expect(incident.postmortemBody, '# Root cause');
       expect(incident.postmortemPublishedAt?.day, 2);

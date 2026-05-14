@@ -1,6 +1,7 @@
 import 'package:magic/magic.dart';
 
 import '../../enums/incident_severity.dart';
+import '../../enums/incident_status.dart';
 import '../../models/incident.dart';
 import '../../requests/store_incident_request.dart';
 
@@ -17,10 +18,12 @@ class IncidentController extends MagicController
 
   Incident? _detail;
   bool _isSubmitting = false;
+  bool _isDrafting = false;
 
   List<Incident> get incidents => rxState ?? const [];
   Incident? get detail => _detail;
   bool get isSubmitting => _isSubmitting;
+  bool get isDrafting => _isDrafting;
 
   /// Typed create wrapper used by the incident composer sheet. Builds the
   /// API payload, guards concurrent submits, and flips [isSubmitting].
@@ -78,23 +81,21 @@ class IncidentController extends MagicController
 
   /// Fetches a single incident into `_detail` for the detail panel.
   ///
-  /// Leaves the list untouched (notifies with the current `incidents`) so the
-  /// surrounding list view does not re-render while a detail is opened.
+  /// Never touches `rxState` / `rxStatus`. The drawer opens on top of a live
+  /// list; flipping the mixin's status to loading here would wipe the
+  /// underlying list render ("All clear" flash) until the detail lands.
   Future<void> loadOne(String id) async {
     clearErrors();
-    setLoading();
     final response = await Http.get('/incidents/$id');
     if (!response.successful) {
-      setError(response.errorMessage ?? trans('incident.errors.generic_load'));
       return;
     }
     final data = response.data?['data'];
     if (data is! Map<String, dynamic>) {
-      setError(trans('incident.errors.generic_load'));
       return;
     }
     _detail = Incident.fromMap(data);
-    setState(incidents, status: RxStatus.success(), notify: true);
+    refreshUI();
   }
 
   /// Creates an incident and prepends it to the list on success.
@@ -158,18 +159,36 @@ class IncidentController extends MagicController
     return updated;
   }
 
-  /// Appends a timeline event (note, ack, status change) to an incident.
+  /// Posts a public-facing incident update.
   ///
-  /// Pushes the returned event into `_detail.events` only when the target
-  /// incident is the one currently open, so off-screen incidents are not
-  /// mutated under the caller's feet.
-  Future<bool> addEvent(String id, Map<String, dynamic> payload) async {
+  /// Atomic on the backend: writes an `IncidentUpdate` row on the public
+  /// stream, transitions the incident status when it moved, and fans out
+  /// subscriber notifications. The drawer and the status page read from
+  /// the same `updates` relation, so both see the new entry on next
+  /// rebuild.
+  ///
+  /// Pushes the parsed [IncidentUpdate] and the derived status into
+  /// `_detail.updates` + `_detail.status` and mirrors the change to the
+  /// list entry when the incident is visible in the current feed.
+  Future<bool> postUpdate({
+    required String id,
+    required IncidentStatus status,
+    required String body,
+    bool deliverNotifications = true,
+  }) async {
     clearErrors();
-    final response = await Http.post('/incidents/$id/events', data: payload);
+    final response = await Http.post(
+      '/incidents/$id/updates',
+      data: {
+        'status': status.name,
+        'body': body,
+        'deliver_notifications': deliverNotifications,
+      },
+    );
     if (!response.successful) {
       handleApiError(
         response,
-        fallback: trans('incident.errors.generic_event'),
+        fallback: trans('incident.errors.generic_update'),
       );
       return false;
     }
@@ -177,23 +196,126 @@ class IncidentController extends MagicController
     if (data is! Map<String, dynamic>) {
       return true;
     }
-    final event = IncidentEvent.fromMap(data);
+    final update = IncidentUpdate.fromMap(data);
 
-    // 1. Detail pane open → push into its stream so /incidents/:id updates.
+    // 1. Detail pane: append the update and reflect the new status.
     if (_detail?.id == id) {
-      _detail = _detail!.copyWith(events: [..._detail!.events, event]);
+      _detail = _detail!.copyWith(
+        status: status,
+        updates: [..._detail!.updates, update],
+        resolvedAt: status == IncidentStatus.resolved
+            ? (_detail!.resolvedAt ?? DateTime.now())
+            : _detail!.resolvedAt,
+      );
     }
 
-    // 2. Drawer reads from the list, not from _detail. Update the matching
-    //    list entry so monitor tab sheets reflect the new event on rebuild.
+    // 2. List mirror: keep the monitor tab and dashboard feed in sync.
     final list = List<Incident>.from(incidents);
     final idx = list.indexWhere((i) => i.id == id);
     if (idx != -1) {
-      list[idx] = list[idx].copyWith(events: [...list[idx].events, event]);
+      final current = list[idx];
+      list[idx] = current.copyWith(
+        status: status,
+        updates: [...current.updates, update],
+        resolvedAt: status == IncidentStatus.resolved
+            ? (current.resolvedAt ?? DateTime.now())
+            : current.resolvedAt,
+      );
       setState(list, status: RxStatus.success(), notify: false);
     }
 
     refreshUI();
     return true;
+  }
+
+  /// Asks the backend drafter agent to polish the incident title AND
+  /// description together, from the "Report incident" composer, before
+  /// any incident row has been created. Returns a `(title, description)`
+  /// record on success so the composer can replace both fields in one
+  /// gesture. Returns `null` on 429 (with a toast) or network error.
+  Future<({String title, String description})?> draftIncidentBundle({
+    required String monitorId,
+    required String severity,
+    required String title,
+    required String description,
+    String? metricKey,
+  }) async {
+    if (_isDrafting) return null;
+    _isDrafting = true;
+    refreshUI();
+    try {
+      final response = await Http.post(
+        '/monitors/$monitorId/incidents/draft',
+        data: {
+          'severity': severity,
+          'title': title,
+          'description': description,
+          'metric_key': ?metricKey,
+        },
+      );
+      if (response.statusCode == 429) {
+        Magic.toast(trans('incident.update.ai_limit_reached'));
+        return null;
+      }
+      if (!response.successful) {
+        Magic.toast(trans('incident.update.ai_error'));
+        return null;
+      }
+      final data = response.data?['data'];
+      if (data is! Map<String, dynamic>) {
+        return null;
+      }
+      final t = data['title'];
+      final d = data['description'];
+      if (t is! String || d is! String) {
+        return null;
+      }
+      return (title: t, description: d);
+    } finally {
+      _isDrafting = false;
+      refreshUI();
+    }
+  }
+
+  /// Asks the backend drafter agent for a polished (or generated) update
+  /// body the operator can drop into the composer. Returns the drafted
+  /// text on success, `null` on failure. 429 surfaces as a toast and
+  /// returns null without throwing so the caller just re-enables its
+  /// button.
+  ///
+  /// `intent` is the status pill the operator selected in the composer;
+  /// `none` is accepted for "note only" entries that do not transition
+  /// the incident.
+  Future<String?> draftUpdate({
+    required String id,
+    required String intent,
+    required String userDraft,
+  }) async {
+    if (_isDrafting) return null;
+    _isDrafting = true;
+    refreshUI();
+    try {
+      final response = await Http.post(
+        '/incidents/$id/updates/draft',
+        data: {'status': intent, 'body': userDraft},
+      );
+      if (response.statusCode == 429) {
+        Magic.toast(trans('incident.update.ai_limit_reached'));
+        return null;
+      }
+      if (!response.successful) {
+        Magic.toast(trans('incident.update.ai_error'));
+        return null;
+      }
+      final data = response.data?['data'];
+      if (data is! Map<String, dynamic>) {
+        return null;
+      }
+      final body = data['body'];
+      return body is String ? body : null;
+    } finally {
+      _isDrafting = false;
+      refreshUI();
+    }
   }
 }

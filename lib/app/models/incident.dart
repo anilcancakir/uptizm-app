@@ -36,7 +36,6 @@ class Incident {
     this.kind = IncidentKind.incident,
     this.impact = IncidentImpact.none,
     this.impactOverride = false,
-    this.isPublished = false,
     this.shortlink,
     this.postmortemBody,
     this.postmortemPublishedAt,
@@ -73,7 +72,6 @@ class Incident {
   final IncidentKind kind;
   final IncidentImpact impact;
   final bool impactOverride;
-  final bool isPublished;
   final String? shortlink;
   final String? postmortemBody;
   final DateTime? postmortemPublishedAt;
@@ -100,7 +98,6 @@ class Incident {
     IncidentKind? kind,
     IncidentImpact? impact,
     bool? impactOverride,
-    bool? isPublished,
     String? postmortemBody,
     DateTime? postmortemPublishedAt,
     List<IncidentAffectedMonitor>? affectedMonitors,
@@ -127,7 +124,6 @@ class Incident {
       kind: kind ?? this.kind,
       impact: impact ?? this.impact,
       impactOverride: impactOverride ?? this.impactOverride,
-      isPublished: isPublished ?? this.isPublished,
       shortlink: shortlink,
       postmortemBody: postmortemBody ?? this.postmortemBody,
       postmortemPublishedAt:
@@ -168,7 +164,6 @@ class Incident {
       kind: IncidentKind.fromWire(map['kind']),
       impact: IncidentImpact.fromWire(map['impact']),
       impactOverride: map['impact_override'] == true,
-      isPublished: map['is_published'] == true,
       shortlink: map['shortlink'] as String?,
       postmortemBody: map['postmortem_body'] as String?,
       postmortemPublishedAt: _date(map['postmortem_published_at']),
