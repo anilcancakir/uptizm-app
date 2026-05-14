@@ -1,23 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
-/// Bottom-sheet note composer for an incident timeline.
+import '../../../../app/controllers/incidents/incident_controller.dart';
+
+/// Bottom-sheet "Post an update" composer for an incident.
 ///
-/// Mock-only: accepts free-form text and optional status-change intent
-/// (none / acknowledge / mitigated / resolved). Submits nothing; just toasts.
+/// Every submission writes a public incident update: a status transition
+/// (or "Note only" to keep the current status) plus a body that flows
+/// to subscribers and the status page. Opened from the drawer footer
+/// (Acknowledge / Resolve preselect the matching intent) or the inline
+/// "Add note" action (opens with intent=none).
+///
+/// The optional AI draft button calls the Haiku-powered drafter agent
+/// and replaces the textarea with a status-page-voice draft. The user
+/// can undo the replacement in one tap; the badge clears as soon as
+/// the textarea is edited.
 class IncidentNoteComposer extends StatefulWidget {
   const IncidentNoteComposer({
     super.key,
+    required this.incidentId,
     required this.incidentTitle,
+    this.initialIntent = 'none',
     this.onSubmit,
   });
 
+  final String incidentId;
   final String incidentTitle;
+  final String initialIntent;
   final void Function(String text, String statusIntent)? onSubmit;
 
   static Future<void> show(
     BuildContext context, {
+    required String incidentId,
     required String incidentTitle,
+    String initialIntent = 'none',
     void Function(String text, String statusIntent)? onSubmit,
   }) {
     return showModalBottomSheet(
@@ -26,7 +42,9 @@ class IncidentNoteComposer extends StatefulWidget {
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => IncidentNoteComposer(
+        incidentId: incidentId,
         incidentTitle: incidentTitle,
+        initialIntent: initialIntent,
         onSubmit: onSubmit,
       ),
     );
@@ -37,33 +55,115 @@ class IncidentNoteComposer extends StatefulWidget {
 }
 
 class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
+  static const int _maxChars = 2000;
   final _controller = TextEditingController();
-  String _intent = 'none';
+  late String _intent;
+  bool _drafting = false;
+  String? _preAiDraft;
+  bool _showUndo = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _intent = _intents.any((i) => i.$1 == widget.initialIntent)
+        ? widget.initialIntent
+        : 'none';
+    _controller.addListener(_onControllerChange);
+  }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerChange);
     _controller.dispose();
     super.dispose();
   }
 
+  /// The "Drafted with AI" badge only holds until the operator starts
+  /// editing the draft. We clear it as soon as the text diverges from
+  /// the AI-produced body so the label never misrepresents authorship.
+  String? _aiBodySnapshot;
+  void _onControllerChange() {
+    if (_showUndo &&
+        _aiBodySnapshot != null &&
+        _controller.text != _aiBodySnapshot) {
+      setState(() {
+        _showUndo = false;
+      });
+    }
+  }
+
+  Future<void> _requestAiDraft() async {
+    if (_drafting) return;
+    setState(() {
+      _drafting = true;
+    });
+    final snapshot = _controller.text;
+    final draft = await IncidentController.instance.draftUpdate(
+      id: widget.incidentId,
+      intent: _intent,
+      userDraft: snapshot,
+    );
+    if (!mounted) return;
+    setState(() {
+      _drafting = false;
+      if (draft != null && draft.isNotEmpty) {
+        _preAiDraft = snapshot;
+        _aiBodySnapshot = draft;
+        _controller.text = draft;
+        _showUndo = true;
+      }
+    });
+  }
+
+  void _undoAiDraft() {
+    if (_preAiDraft == null) return;
+    setState(() {
+      _controller.text = _preAiDraft ?? '';
+      _preAiDraft = null;
+      _aiBodySnapshot = null;
+      _showUndo = false;
+    });
+  }
+
   static const _intents = [
-    ('none', 'incident.note.intent.none', Icons.chat_bubble_outline_rounded),
+    ('none', 'incident.update.intent.none', Icons.chat_bubble_outline_rounded),
     (
-      'acknowledge',
-      'incident.note.intent.acknowledge',
+      'investigating',
+      'incident.update.intent.investigating',
+      Icons.search_rounded,
+    ),
+    ('identified', 'incident.update.intent.identified', Icons.flag_outlined),
+    (
+      'monitoring',
+      'incident.update.intent.monitoring',
       Icons.visibility_rounded,
     ),
     (
-      'mitigated',
-      'incident.note.intent.mitigated',
-      Icons.health_and_safety_outlined,
-    ),
-    (
       'resolved',
-      'incident.note.intent.resolved',
+      'incident.update.intent.resolved',
       Icons.check_circle_outline_rounded,
     ),
   ];
+
+  bool get _isNoteOnly => _intent == 'none';
+  bool get _isResolve => _intent == 'resolved';
+
+  String get _placeholderKey {
+    if (_isNoteOnly) return 'incident.update.placeholder_note_only';
+    if (_isResolve) return 'incident.update.placeholder_resolved';
+    return 'incident.update.placeholder';
+  }
+
+  String get _subtitle {
+    if (_isNoteOnly) return trans('incident.update.subtitle_note_only');
+    return trans('incident.update.subtitle_status', {
+      'status': trans('incident.update.status_name.$_intent'),
+    });
+  }
+
+  String get _submitLabel => _isResolve
+      ? trans('incident.update.submit_resolve')
+      : trans('incident.update.submit');
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +172,7 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
       minChildSize: 0.4,
       maxChildSize: 0.9,
       expand: false,
-      builder: (_, scrollController) {
+      builder: (_, _) {
         return WDiv(
           className: '''
             rounded-t-2xl
@@ -88,8 +188,8 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
               scrollPrimary: true,
               children: [
                 WDiv(
-                  className: 'p-4 flex flex-col gap-4',
-                  children: [_intentRow(), _textField(), _hint()],
+                  className: 'px-4 py-4 flex flex-col gap-4',
+                  children: [_intentRow(), _textField()],
                 ),
               ],
             ),
@@ -118,7 +218,7 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
       ''',
       children: [
         WText(
-          trans('incident.note.title'),
+          trans('incident.update.title'),
           className: '''
             text-lg font-bold
             text-gray-900 dark:text-white
@@ -131,6 +231,14 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
             text-gray-500 dark:text-gray-400 truncate
           ''',
         ),
+        WText(
+          _subtitle,
+          className: '''
+            text-xs leading-relaxed
+            text-gray-600 dark:text-gray-300
+            mt-1
+          ''',
+        ),
       ],
     );
   }
@@ -140,7 +248,7 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
       className: 'flex flex-col gap-2',
       children: [
         WText(
-          trans('incident.note.intent_label'),
+          trans('incident.update.status_label'),
           className: '''
             text-xs font-bold uppercase tracking-wide
             text-gray-500 dark:text-gray-400
@@ -201,56 +309,156 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
 
   Widget _textField() {
     return WDiv(
-      className: 'flex flex-col gap-1.5',
+      className: 'flex flex-col gap-2',
       children: [
-        WText(
-          trans('incident.note.message_label'),
+        WDiv(
           className: '''
-            text-xs font-bold uppercase tracking-wide
-            text-gray-500 dark:text-gray-400
+            flex flex-row items-center justify-between gap-2
           ''',
+          children: [
+            WDiv(
+              className: 'flex flex-row items-center gap-2',
+              children: [
+                WText(
+                  trans('incident.update.message_label'),
+                  className: '''
+                    text-xs font-bold uppercase tracking-wide
+                    text-gray-500 dark:text-gray-400
+                  ''',
+                ),
+                _aiControl(),
+              ],
+            ),
+            ListenableBuilder(
+              listenable: _controller,
+              builder: (_, _) {
+                final len = _controller.text.trim().length;
+                return WText(
+                  '$len / $_maxChars',
+                  className: '''
+                    text-[10px] font-mono
+                    text-gray-400 dark:text-gray-500
+                  ''',
+                );
+              },
+            ),
+          ],
         ),
         WInput(
           controller: _controller,
           type: InputType.multiline,
-          minLines: 4,
-          maxLines: 8,
-          placeholder: trans('incident.note.placeholder'),
-          placeholderClassName: 'text-sm text-gray-400 dark:text-gray-500',
+          minLines: 5,
+          maxLines: 10,
+          placeholder: trans(_placeholderKey),
+          placeholderClassName: '''
+            text-sm leading-relaxed
+            text-gray-400 dark:text-gray-500
+          ''',
           className: '''
-            rounded-lg px-3 py-2.5 text-sm
+            rounded-xl py-3 text-sm leading-relaxed font-sans
             bg-white dark:bg-gray-900
             border border-gray-200 dark:border-gray-700
+            text-gray-900 dark:text-gray-100
           ''',
         ),
       ],
     );
   }
 
-  Widget _hint() {
-    return WDiv(
-      className: '''
-        rounded-lg p-3
-        bg-ai-50/60 dark:bg-ai-900/20
-        border border-ai-200/60 dark:border-ai-800/40
-        flex flex-row items-start gap-2
-      ''',
-      children: [
-        WIcon(
-          Icons.auto_awesome_rounded,
-          className: 'text-sm text-ai-600 dark:text-ai-300',
-        ),
-        WDiv(
-          className: 'flex-1',
-          child: WText(
-            trans('incident.note.ai_hint'),
+  /// AI draft control — three states:
+  /// - idle (default): compact pill that invokes the drafter agent.
+  /// - drafting: spinner + disabled pill.
+  /// - drafted (post-replacement): "Drafted with AI" badge + Undo link
+  ///   that restores the operator's original text. Clears once the
+  ///   textarea is edited past the AI body.
+  Widget _aiControl() {
+    if (_drafting) {
+      return WDiv(
+        className: '''
+          px-2.5 py-1 rounded-md
+          bg-ai-50 dark:bg-ai-900/30
+          border border-ai-200/60 dark:border-ai-800/40
+          flex flex-row items-center gap-1.5
+        ''',
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+          WText(
+            trans('incident.update.ai_drafting'),
             className: '''
-              text-xs leading-relaxed
-              text-gray-700 dark:text-gray-200
+              text-[11px] font-semibold
+              text-ai-700 dark:text-ai-200
             ''',
           ),
-        ),
-      ],
+        ],
+      );
+    }
+
+    if (_showUndo) {
+      return WDiv(
+        className: 'flex flex-row items-center gap-1.5',
+        children: [
+          WDiv(
+            className: 'flex flex-row items-center gap-1',
+            children: [
+              WIcon(
+                Icons.auto_awesome_rounded,
+                className: 'text-[11px] text-ai-600 dark:text-ai-300',
+              ),
+              WText(
+                trans('incident.update.ai_draft_badge'),
+                className: '''
+                  text-[11px] font-semibold
+                  text-ai-700 dark:text-ai-200
+                ''',
+              ),
+            ],
+          ),
+          WText('·', className: 'text-[11px] text-gray-400 dark:text-gray-500'),
+          WButton(
+            onTap: _undoAiDraft,
+            className: 'px-1 py-0.5 rounded',
+            child: WText(
+              trans('incident.update.ai_undo'),
+              className: '''
+                text-[11px] font-semibold
+                text-primary-600 dark:text-primary-300
+                hover:underline
+              ''',
+            ),
+          ),
+        ],
+      );
+    }
+
+    return WButton(
+      onTap: _requestAiDraft,
+      className: '''
+        px-2.5 py-1 rounded-md
+        bg-ai-50 dark:bg-ai-900/30
+        hover:bg-ai-100 dark:hover:bg-ai-900/40
+        border border-ai-200/60 dark:border-ai-800/40
+        flex flex-row items-center gap-1.5
+      ''',
+      child: WDiv(
+        className: 'flex flex-row items-center gap-1.5',
+        children: [
+          WIcon(
+            Icons.auto_awesome_rounded,
+            className: 'text-[11px] text-ai-600 dark:text-ai-300',
+          ),
+          WText(
+            trans('incident.update.ai_draft'),
+            className: '''
+              text-[11px] font-semibold
+              text-ai-700 dark:text-ai-200
+            ''',
+          ),
+        ],
+      ),
     );
   }
 
@@ -292,7 +500,7 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
             children: [
               WIcon(Icons.send_rounded, className: 'text-sm text-white'),
               WText(
-                trans('incident.note.submit'),
+                _submitLabel,
                 className: 'text-sm font-semibold text-white',
               ),
             ],
@@ -303,13 +511,14 @@ class _IncidentNoteComposerState extends State<IncidentNoteComposer> {
   }
 
   void _submit() {
+    if (_drafting) return;
     final text = _controller.text.trim();
     if (text.isEmpty) {
-      Magic.toast(trans('incident.note.empty_toast'));
+      Magic.toast(trans('incident.update.empty_toast'));
       return;
     }
     widget.onSubmit?.call(text, _intent);
     MagicRoute.back();
-    Magic.toast(trans('incident.note.saved_toast'));
+    Magic.toast(trans('incident.update.saved_toast'));
   }
 }

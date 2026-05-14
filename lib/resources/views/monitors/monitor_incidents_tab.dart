@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
 
 import '../../../app/controllers/incidents/incident_controller.dart';
+import '../../../app/controllers/metrics/monitor_metric_controller.dart';
+import '../../../app/controllers/monitors/monitor_controller.dart';
 import '../../../app/enums/incident_status.dart';
 import '../../../app/models/incident.dart';
 import '../components/common/empty_state.dart';
@@ -41,6 +45,14 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.load(monitorId: widget.monitorId);
+      // Prime the metric list so the Report incident sheet's "Affected
+      // metric" picker isn't empty when the user lands straight on the
+      // incidents tab (skipping the Metrics tab that normally loads it).
+      final metrics = MonitorMetricController.instance;
+      if (metrics.currentMonitorId != widget.monitorId ||
+          metrics.metrics.isEmpty) {
+        metrics.load(widget.monitorId);
+      }
     });
   }
 
@@ -129,11 +141,20 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
           ),
         ),
         WButton(
-          onTap: () => IncidentCreateSheet.show(
-            context,
-            monitorTitle: widget.monitorId,
-            monitorId: widget.monitorId,
-          ),
+          onTap: () {
+            final monitor = MonitorController.instance.monitor;
+            final metrics = MonitorMetricController.instance;
+            IncidentCreateSheet.show(
+              context,
+              monitorTitle: monitor?.id == widget.monitorId
+                  ? monitor?.name ?? widget.monitorId
+                  : widget.monitorId,
+              monitorId: widget.monitorId,
+              metrics: metrics.currentMonitorId == widget.monitorId
+                  ? metrics.metrics
+                  : null,
+            );
+          },
           className: '''
             px-4 py-2.5 rounded-lg
             border border-gray-200 dark:border-gray-700
@@ -173,6 +194,11 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
   }
 
   Future<void> _openSheet(Incident incident) async {
+    // The list endpoint omits `events` (IncidentResource::whenLoaded), so the
+    // timeline stays empty until we hit `/incidents/{id}` which eager-loads
+    // them. Fire and forget — the AnimatedBuilder repaints when `_detail`
+    // lands.
+    unawaited(_controller.loadOne(incident.id));
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -186,26 +212,36 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
         builder: (_, _) => AnimatedBuilder(
           animation: _controller,
           builder: (_, _) {
-            // Pull the freshest list entry on every rebuild so the sheet
-            // reflects events appended by `addEvent`. Fall back to the
-            // captured closure when the controller has purged the row.
-            final fresh = _controller.incidents.firstWhere(
-              (i) => i.id == incident.id,
-              orElse: () => incident,
-            );
+            // Prefer the freshly loaded detail (carries `events`) when it
+            // matches the opened incident. Fall back to the list row so the
+            // sheet renders instantly while the detail request is in flight.
+            final detail = _controller.detail;
+            final fresh = detail != null && detail.id == incident.id
+                ? detail
+                : _controller.incidents.firstWhere(
+                    (i) => i.id == incident.id,
+                    orElse: () => incident,
+                  );
             return IncidentDetailPanel(
               incident: fresh,
               onClose: () => MagicRoute.back(),
-              onAcknowledge: () {
-                MagicRoute.back();
-                _transitionStatus(fresh, IncidentStatus.investigating);
-              },
-              onResolve: () {
-                MagicRoute.back();
-                _transitionStatus(fresh, IncidentStatus.resolved);
-              },
+              onAcknowledge: () => IncidentNoteComposer.show(
+                ctx,
+                incidentId: fresh.id,
+                incidentTitle: fresh.title,
+                initialIntent: 'investigating',
+                onSubmit: (text, intent) => _onNoteSubmit(fresh, text, intent),
+              ),
+              onResolve: () => IncidentNoteComposer.show(
+                ctx,
+                incidentId: fresh.id,
+                incidentTitle: fresh.title,
+                initialIntent: 'resolved',
+                onSubmit: (text, intent) => _onNoteSubmit(fresh, text, intent),
+              ),
               onAddNote: () => IncidentNoteComposer.show(
                 ctx,
+                incidentId: fresh.id,
                 incidentTitle: fresh.title,
                 onSubmit: (text, intent) => _onNoteSubmit(fresh, text, intent),
               ),
@@ -216,51 +252,40 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
     );
   }
 
-  Future<void> _transitionStatus(Incident incident, IncidentStatus next) async {
-    final result = await _controller.update(incident.id, {'status': next.name});
-    if (!mounted) return;
-    if (result == null) {
-      final err = _controller.getError('status') ?? _controller.firstError;
-      Magic.toast(err ?? trans('incident.errors.generic_update'));
-      return;
-    }
-    Magic.toast(
-      trans(switch (next) {
-        IncidentStatus.investigating => 'incident.toast.acknowledged',
-        IncidentStatus.resolved => 'incident.toast.resolved',
-        _ => 'incident.toast.updated',
-      }),
-    );
-  }
-
   Future<void> _onNoteSubmit(
     Incident incident,
     String text,
     String intent,
   ) async {
-    if (text.isNotEmpty) {
-      final ok = await _controller.addEvent(incident.id, {
-        'event_type': 'note',
-        'message': text,
-      });
-      if (!ok && mounted) {
-        Magic.toast(
-          _controller.firstError ?? trans('incident.errors.generic_event'),
-        );
-        return;
-      }
-    }
-    final next = switch (intent) {
-      'acknowledge' => IncidentStatus.investigating,
-      'mitigated' => IncidentStatus.mitigated,
+    final nextStatus = switch (intent) {
+      'investigating' => IncidentStatus.investigating,
+      'identified' => IncidentStatus.identified,
+      'monitoring' => IncidentStatus.monitoring,
       'resolved' => IncidentStatus.resolved,
-      _ => null,
+      _ => incident.status,
     };
-    if (next != null && incident.status != next) {
-      await _transitionStatus(incident, next);
+
+    final ok = await _controller.postUpdate(
+      id: incident.id,
+      status: nextStatus,
+      body: text,
+    );
+    if (!ok && mounted) {
+      Magic.toast(
+        _controller.firstError ?? trans('incident.errors.generic_update'),
+      );
       return;
     }
-    if (mounted) Magic.toast(trans('incident.note.toast_added'));
+    if (!mounted) return;
+    Magic.toast(
+      trans(switch (nextStatus) {
+        IncidentStatus.investigating => 'incident.toast.acknowledged',
+        IncidentStatus.identified => 'incident.toast.identified',
+        IncidentStatus.monitoring => 'incident.toast.monitoring',
+        IncidentStatus.resolved => 'incident.toast.resolved',
+        _ => 'incident.update.toast_posted',
+      }),
+    );
   }
 
   Widget _statusTabs(List<Incident> incidents) {

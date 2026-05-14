@@ -63,11 +63,83 @@ class _IncidentCreateSheetState
   String? _metricKey;
   bool _notifyTeam = true;
 
+  // Single AI draft gesture that rewrites title AND description
+  // together. Snapshot stores the pre-AI values so one Undo click
+  // restores both fields; the badge auto-clears as soon as the
+  // operator edits either field past the AI output.
+  bool _drafting = false;
+  String? _titlePreAi;
+  String? _descriptionPreAi;
+  String? _titleAiSnapshot;
+  String? _descriptionAiSnapshot;
+
+  @override
+  void initState() {
+    super.initState();
+    _title.addListener(_onFieldChange);
+    _description.addListener(_onFieldChange);
+  }
+
   @override
   void onClose() {
+    _title.removeListener(_onFieldChange);
+    _description.removeListener(_onFieldChange);
     _title.dispose();
     _description.dispose();
     super.onClose();
+  }
+
+  bool get _showAiBadge =>
+      _titleAiSnapshot != null || _descriptionAiSnapshot != null;
+
+  void _onFieldChange() {
+    if (!_showAiBadge) return;
+    final titleDrifted =
+        _titleAiSnapshot != null && _title.text != _titleAiSnapshot;
+    final descriptionDrifted =
+        _descriptionAiSnapshot != null &&
+        _description.text != _descriptionAiSnapshot;
+    if (titleDrifted || descriptionDrifted) {
+      setState(() {
+        _titleAiSnapshot = null;
+        _descriptionAiSnapshot = null;
+      });
+    }
+  }
+
+  Future<void> _requestAiDraft() async {
+    if (_drafting) return;
+    setState(() => _drafting = true);
+    final bundle = await controller.draftIncidentBundle(
+      monitorId: widget.monitorId,
+      severity: _severity.name,
+      title: _title.text,
+      description: _description.text,
+      metricKey: _metricKey,
+    );
+    if (!mounted) return;
+    setState(() {
+      _drafting = false;
+      if (bundle == null) return;
+      _titlePreAi = _title.text;
+      _descriptionPreAi = _description.text;
+      _title.text = bundle.title;
+      _description.text = bundle.description;
+      _titleAiSnapshot = bundle.title;
+      _descriptionAiSnapshot = bundle.description;
+    });
+  }
+
+  void _undoAiDraft() {
+    if (_titlePreAi == null && _descriptionPreAi == null) return;
+    setState(() {
+      _title.text = _titlePreAi ?? '';
+      _description.text = _descriptionPreAi ?? '';
+      _titlePreAi = null;
+      _descriptionPreAi = null;
+      _titleAiSnapshot = null;
+      _descriptionAiSnapshot = null;
+    });
   }
 
   @override
@@ -96,6 +168,7 @@ class _IncidentCreateSheetState
                   className: 'p-4 flex flex-col gap-5',
                   children: [
                     _severityField(),
+                    _aiDraftBar(),
                     _titleField(),
                     _descriptionField(),
                     _metricField(),
@@ -180,8 +253,7 @@ class _IncidentCreateSheetState
           required: true,
         ),
         WInput(
-          value: _title.text,
-          onChanged: (v) => _title.text = v,
+          controller: _title,
           placeholder: trans('incident.create.fields.title_placeholder'),
           className: '''
             w-full px-3 py-2.5 rounded-lg
@@ -218,6 +290,110 @@ class _IncidentCreateSheetState
           ''',
         ),
       ],
+    );
+  }
+
+  /// Full-width bar sitting between Severity and Title that fills BOTH
+  /// title and description in one agent call. Idle shows a CTA row
+  /// (icon + label + subtle hint on the right), loading swaps the icon
+  /// for a spinner, drafted state shows a badge with a single Undo
+  /// link that restores both fields together.
+  Widget _aiDraftBar() {
+    if (_drafting) {
+      return WDiv(
+        className: '''
+          px-3 py-2.5 rounded-lg
+          bg-ai-50 dark:bg-ai-900/30
+          border border-ai-200/60 dark:border-ai-800/40
+          flex flex-row items-center gap-2
+        ''',
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+          WText(
+            trans('incident.create.ai_drafting_bundle'),
+            className: '''
+              text-xs font-semibold
+              text-ai-700 dark:text-ai-200
+            ''',
+          ),
+        ],
+      );
+    }
+
+    if (_showAiBadge) {
+      return WDiv(
+        className: '''
+          px-3 py-2.5 rounded-lg
+          bg-ai-50 dark:bg-ai-900/30
+          border border-ai-200/60 dark:border-ai-800/40
+          flex flex-row items-center gap-2
+        ''',
+        children: [
+          WIcon(
+            Icons.auto_awesome_rounded,
+            className: 'text-xs text-ai-600 dark:text-ai-300',
+          ),
+          WText(
+            trans('incident.update.ai_draft_badge'),
+            className: '''
+              text-xs font-semibold
+              text-ai-700 dark:text-ai-200
+            ''',
+          ),
+          WDiv(className: 'flex-1', child: const SizedBox.shrink()),
+          WButton(
+            onTap: _undoAiDraft,
+            className: 'px-2 py-1 rounded',
+            child: WText(
+              trans('incident.update.ai_undo'),
+              className: '''
+                text-xs font-semibold
+                text-primary-600 dark:text-primary-300
+                hover:underline
+              ''',
+            ),
+          ),
+        ],
+      );
+    }
+
+    return WButton(
+      onTap: _requestAiDraft,
+      className: '''
+        w-full px-3 py-2.5 rounded-lg
+        bg-ai-50 dark:bg-ai-900/30
+        hover:bg-ai-100 dark:hover:bg-ai-900/40
+        border border-ai-200/60 dark:border-ai-800/40
+        flex flex-row items-center gap-2
+      ''',
+      child: WDiv(
+        className: 'flex flex-row items-center gap-2 w-full',
+        children: [
+          WIcon(
+            Icons.auto_awesome_rounded,
+            className: 'text-sm text-ai-600 dark:text-ai-300',
+          ),
+          WText(
+            trans('incident.create.ai_draft_bundle'),
+            className: '''
+              text-xs font-semibold
+              text-ai-700 dark:text-ai-200
+            ''',
+          ),
+          WDiv(className: 'flex-1', child: const SizedBox.shrink()),
+          WText(
+            trans('incident.create.ai_draft_hint'),
+            className: '''
+              text-[10px]
+              text-ai-600/80 dark:text-ai-300/80
+            ''',
+          ),
+        ],
+      ),
     );
   }
 
