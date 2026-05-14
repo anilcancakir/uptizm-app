@@ -56,4 +56,3 @@ app.*.map.json
 # Local scratch artifacts
 test.json
 flutter_01.png
-web/flutter-skill.js

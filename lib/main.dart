@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_skill/flutter_skill.dart';
 import 'package:magic/magic.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -21,7 +20,6 @@ import 'config/wind.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kDebugMode) FlutterSkillBinding.ensureInitialized();
 
   // Register SentryNavigatorObserver BEFORE Magic.init() — router is built
   // during boot(), so observers must be added before that. Unconditional

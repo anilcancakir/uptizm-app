@@ -24,10 +24,6 @@
         "mcp-server"
       ],
       "env": {}
-    },
-    "flutter-skill": {
-      "command": "/opt/homebrew/bin/flutter-skill",
-      "args": ["server"]
     }
   }
 }
