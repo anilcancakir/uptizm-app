@@ -16,6 +16,7 @@ import '../components/incidents/incident_create_sheet.dart';
 import '../components/incidents/incident_detail_panel.dart';
 import '../components/incidents/incident_list_item.dart';
 import '../components/incidents/incident_note_composer.dart';
+import 'monitor_incidents_tab_filter.dart';
 
 /// Incidents tab.
 ///
@@ -32,10 +33,8 @@ class MonitorIncidentsTab extends StatefulWidget {
   State<MonitorIncidentsTab> createState() => _MonitorIncidentsTabState();
 }
 
-enum _IncidentTab { triggered, acknowledged, resolved, all }
-
 class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
-  _IncidentTab _tab = _IncidentTab.triggered;
+  IncidentTab _tab = IncidentTab.triggered;
   bool _aiOnly = false;
 
   IncidentController get _controller => IncidentController.instance;
@@ -291,10 +290,10 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
   Widget _statusTabs(List<Incident> incidents) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final perTab = constraints.maxWidth / _IncidentTab.values.length;
+        final perTab = constraints.maxWidth / IncidentTab.values.length;
         final scroll = perTab < 110;
         final buttons = [
-          for (final t in _IncidentTab.values)
+          for (final t in IncidentTab.values)
             WButton(
               onTap: () => setState(() => _tab = t),
               states: _tab == t ? {'active'} : {},
@@ -329,7 +328,7 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
     );
   }
 
-  Widget _statusTabChild(_IncidentTab t, int count) {
+  Widget _statusTabChild(IncidentTab t, int count) {
     return WDiv(
       className: 'flex flex-row items-center gap-2',
       children: [
@@ -363,26 +362,19 @@ class _MonitorIncidentsTabState extends State<MonitorIncidentsTab> {
     );
   }
 
-  bool _matchesTab(Incident i, _IncidentTab t) {
-    return switch (t) {
-      _IncidentTab.triggered => i.status == IncidentStatus.detected,
-      _IncidentTab.acknowledged =>
-        i.status == IncidentStatus.investigating ||
-            i.status == IncidentStatus.mitigated,
-      _IncidentTab.resolved => i.status == IncidentStatus.resolved,
-      _IncidentTab.all => true,
-    };
-  }
-
-  int _countFor(List<Incident> incidents, _IncidentTab t) {
+  int _countFor(List<Incident> incidents, IncidentTab t) {
     return incidents
-        .where((i) => _matchesTab(i, t) && (!_aiOnly || i.aiOwned))
+        .where(
+          (i) => incidentMatchesTab(i.status, t) && (!_aiOnly || i.aiOwned),
+        )
         .length;
   }
 
   List<Incident> _filtered(List<Incident> incidents) {
     return incidents
-        .where((i) => _matchesTab(i, _tab) && (!_aiOnly || i.aiOwned))
+        .where(
+          (i) => incidentMatchesTab(i.status, _tab) && (!_aiOnly || i.aiOwned),
+        )
         .toList();
   }
 
