@@ -1,10 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic/magic.dart';
 import 'package:app/app/controllers/status_pages/status_pages_controller.dart';
+import 'package:app/app/models/user.dart';
+import 'package:app/app/policies/status_page_policy.dart';
 import 'package:app/resources/views/status_pages/status_page_create_view.dart';
 import 'package:app/resources/views/status_pages/status_page_edit_view.dart';
 import 'package:app/resources/views/status_pages/status_page_list_view.dart';
 import 'package:app/resources/views/status_pages/status_page_show_view.dart';
+
+User _managerUser() => User.fromMap({
+  'id': 'usr_owner_1',
+  'current_team': {'id': 'team_1', 'user_role': 'owner'},
+});
+
+User _memberUser() => User.fromMap({
+  'id': 'usr_member_1',
+  'current_team': {'id': 'team_1', 'user_role': 'member'},
+});
 
 class _MockNetworkDriver implements NetworkDriver {
   String? lastMethod;
@@ -88,9 +100,11 @@ Map<String, dynamic> _pagePayload({
   String id = 'sp_1',
   String title = 'Cloud',
   bool isPublic = true,
+  String teamId = 'team_1',
 }) {
   return {
     'id': id,
+    'team_id': teamId,
     'title': title,
     'slug': 'cloud',
     'primary_color': '#2563EB',
@@ -111,6 +125,8 @@ void main() {
       Magic.flush();
       driver = _MockNetworkDriver();
       Magic.singleton('network', () => driver);
+      Auth.fake(user: _managerUser());
+      const StatusPagePolicy().register();
       controller = StatusPagesController();
     });
 
@@ -231,6 +247,74 @@ void main() {
       expect(controller.pages.single.isPublic, isTrue);
     });
 
+    test(
+      'store throws AuthorizationException when current user is a guest',
+      () async {
+        Auth.fake();
+        expect(
+          () => controller.store({'title': 'X', 'slug': 'x'}),
+          throwsA(isA<AuthorizationException>()),
+        );
+        expect(driver.lastMethod, isNull);
+      },
+    );
+
+    test(
+      'update throws AuthorizationException when user is not a manager',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': [_pagePayload(id: 'sp_1', teamId: 'team_1')],
+          },
+          statusCode: 200,
+        );
+        await controller.load();
+        Auth.fake(user: _memberUser());
+        expect(
+          () => controller.update('sp_1', {'title': 'New'}),
+          throwsA(isA<AuthorizationException>()),
+        );
+      },
+    );
+
+    test(
+      'destroy throws AuthorizationException when user is not a manager',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': [_pagePayload(id: 'sp_1', teamId: 'team_1')],
+          },
+          statusCode: 200,
+        );
+        await controller.load();
+        Auth.fake(user: _memberUser());
+        expect(
+          () => controller.destroy('sp_1'),
+          throwsA(isA<AuthorizationException>()),
+        );
+      },
+    );
+
+    test(
+      'publish throws AuthorizationException when user is not a manager',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': [
+              _pagePayload(id: 'sp_1', teamId: 'team_1', isPublic: false),
+            ],
+          },
+          statusCode: 200,
+        );
+        await controller.load();
+        Auth.fake(user: _memberUser());
+        expect(
+          () => controller.publish('sp_1'),
+          throwsA(isA<AuthorizationException>()),
+        );
+      },
+    );
+
     test('index() returns StatusPageListView', () {
       expect(controller.index(), isA<StatusPageListView>());
     });
@@ -304,6 +388,13 @@ void main() {
     });
 
     test('submitUpdate builds partial payload and PATCHes', () async {
+      driver.response = MagicResponse(
+        data: {
+          'data': [_pagePayload(id: 'sp_1', title: 'Old')],
+        },
+        statusCode: 200,
+      );
+      await controller.load();
       driver.response = MagicResponse(
         data: {'data': _pagePayload(id: 'sp_1', title: 'New')},
         statusCode: 200,

@@ -104,6 +104,7 @@ class IncidentController extends MagicController
   /// surface as field errors via [handleApiError]. On failure the previous
   /// list is restored without notifying so the UI does not flicker.
   Future<Incident?> store(Map<String, dynamic> payload) async {
+    authorize('incidents.create');
     clearErrors();
     final previous = List<Incident>.from(incidents);
     final response = await Http.post('/incidents', data: payload);
@@ -130,6 +131,11 @@ class IncidentController extends MagicController
   /// Replaces the matching entry in place (order preserved) and swaps
   /// `_detail` when the updated entity is the one currently displayed.
   Future<Incident?> update(String id, Map<String, dynamic> payload) async {
+    final target = incidents.firstWhere(
+      (i) => i.id == id,
+      orElse: () => throw StateError('Incident $id not in scope'),
+    );
+    authorize('incidents.update', target);
     clearErrors();
     final previous = List<Incident>.from(incidents);
     final response = await Http.put('/incidents/$id', data: payload);
@@ -176,6 +182,16 @@ class IncidentController extends MagicController
     required String body,
     bool deliverNotifications = true,
   }) async {
+    // The drawer (loadOne) populates `_detail` without seeding the list, but
+    // the monitor tab posts updates from rows in `incidents`. Resolve from
+    // either source so the gate check sees the matching incident model.
+    final target = _detail?.id == id
+        ? _detail!
+        : incidents.firstWhere(
+            (i) => i.id == id,
+            orElse: () => throw StateError('Incident $id not in scope'),
+          );
+    authorize('incidents.update', target);
     clearErrors();
     final response = await Http.post(
       '/incidents/$id/updates',

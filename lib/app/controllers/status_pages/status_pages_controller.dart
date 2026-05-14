@@ -142,6 +142,7 @@ class StatusPagesController extends MagicController
   /// appears at the top of the feed immediately. Restores the previous
   /// list on failure.
   Future<StatusPage?> store(Map<String, dynamic> payload) async {
+    authorize('status-pages.create');
     clearErrors();
     final previous = List<StatusPage>.from(pages);
     final response = await Http.post('/status-pages', data: payload);
@@ -166,6 +167,8 @@ class StatusPagesController extends MagicController
   /// Patches a status page, replaces it in the list in place, and refreshes
   /// `_detail` if the updated page is the one being inspected.
   Future<StatusPage?> update(String id, Map<String, dynamic> payload) async {
+    final target = _resolvePage(id);
+    authorize('status-pages.update', target);
     clearErrors();
     final previous = List<StatusPage>.from(pages);
     final response = await Http.put('/status-pages/$id', data: payload);
@@ -198,6 +201,8 @@ class StatusPagesController extends MagicController
   /// Deletes a status page after the caller has confirmed. Clears `_detail`
   /// if the deleted page was being inspected so the show screen can pop.
   Future<bool> destroy(String id) async {
+    final target = _resolvePage(id);
+    authorize('status-pages.destroy', target);
     clearErrors();
     final previous = List<StatusPage>.from(pages);
     final response = await Http.delete('/status-pages/$id');
@@ -259,6 +264,8 @@ class StatusPagesController extends MagicController
   /// monitor selection server-side). Returns true even when the response
   /// omits the updated record so the UI can optimistically advance.
   Future<bool> publish(String id) async {
+    final target = _resolvePage(id);
+    authorize('status-pages.publish', target);
     clearErrors();
     final previous = List<StatusPage>.from(pages);
     final response = await Http.post('/status-pages/$id/publish');
@@ -332,5 +339,16 @@ class StatusPagesController extends MagicController
       refreshUI();
     }
     return updated.previewToken;
+  }
+
+  /// Resolves a [StatusPage] for gate checks. Prefers [_detail] when it
+  /// matches the requested id, otherwise scans [pages]. Throws if neither
+  /// surface knows about the id — fail loud rather than gate against null.
+  StatusPage _resolvePage(String id) {
+    if (_detail?.id == id) return _detail!;
+    return pages.firstWhere(
+      (p) => p.id == id,
+      orElse: () => throw StateError('StatusPage $id not in scope'),
+    );
   }
 }

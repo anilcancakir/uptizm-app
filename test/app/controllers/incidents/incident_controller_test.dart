@@ -3,6 +3,18 @@ import 'package:magic/magic.dart';
 import 'package:app/app/controllers/incidents/incident_controller.dart';
 import 'package:app/app/enums/incident_severity.dart';
 import 'package:app/app/enums/incident_status.dart';
+import 'package:app/app/models/user.dart';
+import 'package:app/app/policies/incident_policy.dart';
+
+User _managerUser() => User.fromMap({
+  'id': 'usr_owner_1',
+  'current_team': {'id': 'team_1', 'user_role': 'owner'},
+});
+
+User _memberUser() => User.fromMap({
+  'id': 'usr_member_1',
+  'current_team': {'id': 'team_1', 'user_role': 'member'},
+});
 
 class _MockNetworkDriver implements NetworkDriver {
   String? lastMethod;
@@ -103,9 +115,11 @@ Map<String, dynamic> _incidentPayload({
   String id = 'inc_1',
   String status = 'detected',
   String severity = 'warn',
+  String teamId = 'team_1',
 }) {
   return {
     'id': id,
+    'team_id': teamId,
     'monitor_id': 'mon_1',
     'title': 'Pool degraded',
     'severity': severity,
@@ -131,6 +145,8 @@ void main() {
       Magic.flush();
       driver = _MockNetworkDriver();
       Magic.singleton('network', () => driver);
+      Auth.fake(user: _managerUser());
+      const IncidentPolicy().register();
       controller = IncidentController();
     });
 
@@ -429,6 +445,75 @@ void main() {
         expect(payload['description'], 'trace');
         expect(payload['metric_key'], 'latency_ms');
         expect(payload['notify_team'], false);
+      },
+    );
+
+    test(
+      'store throws AuthorizationException when current user is a guest',
+      () async {
+        // Re-fake with no user — Gate.allows('incidents.create') must deny
+        // because the ability requires _authed(user).
+        Auth.fake();
+
+        expect(
+          () => controller.store({
+            'monitor_id': 'mon_1',
+            'title': 'X',
+            'severity': 'warn',
+          }),
+          throwsA(isA<AuthorizationException>()),
+        );
+        // No Http call should have been made — authorize() throws before
+        // the controller hits the network.
+        expect(driver.lastMethod, isNull);
+      },
+    );
+
+    test(
+      'update throws AuthorizationException when user is not a manager',
+      () async {
+        // Seed the list with one incident in team_1 so update() can resolve
+        // its target before the gate check fires.
+        driver.response = MagicResponse(
+          data: {
+            'data': [_incidentPayload(id: 'inc_1', teamId: 'team_1')],
+          },
+          statusCode: 200,
+        );
+        await controller.load();
+
+        // Re-fake as a member of the same team — same-team check passes
+        // but _isManager rejects.
+        Auth.fake(user: _memberUser());
+
+        expect(
+          () => controller.update('inc_1', {'status': 'investigating'}),
+          throwsA(isA<AuthorizationException>()),
+        );
+      },
+    );
+
+    test(
+      'postUpdate throws AuthorizationException when user is not a manager',
+      () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': [_incidentPayload(id: 'inc_1', teamId: 'team_1')],
+          },
+          statusCode: 200,
+        );
+        await controller.load();
+
+        Auth.fake(user: _memberUser());
+
+        expect(
+          () => controller.postUpdate(
+            id: 'inc_1',
+            status: IncidentStatus.investigating,
+            body: 'Looking',
+          ),
+          throwsA(isA<AuthorizationException>()),
+        );
       },
     );
 
