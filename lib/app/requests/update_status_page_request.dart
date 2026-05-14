@@ -1,32 +1,6 @@
 import 'package:magic/magic.dart';
 
-/// Custom resolver that POSTs the uniqueness probe in the envelope shape
-/// uptizm-api's `UniqueValidationController` expects: `{model, field, value,
-/// ignore_id}` so the edit form does not 422 against the record it is editing.
-Future<bool> Function(String, String, dynamic) _uniqueSlugResolver({
-  required String ignoreId,
-}) {
-  return (String endpoint, String field, dynamic value) async {
-    final response = await Http.post(
-      endpoint,
-      data: {
-        'model': 'status_page',
-        'field': field,
-        'value': value,
-        if (ignoreId.isNotEmpty) 'ignore_id': ignoreId,
-      },
-    );
-    // 422 is the legitimate "slug taken by another record" response.
-    // Anything else outside 2xx — transport failures (statusCode 0 when
-    // offline), 5xx, redirects — gracefully passes so a flaky network
-    // never blocks the edit submit. Mirrors the default Unique resolver
-    // contract at references/magic/.../unique.dart:118-122.
-    if (response.statusCode == 422) return false;
-    if (!response.successful) return true;
-    final body = response.data;
-    return body is Map<String, dynamic> && body['unique'] == true;
-  };
-}
+import '_unique_slug_resolver.dart';
 
 /// Form request for `PATCH /status-pages/{id}`.
 ///
@@ -55,7 +29,7 @@ class UpdateStatusPageRequest extends FormRequest {
         Unique(
           '/validate/unique',
           field: 'slug',
-        ).via(_uniqueSlugResolver(ignoreId: pageId)),
+        ).via(uniqueSlugResolver(ignoreId: pageId)),
       ],
     };
     return Validator.make(normalized, rulesWithSlug).validateAsync();

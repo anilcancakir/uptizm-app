@@ -1,34 +1,6 @@
 import 'package:magic/magic.dart';
 
-/// Custom resolver that POSTs the uniqueness probe in the envelope shape
-/// uptizm-api's `UniqueValidationController` expects: `{model, field, value}`,
-/// plus an optional `ignore_id` for edit flows. The default `Unique` resolver
-/// uses GET with a query-string; this app's endpoint is POST + body, so
-/// every status-page slug rule overrides via `.via(_uniqueSlugResolver(...))`.
-Future<bool> Function(String, String, dynamic) _uniqueSlugResolver({
-  String? ignoreId,
-}) {
-  return (String endpoint, String field, dynamic value) async {
-    final response = await Http.post(
-      endpoint,
-      data: {
-        'model': 'status_page',
-        'field': field,
-        'value': value,
-        if (ignoreId != null && ignoreId.isNotEmpty) 'ignore_id': ignoreId,
-      },
-    );
-    // 422 is the legitimate "not unique" answer from Laravel's validator.
-    // Anything else outside the 2xx success range — transport failures
-    // (statusCode 0 when offline), 5xx, redirects — gracefully passes so
-    // a flaky network never blocks the form. Mirrors the default Unique
-    // resolver contract at references/magic/.../unique.dart:118-122.
-    if (response.statusCode == 422) return false;
-    if (!response.successful) return true;
-    final body = response.data;
-    return body is Map<String, dynamic> && body['unique'] == true;
-  };
-}
+import '_unique_slug_resolver.dart';
 
 /// Form request for `POST /status-pages`.
 ///
@@ -82,7 +54,7 @@ class StoreStatusPageRequest extends FormRequest {
     'slug': [
       Required(),
       Max(63),
-      Unique('/validate/unique', field: 'slug').via(_uniqueSlugResolver()),
+      Unique('/validate/unique', field: 'slug').via(uniqueSlugResolver()),
     ],
     'primary_color': [Required()],
     'is_public': [],

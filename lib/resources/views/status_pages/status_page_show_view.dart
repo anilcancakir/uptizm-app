@@ -111,7 +111,14 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
               icon: Icons.edit_rounded,
               onTap: () => MagicRoute.to('/status-pages/${page.id}/edit'),
             ),
-            if (Gate.allows('status-pages.publish', page))
+            // Publish + unpublish are distinct abilities (status_page_policy
+            // defines them separately so future audit / divergence stays
+            // clean). The toggle button therefore gates on whichever ability
+            // matches the action it will trigger.
+            if (Gate.allows(
+              page.isPublic ? 'status-pages.unpublish' : 'status-pages.publish',
+              page,
+            ))
               PrimaryButton(
                 labelKey: page.isPublic
                     ? 'status_page.show.unpublish'

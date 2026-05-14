@@ -205,45 +205,6 @@
     "kind": {
       "incident": "Incident"
     },
-    "update": {
-      "compose": "Post update",
-      "notify_subscribers": "Email subscribers",
-      "status_change": "Status",
-      "body_placeholder": "What's the latest? Markdown is supported.",
-      "empty": "No updates have been posted yet.",
-      "title": "Post an update",
-      "status_label": "Status",
-      "message_label": "Message",
-      "placeholder": "Share the latest update with your subscribers. Markdown supported.",
-      "placeholder_note_only": "Internal note — won't notify subscribers.",
-      "placeholder_resolved": "Confirm the fix and what subscribers should expect.",
-      "subtitle_note_only": "Internal note only. Subscribers are not notified.",
-      "subtitle_status": "Transition to {status} and notify subscribers.",
-      "submit": "Post update",
-      "submit_resolve": "Post update & resolve",
-      "intent": {
-        "none": "Note only",
-        "investigating": "Investigating",
-        "identified": "Identified",
-        "monitoring": "Monitoring",
-        "resolved": "Resolved"
-      },
-      "status_name": {
-        "investigating": "Investigating",
-        "identified": "Identified",
-        "monitoring": "Monitoring",
-        "resolved": "Resolved"
-      },
-      "ai_draft": "Draft with AI",
-      "ai_drafting": "Drafting…",
-      "ai_draft_badge": "Drafted with AI",
-      "ai_undo": "Undo",
-      "ai_limit_reached": "AI draft limit reached. Try again later.",
-      "ai_error": "Couldn't generate a draft. Try again.",
-      "empty_toast": "Add a message before posting.",
-      "saved_toast": "Update posted.",
-      "toast_posted": "Update posted."
-    },
     "affected_monitors": "Affected components",
     "postmortem": {
       "title": "Postmortem",
@@ -382,7 +343,8 @@
       "submit_resolve": "Post update & resolve",
       "saved_toast": "Update posted",
       "toast_posted": "Update posted",
-      "empty_toast": "Write something before posting."
+      "empty_toast": "Write something before posting.",
+      "empty": "No updates have been posted yet."
     }
   },
   "magic_starter": {
