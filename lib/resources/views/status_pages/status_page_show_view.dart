@@ -13,6 +13,7 @@ import '../components/common/primary_button.dart';
 import '../components/common/refresh_icon_button.dart';
 import '../components/common/secondary_button.dart';
 import '../components/common/skeleton_block.dart';
+import '../components/status_pages/subscribers_section.dart';
 
 /// Status-page detail view. Hydrates from the API via
 /// `StatusPagesController.loadOne`.
@@ -110,18 +111,6 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
               icon: Icons.edit_rounded,
               onTap: () => MagicRoute.to('/status-pages/${page.id}/edit'),
             ),
-            SecondaryButton(
-              labelKey: 'status_page.show.subscribers',
-              icon: Icons.mark_email_read_outlined,
-              onTap: () =>
-                  MagicRoute.to('/status-pages/${page.id}/subscribers'),
-            ),
-            if (!page.isPublic && page.previewUrl != null)
-              SecondaryButton(
-                labelKey: 'status_page.show.open_preview',
-                icon: Icons.visibility_outlined,
-                onTap: () => Launch.url(page.previewUrl!),
-              ),
             if (Gate.allows('status-pages.publish', page))
               PrimaryButton(
                 labelKey: page.isPublic
@@ -137,6 +126,7 @@ class _StatusPageShowViewState extends State<StatusPageShowView> {
         _hero(page),
         _componentsSection(page.monitors),
         if (page.metrics.isNotEmpty) _metricsSection(page.metrics),
+        SubscribersSection(statusPageId: page.id),
       ],
     );
   }

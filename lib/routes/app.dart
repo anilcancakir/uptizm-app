@@ -7,10 +7,8 @@ import '../app/controllers/dashboard/dashboard_controller.dart';
 import '../app/controllers/metrics/metrics_library_controller.dart';
 import '../app/controllers/monitors/monitor_controller.dart';
 import '../app/controllers/settings/settings_controller.dart';
-import '../app/controllers/status_pages/status_page_subscriber_controller.dart';
 import '../app/controllers/status_pages/status_pages_controller.dart';
 import '../resources/views/settings/settings_appearance_view.dart';
-import '../resources/views/status_pages/status_page_subscribers_view.dart';
 
 /// Application route definitions.
 ///
@@ -30,13 +28,6 @@ void registerAppRoutes() {
       // CRUD resources.
       MagicRoute.resource('monitors', MonitorController.instance);
       MagicRoute.resource('status-pages', StatusPagesController.instance);
-      MagicRoute.page('/status-pages/:id/subscribers', (String id) {
-        // Prime the singleton so MagicStatefulView can resolve it — no
-        // other screen references this controller, so without eager
-        // init the view throws "Controller not found".
-        StatusPageSubscriberController.instance;
-        return StatusPageSubscribersView(statusPageId: id);
-      });
 
       // Settings hub + sub-screens. The hub sits at `/settings` directly;
       // child URLs share the `/settings` prefix via the nested group.

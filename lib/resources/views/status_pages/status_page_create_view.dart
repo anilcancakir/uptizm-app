@@ -36,6 +36,7 @@ class _StatusPageCreateViewState
         MagicStatefulViewState<StatusPagesController, StatusPageCreateView> {
   final _titleCtrl = TextEditingController();
   final _slugCtrl = TextEditingController();
+  final _slugFocus = FocusNode();
   bool _slugTouched = false;
   bool _isPublic = true;
   String _primaryColor = '#2563EB';
@@ -59,6 +60,7 @@ class _StatusPageCreateViewState
   void onInit() {
     super.onInit();
     _titleCtrl.addListener(_syncSlugFromTitle);
+    _slugFocus.addListener(_selectSlugOnFirstFocus);
     WidgetsBinding.instance.addPostFrameCallback((_) => _monitors.loadList());
   }
 
@@ -66,6 +68,7 @@ class _StatusPageCreateViewState
   void onClose() {
     _titleCtrl.dispose();
     _slugCtrl.dispose();
+    _slugFocus.dispose();
     super.onClose();
   }
 
@@ -79,6 +82,19 @@ class _StatusPageCreateViewState
       );
     }
     setState(() {});
+  }
+
+  /// When the user focuses an auto-filled slug for the first time,
+  /// highlight the whole value so a typed character replaces it
+  /// instead of appending to the auto-synced name.
+  void _selectSlugOnFirstFocus() {
+    if (_slugTouched || !_slugFocus.hasFocus) return;
+    final text = _slugCtrl.text;
+    if (text.isEmpty) return;
+    _slugCtrl.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: text.length,
+    );
   }
 
   @override
@@ -136,10 +152,10 @@ class _StatusPageCreateViewState
                 required: true,
               ),
               WInput(
-                value: _slugCtrl.text,
+                controller: _slugCtrl,
+                focusNode: _slugFocus,
                 onChanged: (v) {
                   _slugTouched = true;
-                  _slugCtrl.text = v;
                   setState(() {});
                 },
                 placeholder: trans(
