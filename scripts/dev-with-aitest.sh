@@ -26,8 +26,42 @@
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
-exec flutter run -d chrome \
+VM_URI_FILE="/tmp/ai-test-vm-uri"
+LOG_FILE="/tmp/flutter-dev.log"
+: > "$LOG_FILE"
+
+# Spawn flutter in the background, then scrape its log for the VM Service URI.
+# Flutter web ignores --vm-service-port and adds an auth token regardless of
+# --disable-service-auth-codes, so the URI cannot be predicted.
+flutter run -d chrome \
   --web-port=3100 \
   --vm-service-port=8181 \
   --disable-service-auth-codes \
-  --dart-define=AI_TEST=1
+  --no-dds \
+  --dart-define=AI_TEST=1 \
+  > "$LOG_FILE" 2>&1 &
+FLUTTER_PID=$!
+
+cleanup() {
+  kill -TERM "$FLUTTER_PID" 2>/dev/null || true
+  rm -f "$VM_URI_FILE"
+}
+trap cleanup INT TERM EXIT
+
+# Wait for VM Service URI to appear in the log, then publish it.
+while kill -0 "$FLUTTER_PID" 2>/dev/null; do
+  URI=$(grep -oE 'Debug service listening on (ws://[^ ]+)' "$LOG_FILE" | head -1 | awk '{print $NF}')
+  if [ -n "$URI" ]; then
+    # Ensure trailing /ws.
+    case "$URI" in
+      */ws) ;;
+      *) URI="${URI}/ws" ;;
+    esac
+    echo "$URI" > "$VM_URI_FILE"
+    echo "[dev-with-aitest] VM Service ready at $URI (wrote $VM_URI_FILE)"
+    break
+  fi
+  sleep 1
+done
+
+wait "$FLUTTER_PID"
