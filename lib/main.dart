@@ -22,9 +22,17 @@ import 'config/wind.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Gate-guarded by kDebugMode + AI_TEST dart-define + ?aiTest=1 query param.
-  // Release builds tree-shake to a no-op (production-safe).
-  AiTestBinding.ensureInitialized(host: Projection());
+  // Gate-guarded by AI_TEST dart-define + ?aiTest=1 query param via the
+  // binding's runtime check. The compile-time `if (!kReleaseMode)` lets
+  // dart2js prove the entire branch dead in release, which strips the
+  // `Projection()` constructor + its transitive imports (mirror DOM
+  // emitter, glasspane mount, role resolver, synthesizer, metrics) out
+  // of the production bundle. Without the compile-time guard, the
+  // binding's runtime gate prevents activation but the dead code still
+  // ships (verified empirically before the guard was added).
+  if (!kReleaseMode) {
+    AiTestBinding.ensureInitialized(host: Projection());
+  }
 
   // Register SentryNavigatorObserver BEFORE Magic.init() — router is built
   // during boot(), so observers must be added before that. Unconditional
