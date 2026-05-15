@@ -31,7 +31,7 @@ void main() async {
   // binding's runtime gate prevents activation but the dead code still
   // ships (verified empirically before the guard was added).
   if (!kReleaseMode) {
-    AiTestBinding.ensureInitialized(host: Projection());
+    AiTestBinding.ensureInitialized(host: const AiTestPluginV2());
   }
 
   // Register SentryNavigatorObserver BEFORE Magic.init() — router is built
