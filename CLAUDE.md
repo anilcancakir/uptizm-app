@@ -102,6 +102,12 @@ Controllers never build payloads inline — expose a typed `submitCreate({...})`
 - Web SQLite is in-memory; mobile/desktop is file-backed. Don't rely on local persistence for cross-platform caches.
 - Contract changes cross repos — keep `../uptizm-api` in sync.
 
+## V2 AI-Test Agent Control (debug-only)
+
+`references/ai-test/` enables an LLM agent to drive the running web app via Playwright + MCP. Architecture: Hybrid B+C — native Flutter Semantics tree (Playwright `getByRole`/`getByLabel`) + Dart VM Service Inspector Protocol (3 MCP tools: `get_widget_tree`, `evaluate_dart`, `get_routes`). Gated by `kIsWeb && kDebugMode && AI_TEST=1`; release builds tree-shake the entire branch.
+
+Launch: `scripts/dev-with-aitest.sh` (Flutter web on :3100 + VM Service on :8181). Playwright helpers in `references/playwright-cli/tests/_helpers.ts`. MCP server scaffold in `references/ai-test/packages/ai_test_node/`. V1 forensics: `references/ai-test/V1_RESULT.md`.
+
 ## Skills
 
 | Skill             | Coverage                                                  |
