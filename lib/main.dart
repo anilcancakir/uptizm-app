@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ai_test_flutter/ai_test_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:magic/magic.dart';
@@ -20,6 +21,10 @@ import 'config/wind.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Gate-guarded by kDebugMode + AI_TEST dart-define + ?aiTest=1 query param.
+  // Release builds tree-shake to a no-op (production-safe).
+  AiTestBinding.ensureInitialized(host: Projection());
 
   // Register SentryNavigatorObserver BEFORE Magic.init() — router is built
   // during boot(), so observers must be added before that. Unconditional

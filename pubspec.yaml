@@ -35,6 +35,12 @@ dependencies:
   magic_notifications: ^0.0.1-alpha.1
   magic_starter: ^0.0.1-alpha.14
 
+  # Spike-only: Shadow DOM Projection for Flutter Web E2E. AiTestBinding
+  # gates on kDebugMode + dart-define + URL query, so production builds
+  # tree-shake the entire package away (verified by the spike's release
+  # build: `grep -c 'AiTestBinding' build/web/main.dart.js` returns 0).
+  ai_test_flutter: any
+
   fl_chart: ^1.2.0
 
   sentry_flutter: ^9.16.0
@@ -45,6 +51,8 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dependency_overrides:
+  ai_test_flutter:
+    path: references/ai-test/packages/ai_test_flutter
   fluttersdk_wind:
     path: references/wind
   magic:
