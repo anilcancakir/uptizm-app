@@ -102,11 +102,21 @@ Controllers never build payloads inline — expose a typed `submitCreate({...})`
 - Web SQLite is in-memory; mobile/desktop is file-backed. Don't rely on local persistence for cross-platform caches.
 - Contract changes cross repos — keep `../uptizm-api` in sync.
 
-## V2 AI-Test Agent Control (debug-only)
+## V3 AI-Test Agent Control (debug-only)
 
-`references/ai-test/` enables an LLM agent to drive the running web app via Playwright + MCP. Architecture: Hybrid B+C — native Flutter Semantics tree (Playwright `getByRole`/`getByLabel`) + Dart VM Service Inspector Protocol (3 MCP tools: `get_widget_tree`, `evaluate_dart`, `get_routes`). Gated by `kIsWeb && kDebugMode && AI_TEST=1`; release builds tree-shake the entire branch.
+`references/ai-test/` enables an LLM agent to drive the running web app via **MCP-only single-channel** over Dart VM Service custom extensions. No Playwright, no DOM mirror, no Shadow DOM projection. Architecture: one `flutter run -d chrome` session, one VM Service WebSocket, ~18 `ext.aitest.*` extensions Dart-side (snapshot/tap/type/scroll/screenshot/network/etc.), 19 MCP tools Node-side wrapping them via `@modelcontextprotocol/sdk` v1.x `McpServer.registerTool`. Gated by `kIsWeb && kDebugMode` at `lib/main.dart`; release builds tree-shake the entire branch.
 
-Launch: `scripts/dev-with-aitest.sh` (Flutter web on :3100 + VM Service on :8181). Playwright helpers in `references/playwright-cli/tests/_helpers.ts`. MCP server scaffold in `references/ai-test/packages/ai_test_node/`. V1 forensics: `references/ai-test/V1_RESULT.md`.
+Launch:
+
+```bash
+dart run ai_test_flutter:ai_test_flutter start   # boots flutter run -d chrome + writes ~/.ai-test/state.json
+dart run ai_test_flutter:ai_test_flutter status  # JSON status of recorded process
+dart run ai_test_flutter:ai_test_flutter stop    # SIGTERM + state.json delete
+```
+
+State inspection pattern (replaces V2 `inspect_state` per Oracle cull): `flutter_evaluate("Magic.find<MonitorController>().rxState.value.toString()")`. Form data lives in the snapshot YAML's `magicFormField:` enrichment.
+
+Plugin source in `references/ai-test/packages/ai_test_flutter/` (Dart). MCP server in `references/ai-test/packages/ai_test_node/` (TypeScript). V1/V2 forensics: `references/ai-test/V1_RESULT.md` + `references/ai-test/V2_OVERVIEW.md` (when present). V3 architecture deep-dive: `references/ai-test/V3_OVERVIEW.md`.
 
 ## Skills
 
