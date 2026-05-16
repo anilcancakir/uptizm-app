@@ -210,7 +210,7 @@
       "title": "Postmortem",
       "write": "Write postmortem",
       "publish": "Publish postmortem",
-      "published_at": "Published {at}",
+      "published_at": "Published :at",
       "notify_subscribers": "Email subscribers",
       "placeholder": "Root cause, timeline, remediation. Markdown is supported.",
       "locked_hint": "Postmortems can be written after the incident is resolved."
@@ -313,7 +313,7 @@
     "update": {
       "title": "Post an update",
       "subtitle_note_only": "Log a note without changing status.",
-      "subtitle_status": "Move the incident to {status} and share what changed.",
+      "subtitle_status": "Move the incident to :status and share what changed.",
       "status_label": "Status",
       "intent": {
         "none": "Note only",
@@ -455,7 +455,8 @@
       "view_all": "All incidents",
       "ai_owned": "AI",
       "empty_title": "All clear",
-      "empty": "No active incidents right now."
+      "empty": "No active incidents right now.",
+      "deleted_monitor": "Deleted monitor"
     },
     "ai_inbox": {
       "title": "AI suggestions",

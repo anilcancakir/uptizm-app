@@ -200,7 +200,11 @@ class _DashboardViewState extends State<DashboardView>
                         for (final i in list)
                           ActiveIncidentItem(
                             monitorId: i.monitorId,
-                            monitorName: nameById[i.monitorId] ?? i.monitorId,
+                            monitorName:
+                                nameById[i.monitorId] ??
+                                trans(
+                                  'dashboard.active_incidents.deleted_monitor',
+                                ),
                             title: i.title,
                             severity: i.severity,
                             status: i.status,
