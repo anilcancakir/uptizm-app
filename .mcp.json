@@ -29,9 +29,8 @@
       "command": "npx",
       "args": [
         "tsx",
-        "src/cli.ts"
-      ],
-      "cwd": "/Users/anilcan/Code/uptizmv2/uptizm-app/references/ai-test/packages/ai_test_node"
+        "/Users/anilcan/Code/uptizmv2/uptizm-app/references/ai-test/packages/ai_test_node/src/cli.ts"
+      ]
     }
   }
 }
