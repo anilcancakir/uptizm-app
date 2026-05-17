@@ -6,7 +6,7 @@
 #   → navigate incident → delete monitor → verify cleanup
 #
 # Prerequisites (see scripts/qa-smoke-README.md):
-#   - uptizm-app running via `dart run ai_test_flutter:ai_test_flutter start`
+#   - uptizm-app running via `dart run artisan start`
 #   - uptizm-api running (php artisan serve on :8000)
 #   - jq >= 1.6 and node >= 22 on PATH
 #
@@ -27,8 +27,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 API_ROOT="$(cd "$APP_ROOT/../uptizm-api" && pwd)"
 MCP_CLIENT="$SCRIPT_DIR/qa-smoke-mcp-client.mjs"
-MCP_SERVER="$APP_ROOT/references/ai-test/packages/ai_test_node/src/cli.ts"
-STATE_FILE="$HOME/.ai-test/state.json"
+MCP_SERVER="$APP_ROOT/references/fluttersdk_mcp/bin/server.dart"
+STATE_FILE="$HOME/.artisan/state.json"
 
 # ---------------------------------------------------------------------------
 # Smoke-test identity (fresh per run, never hard-coded)
@@ -121,8 +121,8 @@ check_prereqs() {
     # MCP server entry
     [[ -f "$MCP_SERVER" ]] || die "MCP server entry missing: $MCP_SERVER"
 
-    # ai-test session state
-    [[ -f "$STATE_FILE" ]] || die "ai-test session not running — run: dart run ai_test_flutter:ai_test_flutter start"
+    # artisan session state
+    [[ -f "$STATE_FILE" ]] || die "artisan session not running — run: dart run artisan start"
 
     local vm_uri
     vm_uri=$(jq -r '.vmServiceUri // ""' "$STATE_FILE")
@@ -173,7 +173,7 @@ mcp_text() {
 # ---------------------------------------------------------------------------
 
 phase_verify_session() {
-    log_phase "Phase 1: verify ai-test session"
+    log_phase "Phase 1: verify artisan session"
 
     local age_secs
     age_secs=$(( $(date +%s) - $(jq -r '.startedAt // 0' "$STATE_FILE" | sed 's/\..*//' | sed 's/[^0-9]*//g' | head -c 10) )) 2>/dev/null || age_secs=999
@@ -217,19 +217,19 @@ phase_login() {
     log_phase "Phase 3: login via MCP"
 
     # 3a. Navigate to login page.
-    mcp_call "flutter_navigate" '{"route":"/auth/login"}' >/dev/null
+    mcp_call "dusk_navigate" '{"route":"/auth/login"}' >/dev/null
     sleep 1
     log_ok "navigated to /auth/login"
 
     # 3b. Type email.
     local snapshot
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
 
     local email_ref
     email_ref=$(printf '%s' "$snapshot" | grep -E 'email|Email' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
     [[ -n "$email_ref" ]] || die "login: email field ref not found in snapshot"
 
-    mcp_call "flutter_type" "{\"ref\":\"$email_ref\",\"text\":\"$SMOKE_EMAIL\"}" >/dev/null
+    mcp_call "dusk_type" "{\"ref\":\"$email_ref\",\"text\":\"$SMOKE_EMAIL\"}" >/dev/null
     log_ok "typed email"
 
     # 3c. Type password.
@@ -237,22 +237,22 @@ phase_login() {
     pwd_ref=$(printf '%s' "$snapshot" | grep -iE 'password|Password' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
     [[ -n "$pwd_ref" ]] || die "login: password field ref not found in snapshot"
 
-    mcp_call "flutter_type" "{\"ref\":\"$pwd_ref\",\"text\":\"$SMOKE_PASSWORD\"}" >/dev/null
+    mcp_call "dusk_type" "{\"ref\":\"$pwd_ref\",\"text\":\"$SMOKE_PASSWORD\"}" >/dev/null
     log_ok "typed password"
 
     # 3d. Tap Sign In.
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
     local signin_ref
     signin_ref=$(printf '%s' "$snapshot" | grep -iE 'sign.?in|Log.?in' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
     [[ -n "$signin_ref" ]] || die "login: sign in button ref not found in snapshot"
 
-    mcp_call "flutter_tap" "{\"ref\":\"$signin_ref\"}" >/dev/null
+    mcp_call "dusk_tap" "{\"ref\":\"$signin_ref\"}" >/dev/null
     log_ok "tapped Sign In"
 
     # 3e. Wait for dashboard route.
     sleep 2
     local routes
-    routes=$(mcp_text "$(mcp_call "flutter_get_routes" '{}')")
+    routes=$(mcp_text "$(mcp_call "dusk_get_routes" '{}')")
     local location
     location=$(printf '%s' "$routes" | jq -r '.location // ""' 2>/dev/null || printf '%s' "$routes")
     log_ok "post-login location: $location"
@@ -266,18 +266,18 @@ phase_create_monitor() {
     log_phase "Phase 4: create monitor via MCP"
 
     # 4a. Navigate to create page.
-    mcp_call "flutter_navigate" '{"route":"/monitors/create"}' >/dev/null
+    mcp_call "dusk_navigate" '{"route":"/monitors/create"}' >/dev/null
     sleep 1
 
     # 4b. Snapshot and find name field.
     local snapshot
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":4}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":4}')")
 
     local name_ref
     name_ref=$(printf '%s' "$snapshot" | grep -iE 'name|monitor.name|Name' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
     [[ -n "$name_ref" ]] || die "create_monitor: name field ref not found"
 
-    mcp_call "flutter_type" "{\"ref\":\"$name_ref\",\"text\":\"$SMOKE_MONITOR_NAME\"}" >/dev/null
+    mcp_call "dusk_type" "{\"ref\":\"$name_ref\",\"text\":\"$SMOKE_MONITOR_NAME\"}" >/dev/null
     log_ok "typed monitor name: $SMOKE_MONITOR_NAME"
 
     # 4c. Find URL field and type.
@@ -285,16 +285,16 @@ phase_create_monitor() {
     url_ref=$(printf '%s' "$snapshot" | grep -iE 'url|URL|endpoint' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
     [[ -n "$url_ref" ]] || die "create_monitor: URL field ref not found"
 
-    mcp_call "flutter_type" "{\"ref\":\"$url_ref\",\"text\":\"$SMOKE_MONITOR_URL\"}" >/dev/null
+    mcp_call "dusk_type" "{\"ref\":\"$url_ref\",\"text\":\"$SMOKE_MONITOR_URL\"}" >/dev/null
     log_ok "typed monitor URL: $SMOKE_MONITOR_URL"
 
     # 4d. Tap Create / Submit button.
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
     local submit_ref
     submit_ref=$(printf '%s' "$snapshot" | grep -iE 'create.?monitor|Save|Submit' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
     [[ -n "$submit_ref" ]] || die "create_monitor: submit button ref not found"
 
-    mcp_call "flutter_tap" "{\"ref\":\"$submit_ref\"}" >/dev/null
+    mcp_call "dusk_tap" "{\"ref\":\"$submit_ref\"}" >/dev/null
     log_ok "tapped Create Monitor"
 
     # 4e. Wait for POST 201 or route change.
@@ -326,12 +326,12 @@ phase_add_metric() {
 
     # 5a. Find and tap Metrics tab.
     local snapshot
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
     local metrics_tab_ref
     metrics_tab_ref=$(printf '%s' "$snapshot" | grep -iE 'metrics|Metrics' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
 
     if [[ -n "$metrics_tab_ref" ]]; then
-        mcp_call "flutter_tap" "{\"ref\":\"$metrics_tab_ref\"}" >/dev/null
+        mcp_call "dusk_tap" "{\"ref\":\"$metrics_tab_ref\"}" >/dev/null
         sleep 1
         log_ok "tapped Metrics tab"
     else
@@ -340,12 +340,12 @@ phase_add_metric() {
     fi
 
     # 5b. Tap "Cache hit" preset.
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":4}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":4}')")
     local cache_ref
     cache_ref=$(printf '%s' "$snapshot" | grep -iE 'cache.?hit|Cache Hit' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
 
     if [[ -n "$cache_ref" ]]; then
-        mcp_call "flutter_tap" "{\"ref\":\"$cache_ref\"}" >/dev/null
+        mcp_call "dusk_tap" "{\"ref\":\"$cache_ref\"}" >/dev/null
         sleep 1
         log_ok "tapped Cache hit preset"
     else
@@ -354,12 +354,12 @@ phase_add_metric() {
     fi
 
     # 5c. Tap Add metric button.
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
     local add_ref
     add_ref=$(printf '%s' "$snapshot" | grep -iE 'add.?metric|Add Metric' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
 
     if [[ -n "$add_ref" ]]; then
-        mcp_call "flutter_tap" "{\"ref\":\"$add_ref\"}" >/dev/null
+        mcp_call "dusk_tap" "{\"ref\":\"$add_ref\"}" >/dev/null
         sleep 2
         log_ok "tapped Add Metric"
     else
@@ -407,11 +407,11 @@ PHP
 phase_verify_dashboard() {
     log_phase "Phase 7: verify dashboard incidents counter"
 
-    mcp_call "flutter_navigate" '{"route":"/"}' >/dev/null
+    mcp_call "dusk_navigate" '{"route":"/"}' >/dev/null
     sleep 2
 
     local snapshot
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":4}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":4}')")
 
     # Check that the INCIDENTS counter is present (value >= 1 is sufficient;
     # exact count may vary by team pre-existing data).
@@ -430,18 +430,18 @@ phase_incident_drawer() {
     log_phase "Phase 8: navigate to monitor incidents tab and open drawer"
 
     # Navigate to monitor detail.
-    mcp_call "flutter_navigate" "{\"route\":\"/monitors/$SMOKE_MONITOR_ID\"}" >/dev/null
+    mcp_call "dusk_navigate" "{\"route\":\"/monitors/$SMOKE_MONITOR_ID\"}" >/dev/null
     sleep 2
 
     local snapshot
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
 
     # Tap Incidents tab if present.
     local incidents_tab_ref
     incidents_tab_ref=$(printf '%s' "$snapshot" | grep -iE 'incidents|Incidents' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
 
     if [[ -n "$incidents_tab_ref" ]]; then
-        mcp_call "flutter_tap" "{\"ref\":\"$incidents_tab_ref\"}" >/dev/null
+        mcp_call "dusk_tap" "{\"ref\":\"$incidents_tab_ref\"}" >/dev/null
         sleep 1
         log_ok "tapped Incidents tab"
     else
@@ -450,17 +450,17 @@ phase_incident_drawer() {
     fi
 
     # Tap the seeded incident row.
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":4}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":4}')")
     local inc_ref
     inc_ref=$(printf '%s' "$snapshot" | grep -iE 'QA smoke seed|smoke' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
 
     if [[ -n "$inc_ref" ]]; then
-        mcp_call "flutter_tap" "{\"ref\":\"$inc_ref\"}" >/dev/null
+        mcp_call "dusk_tap" "{\"ref\":\"$inc_ref\"}" >/dev/null
         sleep 1
         log_ok "tapped incident row"
 
         # Verify drawer rendered.
-        snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+        snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
         if printf '%s' "$snapshot" | grep -qiE 'QA smoke|smoke seed|incident.?detail'; then
             log_ok "incident drawer rendered"
         else
@@ -478,28 +478,28 @@ phase_incident_drawer() {
 phase_delete_monitor() {
     log_phase "Phase 9: delete monitor via edit page"
 
-    mcp_call "flutter_navigate" "{\"route\":\"/monitors/$SMOKE_MONITOR_ID/edit\"}" >/dev/null
+    mcp_call "dusk_navigate" "{\"route\":\"/monitors/$SMOKE_MONITOR_ID/edit\"}" >/dev/null
     sleep 2
 
     local snapshot
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
 
     local delete_ref
     delete_ref=$(printf '%s' "$snapshot" | grep -iE 'delete.?monitor|Delete Monitor' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
 
     [[ -n "$delete_ref" ]] || die "delete_monitor: delete button ref not found in snapshot"
 
-    mcp_call "flutter_tap" "{\"ref\":\"$delete_ref\"}" >/dev/null
+    mcp_call "dusk_tap" "{\"ref\":\"$delete_ref\"}" >/dev/null
     sleep 1
     log_ok "tapped Delete Monitor"
 
     # Confirm dialog.
-    snapshot=$(mcp_text "$(mcp_call "flutter_snapshot" '{"depth":3}')")
+    snapshot=$(mcp_text "$(mcp_call "dusk_snap" '{"depth":3}')")
     local confirm_ref
     confirm_ref=$(printf '%s' "$snapshot" | grep -iE 'confirm|delete|yes' | grep -oE 'ref=e[0-9]+' | head -1 | sed 's/ref=//')
 
     if [[ -n "$confirm_ref" ]]; then
-        mcp_call "flutter_tap" "{\"ref\":\"$confirm_ref\"}" >/dev/null
+        mcp_call "dusk_tap" "{\"ref\":\"$confirm_ref\"}" >/dev/null
         sleep 2
         log_ok "confirmed deletion"
     else

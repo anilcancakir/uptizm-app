@@ -102,24 +102,45 @@ Controllers never build payloads inline — expose a typed `submitCreate({...})`
 - Web SQLite is in-memory; mobile/desktop is file-backed. Don't rely on local persistence for cross-platform caches.
 - Contract changes cross repos — keep `../uptizm-api` in sync.
 
-## V3 AI-Test Agent Control (debug-only)
+## fluttersdk Dev-Tooling (debug-only)
 
-`references/ai-test/` enables an LLM agent to drive the running app via **MCP-only single-channel** over Dart VM Service custom extensions. No Playwright, no DOM mirror, no Shadow DOM projection. Architecture: one `flutter run -d <target>` session, one VM Service WebSocket, ~18 `ext.aitest.*` extensions Dart-side (snapshot/tap/type/scroll/screenshot/network/etc.), 19 MCP tools Node-side wrapping them via `@modelcontextprotocol/sdk` v1.x `McpServer.registerTool`. Gated by `kDebugMode` at `lib/main.dart`; release builds tree-shake the entire branch on every platform (dart2js for web, dart2native for desktop/mobile AOT).
+Five vendored packages under `references/fluttersdk_*` + `references/magic_tinker` give an LLM agent eyes-and-hands over the running app via a single Dart MCP server. Replaces the V3 ai-test monolith.
 
-Cross-platform: `--device` selects the launch target. `chrome` (default, web), `macos`/`linux`/`windows` (desktop), iOS UDID, Android serial all work — D6 Chrome reaper auto-skips on non-chrome targets. Same `ext.aitest.*` surface everywhere.
+Stack:
+- `fluttersdk_artisan` — pure Dart CLI framework (start/stop/status/logs/restart/doctor/list/help/make:command builtins + ArtisanServiceProvider abstraction + VmServiceClient + StateFile).
+- `fluttersdk_dusk` — E2E driver (gesture/snap/screenshot/wait/find/modal) over `ext.dusk.*` VM Service extensions.
+- `fluttersdk_telescope` — runtime inspector (HTTP + log + exception + Magic Model + Magic Cache watchers) over `ext.telescope.*`.
+- `fluttersdk_mcp` — single Dart MCP server, stdio JSON-RPC + runtime tool discovery (filters `ext.dusk.*` / `ext.telescope.*` / `ext.tinker.*` per installed packages).
+- `magic_tinker` — connected REPL over `ext.tinker.evaluate` (VM Service evaluate); Magic-aware autocomplete via MagicTinkerIntegration.
 
-Launch:
+Magic-side glue lives in `references/magic/lib/src/cli/`:
+- `MagicArtisanProvider` — 16 make:* + magic:install + key:generate commands.
+- `MagicDuskIntegration` — MagicForm field + MagicRoute location enrichers.
+- `MagicTelescopeIntegration` — Magic.Http facade adapter + Model lifecycle + Cache watchers.
+- `MagicTinkerIntegration` — 31 Magic facade autocomplete symbols + Eloquent model caster.
+
+Wind-side: `WindDuskIntegration` enriches Dusk snapshots with W-widget resolved className metadata (6 fields: breakpoint, brightness, platform, states, bgColor, textColor).
+
+All install() gates live under `kDebugMode` at `lib/main.dart`; release builds tree-shake the entire branch on every platform (dart2js for web, dart2native for desktop + mobile AOT).
+
+Launch (consumer-side `bin/artisan.dart`):
 
 ```bash
-dart run ai_test_flutter:ai_test_flutter start                  # web (chrome, default)
-dart run ai_test_flutter:ai_test_flutter start --device=macos   # desktop
-dart run ai_test_flutter:ai_test_flutter status                 # JSON status of recorded process
-dart run ai_test_flutter:ai_test_flutter stop                   # SIGTERM + state.json delete
+dart run artisan start                  # web (chrome, default)
+dart run artisan start --device=macos   # desktop
+dart run artisan status                 # JSON status of recorded process
+dart run artisan stop                   # SIGTERM + state.json delete
+dart run artisan list                   # all registered commands (9 builtin + per-provider)
+dart run artisan dusk:snap              # capture Semantics YAML snapshot
+dart run artisan telescope:tail         # live HTTP/log feed
+dart run artisan tinker                 # connected REPL
 ```
 
-State inspection pattern (replaces V2 `inspect_state` per Oracle cull): `flutter_evaluate("Magic.find<MonitorController>().rxState.value.toString()")`. Form data lives in the snapshot YAML's `magicFormField:` enrichment.
+State inspection pattern (Magic-stack apps): `tinker_eval("Magic.find<MonitorController>().rxState.value.toString()")` via MCP. Form data lives in the snapshot YAML's `magicFormField:` enrichment.
 
-Plugin source in `references/ai-test/packages/ai_test_flutter/` (Dart). MCP server in `references/ai-test/packages/ai_test_node/` (TypeScript). V1/V2 forensics: `references/ai-test/V1_RESULT.md` + `references/ai-test/V2_OVERVIEW.md` (when present). V3 architecture deep-dive: `references/ai-test/V3_OVERVIEW.md`.
+Plugin source: `references/fluttersdk_artisan/` (Dart CLI framework), `references/fluttersdk_dusk/` (E2E), `references/fluttersdk_telescope/` (inspector), `references/fluttersdk_mcp/` (MCP server), `references/magic_tinker/` (REPL). Adapter glue: `references/magic/lib/src/cli/` + `references/wind/lib/src/dusk_integration.dart`.
+
+Provider wiring: `lib/config/artisan.dart` exposes `artisanProviders` (9 factories); `bin/artisan.dart` registers builtins + expands the providers list into ArtisanRegistry (fail-fast on collision).
 
 ## Skills
 

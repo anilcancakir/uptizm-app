@@ -31,9 +31,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  magic: ^1.0.0-alpha.12
-  magic_notifications: ^0.0.1-alpha.1
-  magic_starter: ^0.0.1-alpha.14
+  magic: ^1.0.0-alpha.14
+  magic_deeplink: ^0.0.1-alpha.2
+  magic_notifications: ^0.0.1-alpha.2
+  magic_social_auth: ^0.0.1-alpha.2
+  magic_starter: ^0.0.1-alpha.15
 
   # Spike-only: Shadow DOM Projection for Flutter Web E2E. AiTestBinding
   # gates on kDebugMode + dart-define + URL query, so production builds
@@ -73,6 +75,12 @@ dependency_overrides:
     path: references/magic
   magic_starter:
     path: references/magic_starter
+  magic_notifications:
+    path: references/magic_notifications
+  magic_deeplink:
+    path: references/magic_deeplink
+  magic_social_auth:
+    path: references/magic_social_auth
 
 executables:
   artisan: artisan

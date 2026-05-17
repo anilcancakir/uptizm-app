@@ -35,6 +35,10 @@ void main() async {
     DuskPlugin.install();
     TelescopePlugin.install();
     TinkerPlugin.install();
+    MagicDuskIntegration.install();
+    MagicTelescopeIntegration.install();
+    MagicTinkerIntegration.install();
+    WindDuskIntegration.install();
   }
 
   // Register SentryNavigatorObserver BEFORE Magic.init() — router is built

@@ -25,12 +25,13 @@
       ],
       "env": {}
     },
-    "ai-test": {
-      "command": "npx",
+    "fluttersdk": {
+      "command": "dart",
       "args": [
-        "tsx",
-        "/Users/anilcan/Code/uptizmv2/uptizm-app/references/ai-test/packages/ai_test_node/src/cli.ts"
-      ]
+        "run",
+        "fluttersdk_mcp:server"
+      ],
+      "cwd": "/Users/anilcan/Code/uptizmv2/uptizm-app"
     }
   }
 }
