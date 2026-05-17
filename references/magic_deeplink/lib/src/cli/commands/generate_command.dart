@@ -20,7 +20,12 @@ import 'package:fluttersdk_artisan/artisan.dart';
 /// ```
 class GenerateCommand extends ArtisanCommand {
   @override
-  String get name => 'deeplink:generate';
+  String get signature => 'deeplink:generate '
+      '{--output=public : Output directory for generated files (relative to project root).} '
+      '{--root=. : Project root directory (defaults to current working directory).} '
+      '{--team-id= : Apple Developer Team ID (for AASA).} '
+      '{--bundle-id= : iOS app bundle identifier.} '
+      '{--package-name= : Android package name.}';
 
   @override
   String get description =>
@@ -38,25 +43,10 @@ class GenerateCommand extends ArtisanCommand {
 
   @override
   void configure(ArgParser parser) {
-    parser.addOption(
-      'output',
-      abbr: 'o',
-      defaultsTo: 'public',
-      help: 'Output directory for generated files (relative to project root).',
-    );
+    // 1. Let the signature DSL register every single-value option/flag.
+    super.configure(parser);
 
-    parser.addOption(
-      'root',
-      defaultsTo: '.',
-      help: 'Project root directory (defaults to current working directory).',
-    );
-
-    parser.addOption('team-id', help: 'Apple Developer Team ID (for AASA).');
-
-    parser.addOption('bundle-id', help: 'iOS app bundle identifier.');
-
-    parser.addOption('package-name', help: 'Android package name.');
-
+    // 2. Register multi-value options the DSL cannot model.
     parser.addMultiOption('sha256-fingerprints', help: 'SHA-256 fingerprints.');
 
     parser.addMultiOption(
@@ -186,9 +176,8 @@ class GenerateCommand extends ArtisanCommand {
       final fingerprintMatches = RegExp(
         r"'([^']+)'",
       ).allMatches(fingerprintsContent);
-      config['fingerprints'] = fingerprintMatches
-          .map((m) => m.group(1)!)
-          .toList();
+      config['fingerprints'] =
+          fingerprintMatches.map((m) => m.group(1)!).toList();
     }
 
     final pathsMatch = RegExp(

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:fluttersdk_artisan/artisan.dart';
 
 /// CLI command to uninstall Magic Notifications from the project.
@@ -20,7 +18,8 @@ import 'package:fluttersdk_artisan/artisan.dart';
 /// ```
 class UninstallCommand extends ArtisanCommand {
   @override
-  String get name => 'notifications:uninstall';
+  String get signature =>
+      'notifications:uninstall {--force : Skip confirmation prompt}';
 
   @override
   String get description => 'Remove Magic Notifications from the project';
@@ -37,17 +36,6 @@ class UninstallCommand extends ArtisanCommand {
   String get projectRoot => getProjectRoot();
 
   @override
-  void configure(ArgParser parser) {
-    parser.addFlag(
-      'force',
-      abbr: 'f',
-      help: 'Skip confirmation prompt',
-      defaultsTo: false,
-      negatable: false,
-    );
-  }
-
-  @override
   Future<int> handle(ArtisanContext ctx) async {
     ctx.output.info(ConsoleStyle.banner('Magic Notifications', '0.0.1'));
 
@@ -58,7 +46,7 @@ class UninstallCommand extends ArtisanCommand {
 
     // 2. Confirm unless --force is provided.
     if (!force) {
-      final confirmed = _confirm(
+      final confirmed = Prompt.confirm(
         'Are you sure you want to uninstall Magic Notifications?',
         defaultValue: false,
       );
@@ -210,25 +198,5 @@ class UninstallCommand extends ArtisanCommand {
     ctx.output.info('Web (web/OneSignalSDKWorker.js):');
     ctx.output.info('  Delete this file if no longer needed');
     ctx.output.writeln('');
-  }
-
-  /// Prompt the user for a yes/no confirmation.
-  ///
-  /// Inlined from magic_cli's `Command.confirm()` because fluttersdk_artisan
-  /// does not (yet) provide an interactive input helper.
-  bool _confirm(String question, {bool? defaultValue}) {
-    final defaultText = defaultValue == null
-        ? 'y/n'
-        : defaultValue
-        ? 'Y/n'
-        : 'y/N';
-    stdout.write('$question [$defaultText]: ');
-
-    final input = stdin.readLineSync()?.trim().toLowerCase();
-    if (input == null || input.isEmpty) {
-      return defaultValue ?? false;
-    }
-
-    return input == 'y' || input == 'yes';
   }
 }

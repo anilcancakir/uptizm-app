@@ -3,42 +3,18 @@ import 'package:fluttersdk_artisan/artisan.dart';
 /// Test command for sending test notifications via any available channel.
 class TestCommand extends ArtisanCommand {
   @override
-  String get name => 'notifications:test';
+  String get signature => 'notifications:test '
+      '{--dry-run : Preview notification without sending} '
+      '{--title=Test Notification : Notification title} '
+      '{--body=This is a test notification from the CLI : Notification body} '
+      '{--channel=database : Notification channel (database, push, mail)} '
+      '{--api-url= : API URL for push notifications}';
 
   @override
   String get description => 'Send test notifications to verify setup';
 
   @override
   CommandBoot get boot => CommandBoot.none;
-
-  @override
-  void configure(ArgParser parser) {
-    parser
-      ..addFlag(
-        'dry-run',
-        negatable: false,
-        help: 'Preview notification without sending',
-      )
-      ..addOption(
-        'title',
-        abbr: 't',
-        defaultsTo: 'Test Notification',
-        help: 'Notification title',
-      )
-      ..addOption(
-        'body',
-        abbr: 'b',
-        defaultsTo: 'This is a test notification from the CLI',
-        help: 'Notification body',
-      )
-      ..addOption(
-        'channel',
-        abbr: 'c',
-        defaultsTo: 'database',
-        help: 'Notification channel (database, push, mail)',
-      )
-      ..addOption('api-url', help: 'API URL for push notifications');
-  }
 
   /// Return the Flutter project root directory.
   ///

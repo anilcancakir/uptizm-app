@@ -11,7 +11,7 @@ import 'package:fluttersdk_artisan/artisan.dart';
 /// ```
 class ChannelsCommand extends ArtisanCommand {
   @override
-  String get name => 'notifications:channels';
+  String get signature => 'notifications:channels';
 
   @override
   String get description =>
@@ -27,11 +27,6 @@ class ChannelsCommand extends ArtisanCommand {
 
   /// Shortcut for projectRoot.
   String get projectRoot => getProjectRoot();
-
-  @override
-  void configure(ArgParser parser) {
-    // No options for this command
-  }
 
   @override
   Future<int> handle(ArtisanContext ctx) async {

@@ -9,7 +9,14 @@ enum ProjectType { flutter, dart, unknown }
 /// Installation command for Magic Notifications
 class InstallCommand extends ArtisanCommand {
   @override
-  String get name => 'notifications:install';
+  String get signature => 'notifications:install '
+      '{--non-interactive : Run in non-interactive mode (for CI/CD)} '
+      '{--app-id= : OneSignal App ID} '
+      '{--platforms= : Comma-separated list of platforms (android,ios,web)} '
+      '{--no-soft-prompt : Disable soft prompt (enabled by default)} '
+      '{--safari-web-id= : Safari Web ID for web push (optional)} '
+      '{--notify-button : Enable OneSignal notify button on web (default: disabled)} '
+      '{--force : Overwrite existing configuration file.}';
 
   @override
   String get description => 'Install and configure Magic Notifications';
@@ -28,42 +35,6 @@ class InstallCommand extends ArtisanCommand {
   /// Overridable in tests.
   List<String> getStubSearchPaths() {
     return [_resolvePluginStubsDir(), '${Directory.current.path}/assets/stubs'];
-  }
-
-  @override
-  void configure(ArgParser parser) {
-    parser
-      ..addFlag(
-        'non-interactive',
-        negatable: false,
-        help: 'Run in non-interactive mode (for CI/CD)',
-      )
-      ..addOption('app-id', help: 'OneSignal App ID')
-      ..addOption(
-        'platforms',
-        help: 'Comma-separated list of platforms (android,ios,web)',
-      )
-      ..addFlag(
-        'soft-prompt',
-        defaultsTo: true,
-        help: 'Enable soft prompt for notifications',
-      )
-      ..addOption(
-        'safari-web-id',
-        help: 'Safari Web ID for web push (optional)',
-      )
-      ..addFlag(
-        'notify-button',
-        defaultsTo: false,
-        help: 'Enable OneSignal notify button on web (default: disabled)',
-      )
-      ..addFlag(
-        'force',
-        abbr: 'f',
-        help: 'Overwrite existing configuration file.',
-        defaultsTo: false,
-        negatable: false,
-      );
   }
 
   /// Detect the project type by inspecting pubspec.yaml
@@ -136,7 +107,7 @@ class InstallCommand extends ArtisanCommand {
     final platformsStr =
         ctx.input.option('platforms') as String? ?? 'android,ios,web';
     final platforms = platformsStr.split(',').map((p) => p.trim()).toList();
-    final enableSoftPrompt = ctx.input.option('soft-prompt') as bool;
+    final enableSoftPrompt = !(ctx.input.option('no-soft-prompt') as bool);
     final safariWebId = ctx.input.option('safari-web-id') as String?;
     final notifyButtonEnabled = ctx.input.option('notify-button') as bool;
 
@@ -164,9 +135,9 @@ class InstallCommand extends ArtisanCommand {
 
     String? appId;
     while (appId == null || appId.isEmpty) {
-      final input = _ask('Enter your OneSignal App ID');
+      final input = Prompt.ask('Enter your OneSignal App ID');
 
-      if (input == null || input.isEmpty) {
+      if (input.isEmpty) {
         ctx.output.error('App ID is required');
         continue;
       }
@@ -195,7 +166,7 @@ class InstallCommand extends ArtisanCommand {
 
     final selectedPlatforms = <String>[];
     for (final platform in availablePlatforms) {
-      if (_confirm('Enable $platform?', defaultValue: true)) {
+      if (Prompt.confirm('Enable $platform?', defaultValue: true)) {
         selectedPlatforms.add(platform);
         ctx.output.success('  $platform enabled');
       } else {
@@ -219,15 +190,17 @@ class InstallCommand extends ArtisanCommand {
         'Safari Web ID is required for Safari push notifications',
       );
 
-      final safariInput = _ask('Enter Safari Web ID (or press Enter to skip)');
-      if (safariInput != null && safariInput.isNotEmpty) {
+      final safariInput = Prompt.ask(
+        'Enter Safari Web ID (or press Enter to skip)',
+      );
+      if (safariInput.isNotEmpty) {
         safariWebId = safariInput;
         ctx.output.success('Safari Web ID configured');
       } else {
         ctx.output.comment('Safari Web ID skipped');
       }
 
-      notifyButtonEnabled = _confirm(
+      notifyButtonEnabled = Prompt.confirm(
         'Enable OneSignal notify button?',
         defaultValue: false,
       );
@@ -252,7 +225,7 @@ class InstallCommand extends ArtisanCommand {
       'Soft prompt asks users before requesting push permissions',
     );
 
-    final enableSoftPrompt = _confirm(
+    final enableSoftPrompt = Prompt.confirm(
       'Enable soft prompt?',
       defaultValue: true,
     );
@@ -518,44 +491,5 @@ class InstallCommand extends ArtisanCommand {
     ctx.output.info(
       '  4. Check status: ${ConsoleStyle.cyan}artisan notifications:doctor${ConsoleStyle.reset}',
     );
-  }
-
-  /// Prompt the user for free-form input.
-  ///
-  /// Inlined from magic_cli's `Command.ask()` because fluttersdk_artisan does
-  /// not (yet) provide an interactive input helper; the install wizard depends
-  /// on this behavior verbatim.
-  String? _ask(String question, {String? defaultValue}) {
-    if (defaultValue != null) {
-      stdout.write('$question [$defaultValue]: ');
-    } else {
-      stdout.write('$question: ');
-    }
-
-    final input = stdin.readLineSync();
-    if (input == null || input.trim().isEmpty) {
-      return defaultValue ?? '';
-    }
-    return input.trim();
-  }
-
-  /// Prompt the user for a yes/no confirmation.
-  ///
-  /// Inlined from magic_cli's `Command.confirm()` for the same reason as
-  /// [_ask].
-  bool _confirm(String question, {bool? defaultValue}) {
-    final defaultText = defaultValue == null
-        ? 'y/n'
-        : defaultValue
-        ? 'Y/n'
-        : 'y/N';
-    stdout.write('$question [$defaultText]: ');
-
-    final input = stdin.readLineSync()?.trim().toLowerCase();
-    if (input == null || input.isEmpty) {
-      return defaultValue ?? false;
-    }
-
-    return input == 'y' || input == 'yes';
   }
 }

@@ -16,7 +16,8 @@ import 'package:magic_notifications/src/cli/cli.dart';
 /// ```
 class DoctorCommand extends ArtisanCommand {
   @override
-  String get name => 'notifications:doctor';
+  String get signature =>
+      'notifications:doctor {--verbose : Show detailed diagnostic information}';
 
   @override
   String get description =>
@@ -30,16 +31,6 @@ class DoctorCommand extends ArtisanCommand {
 
   /// Resolve the Flutter project root — may be overridden in tests.
   String getProjectRoot() => FileHelper.findProjectRoot();
-
-  @override
-  void configure(ArgParser parser) {
-    parser.addFlag(
-      'verbose',
-      abbr: 'v',
-      negatable: false,
-      help: 'Show detailed diagnostic information',
-    );
-  }
 
   @override
   Future<int> handle(ArtisanContext ctx) async {

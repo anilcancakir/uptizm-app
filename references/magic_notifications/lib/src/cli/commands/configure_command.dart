@@ -9,7 +9,12 @@ import 'package:fluttersdk_artisan/artisan.dart';
 /// tests can safely intercept by overriding [getProjectRoot].
 class ConfigureCommand extends ArtisanCommand {
   @override
-  String get name => 'notifications:configure';
+  String get signature => 'notifications:configure '
+      '{--show : Show current configuration} '
+      '{--app-id= : Update OneSignal App ID} '
+      '{--polling-interval= : Update polling interval (seconds, 5-600)} '
+      '{--soft-prompt : Enable soft prompt} '
+      '{--no-soft-prompt : Disable soft prompt}';
 
   @override
   String get description => 'Update Magic Notifications settings';
@@ -22,23 +27,6 @@ class ConfigureCommand extends ArtisanCommand {
 
   /// Resolve the Flutter project root — may be overridden in tests.
   String getProjectRoot() => FileHelper.findProjectRoot();
-
-  @override
-  void configure(ArgParser parser) {
-    parser
-      ..addFlag('show', negatable: false, help: 'Show current configuration')
-      ..addOption('app-id', help: 'Update OneSignal App ID')
-      ..addOption(
-        'polling-interval',
-        help: 'Update polling interval (seconds, 5-600)',
-      )
-      ..addFlag('soft-prompt', help: 'Enable soft prompt')
-      ..addFlag(
-        'no-soft-prompt',
-        negatable: false,
-        help: 'Disable soft prompt',
-      );
-  }
 
   /// Absolute path to the notifications config file.
   String get _configPath => '$projectRoot/lib/config/notifications.dart';

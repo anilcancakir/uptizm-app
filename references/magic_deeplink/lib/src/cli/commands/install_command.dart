@@ -17,7 +17,8 @@ import 'package:fluttersdk_artisan/artisan.dart';
 /// ```
 class InstallCommand extends ArtisanCommand {
   @override
-  String get name => 'deeplink:install';
+  String get signature =>
+      'deeplink:install {--force : Overwrite existing configuration file.}';
 
   @override
   String get description =>
@@ -39,17 +40,6 @@ class InstallCommand extends ArtisanCommand {
   /// Overridable in tests.
   List<String> getStubSearchPaths() {
     return [_resolvePluginStubsDir(), '${Directory.current.path}/assets/stubs'];
-  }
-
-  @override
-  void configure(ArgParser parser) {
-    parser.addFlag(
-      'force',
-      abbr: 'f',
-      help: 'Overwrite existing configuration file.',
-      defaultsTo: false,
-      negatable: false,
-    );
   }
 
   @override

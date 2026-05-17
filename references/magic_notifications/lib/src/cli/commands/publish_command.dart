@@ -19,7 +19,8 @@ import 'package:fluttersdk_artisan/artisan.dart';
 /// ```
 class PublishCommand extends ArtisanCommand {
   @override
-  String get name => 'notifications:publish';
+  String get signature =>
+      'notifications:publish {--force : Overwrite existing published files.}';
 
   @override
   String get description =>
@@ -39,17 +40,6 @@ class PublishCommand extends ArtisanCommand {
   /// Overridable in tests.
   List<String> getStubSearchPaths() {
     return [_resolvePluginStubsDir(), '${Directory.current.path}/assets/stubs'];
-  }
-
-  @override
-  void configure(ArgParser parser) {
-    parser.addFlag(
-      'force',
-      abbr: 'f',
-      help: 'Overwrite existing published files.',
-      defaultsTo: false,
-      negatable: false,
-    );
   }
 
   @override
