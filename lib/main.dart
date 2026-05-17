@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:fluttersdk_dusk/dusk.dart';
 import 'package:fluttersdk_telescope/telescope.dart';
 import 'package:magic/magic.dart';
-import 'package:magic_tinker/magic_tinker.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'config/app.dart';
@@ -35,10 +34,13 @@ void main() async {
   // Safe to install before Magic.init(). The Magic-side adapters move
   // below Magic.init() — they consume Magic.make<NetworkDriver>('network')
   // and need the IoC container fully bound first.
+  //
+  // Tinker is no longer a host-side plugin: the artisan CLI's tinker
+  // command talks to the running app's VM Service directly via the
+  // built-in `evaluate` RPC, so no per-app install entry is needed.
   if (kDebugMode) {
     DuskPlugin.install();
     TelescopePlugin.install();
-    TinkerPlugin.install();
     WindDuskIntegration.install();
   }
 

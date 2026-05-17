@@ -715,13 +715,6 @@ packages:
       relative: true
     source: path
     version: "0.0.1-alpha.15"
-  magic_tinker:
-    dependency: "direct main"
-    description:
-      path: "references/magic_tinker"
-      relative: true
-    source: path
-    version: "1.0.0-alpha.1"
   matcher:
     dependency: transitive
     description:
