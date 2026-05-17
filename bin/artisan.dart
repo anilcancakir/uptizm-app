@@ -1,18 +1,19 @@
 import 'dart:io';
 
 import 'package:app/app/commands/_index.g.dart' as auto;
-import 'package:app/config/artisan.dart';
 import 'package:fluttersdk_artisan/artisan.dart';
 
 /// uptizm-app consumer-side artisan dispatcher.
 ///
 /// Two registration paths:
-/// 1. Auto-discovery — every `ArtisanCommand` subclass under
-///    `lib/app/commands/` is registered from `_index.g.dart` (kept fresh
-///    by `make:command` and `commands:refresh`). Zero config.
-/// 2. Third-party providers — packages like `fluttersdk_dusk` or `magic`
-///    ship their own `ArtisanServiceProvider`; declare them once in
-///    `lib/config/artisan.dart`.
+///   1. App-level commands — every `ArtisanCommand` subclass under
+///      `lib/app/commands/` is auto-discovered via the generated
+///      `_index.g.dart` (kept fresh by `make:command` and
+///      `commands:refresh`). ZERO config.
+///   2. Third-party packages — uncomment the imports + registerProvider
+///      lines below as you add pub packages that ship a `cli.dart`
+///      sub-barrel (`fluttersdk_dusk`, `fluttersdk_telescope`,
+///      `fluttersdk_mcp`, `magic`, `magic_starter`, ...).
 Future<void> main(List<String> args) async {
   try {
     final registry = ArtisanRegistry();
@@ -21,9 +22,17 @@ Future<void> main(List<String> args) async {
       providerName: 'fluttersdk_artisan',
     );
     registry.registerAll(auto.commands, providerName: 'app');
-    for (final factory in artisanProviders) {
-      registry.registerProvider(factory());
-    }
+
+    // Third-party package providers — uncomment as needed.
+    // registry.registerProvider(DuskArtisanProvider());
+    // registry.registerProvider(TelescopeArtisanProvider());
+    // registry.registerProvider(McpArtisanProvider());
+    // registry.registerProvider(MagicArtisanProvider());
+    // registry.registerProvider(StarterArtisanProvider());
+    // registry.registerProvider(NotificationsArtisanProvider());
+    // registry.registerProvider(DeeplinkArtisanProvider());
+    // registry.registerProvider(SocialAuthArtisanProvider());
+
     final app = ArtisanApplication(registry: registry);
     exit(await app.dispatch(args));
   } on ArtisanCommandCollisionException catch (e) {
