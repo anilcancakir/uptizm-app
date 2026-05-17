@@ -31,13 +31,14 @@ void main() async {
   // - DuskPlugin: gesture/snap/screenshot/wait/find extensions (ext.dusk.*)
   // - TelescopePlugin: HTTP capture (via adapter) + log + exception (ext.telescope.*)
   // - TinkerPlugin: VM Service evaluate sentinel (ext.tinker.evaluate)
+  // Framework-side plugins register VM service extensions (no Magic dep).
+  // Safe to install before Magic.init(). The Magic-side adapters move
+  // below Magic.init() — they consume Magic.make<NetworkDriver>('network')
+  // and need the IoC container fully bound first.
   if (kDebugMode) {
     DuskPlugin.install();
     TelescopePlugin.install();
     TinkerPlugin.install();
-    MagicDuskIntegration.install();
-    MagicTelescopeIntegration.install();
-    MagicTinkerIntegration.install();
     WindDuskIntegration.install();
   }
 
@@ -78,6 +79,16 @@ void main() async {
       () => sentryConfig,
     ],
   );
+
+  // Magic-side fluttersdk dev-tooling adapters. Run AFTER Magic.init()
+  // because MagicHttpFacadeAdapter resolves NetworkDriver from the IoC
+  // container, MagicDuskIntegration's enrichers reference MagicRouter,
+  // and MagicTinkerIntegration seeds Tinker hooks Magic facades.
+  if (kDebugMode) {
+    MagicDuskIntegration.install();
+    MagicTelescopeIntegration.install();
+    MagicTinkerIntegration.install();
+  }
 
   final sentryDsn = Config.get<String>('sentry.dsn', '') ?? '';
   if (sentryDsn.isNotEmpty) {
