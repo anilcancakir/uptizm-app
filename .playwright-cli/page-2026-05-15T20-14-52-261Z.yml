@@ -1,0 +1,28 @@
+- generic [active] [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - group:
+            - generic:
+              - generic:
+                - button [ref=e18]
+                - generic:
+                  - generic: Sign In
+                - generic:
+                  - generic: Sign in to your account
+                - generic:
+                  - generic: Invalid credentials
+                - generic:
+                  - group "Email Address":
+                    - generic [ref=e19]:
+                      - textbox "Email Address" [ref=e20]
+                      - textbox [ref=e22]
+                  - group "Password":
+                    - generic [ref=e23]:
+                      - textbox "Password" [ref=e24]
+                      - textbox [ref=e26]
+                  - checkbox "Remember me" [ref=e27]
+                  - button "Forgot password?" [ref=e28]
+                  - button "Sign In" [ref=e29]
+                  - button "Don't have an account? Sign up" [ref=e30]

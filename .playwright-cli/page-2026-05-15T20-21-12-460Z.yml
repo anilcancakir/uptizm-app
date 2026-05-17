@@ -1,0 +1,26 @@
+- generic [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - group:
+            - generic:
+              - generic:
+                - button [ref=e5]
+                - generic:
+                  - generic: Sign In
+                - generic:
+                  - generic: Sign in to your account
+                - generic:
+                  - group "Email Address The Email Address field is required.":
+                    - generic [ref=e6]:
+                      - textbox "Email Address" [ref=e7]: aispike@example.com
+                      - textbox "you@example.com" [ref=e9]
+                  - group "Password The Password field is required.":
+                    - generic [ref=e10]:
+                      - textbox "Password" [ref=e11]: password123
+                      - textbox "At least 8 characters" [ref=e13]
+                  - checkbox "Remember me" [ref=e14]
+                  - button "Forgot password?" [ref=e15]
+                  - button "Sign In" [active] [ref=e16]
+                  - button "Don't have an account? Sign up" [ref=e17]

@@ -1,0 +1,26 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic: Uptizm
+          - button "A AI Test Team" [ref=e19]
+          - group:
+            - button "Dashboard" [ref=e20]
+            - button "Monitors" [active] [ref=e21]
+            - button "Status Pages" [ref=e22]
+            - button "Settings" [ref=e23]
+          - button "A AI Spike aispike@example.com" [ref=e25]
+          - button [ref=e27]
+          - group:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Monitors
+                - generic:
+                  - generic: All of your monitors at a glance.
+                - generic "Refresh":
+                  - button [ref=e37]
+                - button "New monitor" [ref=e38]
+                - button "AI Test Monitor https://example.com OFF Paused" [ref=e39]

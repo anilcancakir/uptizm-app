@@ -1,0 +1,101 @@
+- generic [active] [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic: Uptizm
+          - button "A AI Test Team" [ref=e19]
+          - group:
+            - button "Dashboard" [ref=e20]
+            - button "Monitors" [ref=e21]
+            - button "Status Pages" [ref=e22]
+            - button "Settings" [ref=e23]
+          - button "A AI Spike aispike@example.com" [ref=e25]
+          - button [ref=e27]
+          - group:
+            - generic:
+              - generic:
+                - button [ref=e40]
+                - generic:
+                  - generic: New monitor
+                - generic:
+                  - generic: Set up a check in under a minute. Custom metrics can be added later.
+                - generic:
+                  - generic: Basics
+                - generic:
+                  - generic: Name the monitor and tell us what to probe.
+                - generic:
+                  - generic: MONITOR NAME
+                - generic:
+                  - generic: "*"
+                - generic:
+                  - generic: A short label you will recognize in the dashboard.
+                - generic [ref=e41]:
+                  - textbox "Production API" [ref=e42]
+                  - textbox "Production API" [ref=e44]
+                - generic:
+                  - generic: MONITOR TYPE
+                - generic:
+                  - generic: Pick the protocol that matches your endpoint.
+                - button "HTTP / HTTPS" [ref=e45]
+                - button "TCP port" [ref=e46]
+                - generic:
+                  - generic: ENDPOINT URL
+                - generic:
+                  - generic: "*"
+                - generic:
+                  - generic: Probe a URL with GET / POST / HEAD and optional SSL tracking.
+                - generic [ref=e47]:
+                  - textbox "https://api.example.com/health" [ref=e48]
+                  - textbox "https://api.example.com/health" [ref=e50]
+                - generic:
+                  - generic: Check settings
+                - generic:
+                  - generic: How often and how we should call your endpoint.
+                - generic:
+                  - generic: HTTP METHOD
+                - button "GET" [ref=e51]
+                - button "POST" [ref=e52]
+                - button "HEAD" [ref=e53]
+                - generic:
+                  - generic: CHECK INTERVAL
+                - generic:
+                  - generic: "*"
+                - generic:
+                  - generic: Shorter intervals detect issues faster.
+                - button "30s" [ref=e54]
+                - button "1m" [ref=e55]
+                - button "5m" [ref=e56]
+                - button "15m" [ref=e57]
+                - button "1h" [ref=e58]
+                - button "Track SSL certificate Warn before the certificate expires." [ref=e59]
+                - generic:
+                  - generic: Authentication
+                - generic:
+                  - generic: Send credentials with every check if your endpoint is protected.
+                - group:
+                  - button "None" [ref=e60]
+                  - button "Basic" [ref=e61]
+                  - button "Bearer" [ref=e62]
+                  - button "API key" [ref=e63]
+                - button "Advanced Fine-tune the request (HTTP only)." [ref=e64]
+                - generic:
+                  - generic: Regions
+                - generic:
+                  - generic: Pick where checks should run from.
+                - button "🇮🇪 Western Europe EU-W Dublin / London" [ref=e65]
+                - button "🇩🇪 Central Europe EU-C Frankfurt / Warsaw" [ref=e66]
+                - button "🇺🇸 US East US-E Virginia / Ashburn" [ref=e67]
+                - button "🇺🇸 US West US-W Oregon / California" [ref=e68]
+                - button "🌏 Asia-Pacific AP Singapore / Tokyo" [ref=e69]
+                - generic:
+                  - generic: 1 region(s) selected
+                - generic:
+                  - generic: Alerts
+                - generic:
+                  - generic: We will notify you when something goes wrong.
+                - button "Alert on down Open an incident the moment a check fails." [ref=e70]
+                - 'button "Alert on warn Also notify on degraded responses (threshold band: warn)." [ref=e71]'
+                - button "Cancel" [ref=e72]
+                - button "Create monitor" [ref=e73]

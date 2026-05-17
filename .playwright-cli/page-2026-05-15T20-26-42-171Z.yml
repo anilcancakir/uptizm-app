@@ -1,0 +1,26 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - group:
+            - generic:
+              - generic:
+                - button [ref=e5]
+                - generic:
+                  - generic: Sign In
+                - generic:
+                  - generic: Sign in to your account
+                - generic:
+                  - group "Email Address":
+                    - generic [ref=e6]:
+                      - textbox "Email Address" [ref=e7]
+                      - textbox "you@example.com" [ref=e9]: aispike@example.com
+                  - group "Password":
+                    - generic [ref=e10]:
+                      - textbox "Password" [ref=e11]
+                      - textbox "At least 8 characters" [active] [ref=e13]
+                  - checkbox "Remember me" [ref=e14]
+                  - button "Forgot password?" [ref=e15]
+                  - button "Sign In" [ref=e16]
+                  - button "Don't have an account? Sign up" [ref=e17]

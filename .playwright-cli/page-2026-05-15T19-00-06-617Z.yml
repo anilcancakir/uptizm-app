@@ -1,0 +1,29 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic: Uptizm
+          - group:
+            - button "Dashboard" [ref=e18]
+            - button "Monitors" [ref=e19]
+            - button "Status Pages" [ref=e20]
+            - button "Settings" [ref=e21]
+          - button "A AI Spike aispike@example.com" [ref=e23]
+          - button [ref=e25]
+          - group:
+            - generic:
+              - generic:
+                - generic:
+                  - generic [active]: Overview
+                - generic:
+                  - generic: Live status across your monitors.
+                - generic "Auto-refreshing every 60s":
+                  - button "Live" [ref=e26]
+                - generic "Refresh":
+                  - button [ref=e27]
+                - button "100.00% UPTIME 30D" [ref=e28]
+                - button "0 INCIDENTS" [ref=e29]
+                - button "0ms AVG P95" [ref=e30]
+                - button "0 AI 24H" [ref=e31]

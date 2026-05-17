@@ -1,9 +1,11 @@
 import 'dart:async';
 
-import 'package:ai_test_flutter/ai_test_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttersdk_dusk/dusk.dart';
+import 'package:fluttersdk_telescope/telescope.dart';
 import 'package:magic/magic.dart';
+import 'package:magic_tinker/magic_tinker.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'config/app.dart';
@@ -22,20 +24,17 @@ import 'config/wind.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // V3: MCP-only single-channel via VM Service custom extensions.
-  // `kDebugMode` is the only gate: tree-shaking still strips the entire V3
-  // branch from release builds on every platform (dart2js for web,
-  // dart2native for desktop/mobile AOT). Removing the `kIsWeb` clause makes
-  // the plugin reachable from `flutter run -d macos|ios|android|linux|
-  // windows` debug sessions too, matching `ai_test_flutter start --device
-  // <target>`. AiTestPluginV3.install() registers all 19 ext.aitest.* RPCs
-  // idempotently (try/catch ArgumentError per call, hot-restart safe). The
-  // host app wraps its widget root in a plain RepaintBoundary (no
-  // GlobalKey) so the screenshot extension can find it via render-tree
-  // walk. The legacy GlobalKey approach caused _ElementLifecycle.inactive
-  // assertions when MagicApplication rebuilt its child tree.
+  // fluttersdk dev-tooling ecosystem (V1 local-first per /ac:execute --auto
+  // local-first variant; pub.dev publish + magic adapters happen V1.x).
+  // `kDebugMode` is the only gate: dart2js (web) + dart2native (desktop +
+  // mobile AOT) tree-shake the entire branch out of release builds.
+  // - DuskPlugin: gesture/snap/screenshot/wait/find extensions (ext.dusk.*)
+  // - TelescopePlugin: HTTP capture (via adapter) + log + exception (ext.telescope.*)
+  // - TinkerPlugin: VM Service evaluate sentinel (ext.tinker.evaluate)
   if (kDebugMode) {
-    AiTestPluginV3.install();
+    DuskPlugin.install();
+    TelescopePlugin.install();
+    TinkerPlugin.install();
   }
 
   // Register SentryNavigatorObserver BEFORE Magic.init() — router is built

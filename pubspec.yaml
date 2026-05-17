@@ -39,7 +39,13 @@ dependencies:
   # gates on kDebugMode + dart-define + URL query, so production builds
   # tree-shake the entire package away (verified by the spike's release
   # build: `grep -c 'AiTestBinding' build/web/main.dart.js` returns 0).
-  ai_test_flutter: any
+  # NEW fluttersdk ecosystem packages (V1 local-first; pub.dev publish after
+  # real-world test pass per /ac:execute --auto local-first variant).
+  fluttersdk_artisan: any
+  fluttersdk_dusk: any
+  fluttersdk_telescope: any
+  fluttersdk_mcp: any
+  magic_tinker: any
 
   fl_chart: ^1.2.0
 
@@ -51,14 +57,25 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dependency_overrides:
-  ai_test_flutter:
-    path: references/ai-test/packages/ai_test_flutter
+  fluttersdk_artisan:
+    path: references/fluttersdk_artisan
+  fluttersdk_dusk:
+    path: references/fluttersdk_dusk
+  fluttersdk_telescope:
+    path: references/fluttersdk_telescope
+  fluttersdk_mcp:
+    path: references/fluttersdk_mcp
+  magic_tinker:
+    path: references/magic_tinker
   fluttersdk_wind:
     path: references/wind
   magic:
     path: references/magic
   magic_starter:
     path: references/magic_starter
+
+executables:
+  artisan: artisan
 
 dev_dependencies:
   flutter_test:
