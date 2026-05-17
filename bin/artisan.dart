@@ -1,13 +1,18 @@
 import 'dart:io';
 
+import 'package:app/app/commands/_index.g.dart' as auto;
 import 'package:app/config/artisan.dart';
 import 'package:fluttersdk_artisan/artisan.dart';
 
 /// uptizm-app consumer-side artisan dispatcher.
 ///
-/// Loads 9 builtin commands from fluttersdk_artisan + expands the providers
-/// list from lib/config/artisan.dart (4 fluttersdk providers in V1; magic
-/// adapter providers added V1.x).
+/// Two registration paths:
+/// 1. Auto-discovery — every `ArtisanCommand` subclass under
+///    `lib/app/commands/` is registered from `_index.g.dart` (kept fresh
+///    by `make:command` and `commands:refresh`). Zero config.
+/// 2. Third-party providers — packages like `fluttersdk_dusk` or `magic`
+///    ship their own `ArtisanServiceProvider`; declare them once in
+///    `lib/config/artisan.dart`.
 Future<void> main(List<String> args) async {
   try {
     final registry = ArtisanRegistry();
@@ -15,9 +20,9 @@ Future<void> main(List<String> args) async {
       _builtinCommands(registry),
       providerName: 'fluttersdk_artisan',
     );
+    registry.registerAll(auto.commands, providerName: 'app');
     for (final factory in artisanProviders) {
-      final provider = factory();
-      registry.registerProvider(provider);
+      registry.registerProvider(factory());
     }
     final app = ArtisanApplication(registry: registry);
     exit(await app.dispatch(args));
@@ -37,12 +42,13 @@ List<ArtisanCommand> _builtinCommands(ArtisanRegistry registry) =>
       StopCommand(),
       StatusCommand(),
       LogsCommand(),
+      RestartCommand(),
       ReloadCommand(),
       HotRestartCommand(),
-      RestartCommand(),
       DoctorCommand(),
       ListCommand(registry),
       HelpCommand(registry),
       MakeCommandCommand(),
+      CommandsRefreshCommand(),
       TinkerCommand(),
     ];
