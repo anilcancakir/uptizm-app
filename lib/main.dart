@@ -28,10 +28,11 @@ void main() async {
   // ext.aitest.* extension + RefRegistry + interceptor + log sink out of
   // the production bundle. AiTestPluginV3.install() registers all 19
   // ext.aitest.* RPCs idempotently (try/catch ArgumentError per call,
-  // hot-restart safe). The host app must wrap its widget root in
-  // RepaintBoundary(key: AiTestPluginV3.rootRepaintBoundaryKey, ...) so
-  // the screenshot extension can call toImage(); the wrap below honors
-  // that contract on both runApp branches (Sentry-wrapped and bare).
+  // hot-restart safe). The host app wraps its widget root in a plain
+  // RepaintBoundary (no GlobalKey) so the screenshot extension can find
+  // it via render-tree walk. The legacy GlobalKey approach caused
+  // _ElementLifecycle.inactive assertions when MagicApplication rebuilt
+  // its child tree (e.g. logout → /auth/login swap).
   if (kIsWeb && kDebugMode) {
     AiTestPluginV3.install();
   }
@@ -149,14 +150,7 @@ void main() async {
             final Widget app = SentryWidget(
               child: MagicApplication(title: 'Uptizm', windTheme: windTheme),
             );
-            runApp(
-              kIsWeb && kDebugMode
-                  ? RepaintBoundary(
-                      key: AiTestPluginV3.rootRepaintBoundaryKey,
-                      child: app,
-                    )
-                  : app,
-            );
+            runApp(kIsWeb && kDebugMode ? RepaintBoundary(child: app) : app);
           },
           (exception, stackTrace) {
             Sentry.captureException(exception, stackTrace: stackTrace);
@@ -167,14 +161,7 @@ void main() async {
   } else {
     _configureErrorVisibility();
     final Widget app = MagicApplication(title: 'Uptizm', windTheme: windTheme);
-    runApp(
-      kIsWeb && kDebugMode
-          ? RepaintBoundary(
-              key: AiTestPluginV3.rootRepaintBoundaryKey,
-              child: app,
-            )
-          : app,
-    );
+    runApp(kIsWeb && kDebugMode ? RepaintBoundary(child: app) : app);
   }
 }
 
