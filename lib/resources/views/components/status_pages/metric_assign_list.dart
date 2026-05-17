@@ -45,7 +45,11 @@ class _MetricAssignListState extends State<MetricAssignList> {
   }
 
   Future<void> _syncLoads() async {
-    for (final id in widget.monitorIds) {
+    // Snapshot the parent's selection set; iterating widget.monitorIds
+    // directly races with the parent's setState when the user toggles a
+    // checkbox mid-await, producing ConcurrentModificationError.
+    final ids = widget.monitorIds.toList(growable: false);
+    for (final id in ids) {
       if (_byMonitor.containsKey(id) || _loading.contains(id)) continue;
       _loading.add(id);
       final response = await Http.get('/monitors/$id/metrics');
