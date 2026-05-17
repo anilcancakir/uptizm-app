@@ -104,14 +104,17 @@ Controllers never build payloads inline — expose a typed `submitCreate({...})`
 
 ## V3 AI-Test Agent Control (debug-only)
 
-`references/ai-test/` enables an LLM agent to drive the running web app via **MCP-only single-channel** over Dart VM Service custom extensions. No Playwright, no DOM mirror, no Shadow DOM projection. Architecture: one `flutter run -d chrome` session, one VM Service WebSocket, ~18 `ext.aitest.*` extensions Dart-side (snapshot/tap/type/scroll/screenshot/network/etc.), 19 MCP tools Node-side wrapping them via `@modelcontextprotocol/sdk` v1.x `McpServer.registerTool`. Gated by `kIsWeb && kDebugMode` at `lib/main.dart`; release builds tree-shake the entire branch.
+`references/ai-test/` enables an LLM agent to drive the running app via **MCP-only single-channel** over Dart VM Service custom extensions. No Playwright, no DOM mirror, no Shadow DOM projection. Architecture: one `flutter run -d <target>` session, one VM Service WebSocket, ~18 `ext.aitest.*` extensions Dart-side (snapshot/tap/type/scroll/screenshot/network/etc.), 19 MCP tools Node-side wrapping them via `@modelcontextprotocol/sdk` v1.x `McpServer.registerTool`. Gated by `kDebugMode` at `lib/main.dart`; release builds tree-shake the entire branch on every platform (dart2js for web, dart2native for desktop/mobile AOT).
+
+Cross-platform: `--device` selects the launch target. `chrome` (default, web), `macos`/`linux`/`windows` (desktop), iOS UDID, Android serial all work — D6 Chrome reaper auto-skips on non-chrome targets. Same `ext.aitest.*` surface everywhere.
 
 Launch:
 
 ```bash
-dart run ai_test_flutter:ai_test_flutter start   # boots flutter run -d chrome + writes ~/.ai-test/state.json
-dart run ai_test_flutter:ai_test_flutter status  # JSON status of recorded process
-dart run ai_test_flutter:ai_test_flutter stop    # SIGTERM + state.json delete
+dart run ai_test_flutter:ai_test_flutter start                  # web (chrome, default)
+dart run ai_test_flutter:ai_test_flutter start --device=macos   # desktop
+dart run ai_test_flutter:ai_test_flutter status                 # JSON status of recorded process
+dart run ai_test_flutter:ai_test_flutter stop                   # SIGTERM + state.json delete
 ```
 
 State inspection pattern (replaces V2 `inspect_state` per Oracle cull): `flutter_evaluate("Magic.find<MonitorController>().rxState.value.toString()")`. Form data lives in the snapshot YAML's `magicFormField:` enrichment.

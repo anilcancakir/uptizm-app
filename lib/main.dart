@@ -23,17 +23,18 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // V3: MCP-only single-channel via VM Service custom extensions.
-  // The compile-time `kIsWeb && kDebugMode` outer guard lets dart2js prove
-  // the entire branch dead in release, stripping AiTestPluginV3 + every
-  // ext.aitest.* extension + RefRegistry + interceptor + log sink out of
-  // the production bundle. AiTestPluginV3.install() registers all 19
-  // ext.aitest.* RPCs idempotently (try/catch ArgumentError per call,
-  // hot-restart safe). The host app wraps its widget root in a plain
-  // RepaintBoundary (no GlobalKey) so the screenshot extension can find
-  // it via render-tree walk. The legacy GlobalKey approach caused
-  // _ElementLifecycle.inactive assertions when MagicApplication rebuilt
-  // its child tree (e.g. logout → /auth/login swap).
-  if (kIsWeb && kDebugMode) {
+  // `kDebugMode` is the only gate: tree-shaking still strips the entire V3
+  // branch from release builds on every platform (dart2js for web,
+  // dart2native for desktop/mobile AOT). Removing the `kIsWeb` clause makes
+  // the plugin reachable from `flutter run -d macos|ios|android|linux|
+  // windows` debug sessions too, matching `ai_test_flutter start --device
+  // <target>`. AiTestPluginV3.install() registers all 19 ext.aitest.* RPCs
+  // idempotently (try/catch ArgumentError per call, hot-restart safe). The
+  // host app wraps its widget root in a plain RepaintBoundary (no
+  // GlobalKey) so the screenshot extension can find it via render-tree
+  // walk. The legacy GlobalKey approach caused _ElementLifecycle.inactive
+  // assertions when MagicApplication rebuilt its child tree.
+  if (kDebugMode) {
     AiTestPluginV3.install();
   }
 
@@ -150,7 +151,7 @@ void main() async {
             final Widget app = SentryWidget(
               child: MagicApplication(title: 'Uptizm', windTheme: windTheme),
             );
-            runApp(kIsWeb && kDebugMode ? RepaintBoundary(child: app) : app);
+            runApp(kDebugMode ? RepaintBoundary(child: app) : app);
           },
           (exception, stackTrace) {
             Sentry.captureException(exception, stackTrace: stackTrace);
@@ -161,7 +162,7 @@ void main() async {
   } else {
     _configureErrorVisibility();
     final Widget app = MagicApplication(title: 'Uptizm', windTheme: windTheme);
-    runApp(kIsWeb && kDebugMode ? RepaintBoundary(child: app) : app);
+    runApp(kDebugMode ? RepaintBoundary(child: app) : app);
   }
 }
 
