@@ -1,27 +1,20 @@
 import 'package:fluttersdk_artisan/artisan.dart';
-import 'package:fluttersdk_dusk/dusk.dart';
-import 'package:fluttersdk_mcp/mcp.dart';
-import 'package:fluttersdk_telescope/telescope.dart';
-import 'package:magic/magic.dart';
-import 'package:magic_deeplink/magic_deeplink.dart';
-import 'package:magic_notifications/magic_notifications.dart';
-import 'package:magic_social_auth/magic_social_auth.dart';
-import 'package:magic_starter/magic_starter.dart';
-import 'package:magic_tinker/magic_tinker.dart';
+import 'package:magic_tinker/cli.dart';
 
-/// Artisan command providers registered by uptizm-app's bin/artisan.dart.
+/// Artisan command providers registered by uptizm-app's `bin/artisan.dart`.
 ///
-/// Each provider contributes a `<namespace>:*` command set to the unified
-/// `artisan` binary. Order is presentation-only; ArtisanRegistry fails fast
-/// on collisions, so namespace clashes surface immediately at registration.
+/// IMPORTANT: This file MUST stay pure-Dart (no Flutter imports). The
+/// consumer-side `bin/artisan.dart` runs under `dart run` which cannot
+/// load `dart:ui`. Each provider package exposes a `cli.dart` sub-barrel
+/// that only re-exports the artisan-side surface (command classes +
+/// provider), keeping the Flutter-side install entry (e.g. DuskPlugin,
+/// TelescopePlugin, TinkerPlugin) separate.
+///
+/// Magic-side providers (MagicArtisanProvider, StarterArtisanProvider,
+/// NotificationsArtisanProvider, etc.) will land here once each package
+/// ships its own `cli.dart` sub-barrel. Until then this list registers
+/// only the pure-Dart-compatible TinkerArtisanProvider so the consumer
+/// wrapper boots without dragging Flutter into pub resolution.
 final List<ArtisanServiceProvider Function()> artisanProviders = [
-  MagicArtisanProvider.new,
-  StarterArtisanProvider.new,
-  NotificationsArtisanProvider.new,
-  DeeplinkArtisanProvider.new,
-  SocialAuthArtisanProvider.new,
-  DuskArtisanProvider.new,
-  TelescopeArtisanProvider.new,
   TinkerArtisanProvider.new,
-  McpArtisanProvider.new,
 ];
