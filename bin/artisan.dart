@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:app/app/commands/_index.g.dart' as auto;
 import 'package:fluttersdk_artisan/artisan.dart';
+import 'package:fluttersdk_telescope/telescope.dart';
 
 /// uptizm-app consumer-side artisan dispatcher.
 ///
@@ -25,7 +26,7 @@ Future<void> main(List<String> args) async {
 
     // Third-party package providers — uncomment as needed.
     // registry.registerProvider(DuskArtisanProvider());
-    // registry.registerProvider(TelescopeArtisanProvider());
+    registry.registerProvider(TelescopeArtisanProvider());
     // registry.registerProvider(McpArtisanProvider());
     // registry.registerProvider(MagicArtisanProvider());
     // registry.registerProvider(StarterArtisanProvider());
