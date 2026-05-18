@@ -41,6 +41,8 @@ void main() async {
   if (kDebugMode) {
     DuskPlugin.install();
     TelescopePlugin.install();
+    TelescopePlugin.registerWatcher(ExceptionWatcher());
+    TelescopePlugin.registerWatcher(DumpWatcher());
     WindDuskIntegration.install();
   }
 
