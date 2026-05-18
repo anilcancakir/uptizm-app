@@ -46,7 +46,6 @@ dependencies:
   fluttersdk_artisan: any
   fluttersdk_dusk: any
   fluttersdk_telescope: any
-  fluttersdk_mcp: any
 
   fl_chart: ^1.2.0
 
@@ -64,8 +63,6 @@ dependency_overrides:
     path: references/fluttersdk_dusk
   fluttersdk_telescope:
     path: references/fluttersdk_telescope
-  fluttersdk_mcp:
-    path: references/fluttersdk_mcp
   fluttersdk_wind:
     path: references/wind
   magic:

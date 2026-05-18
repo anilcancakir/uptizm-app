@@ -104,13 +104,12 @@ Controllers never build payloads inline — expose a typed `submitCreate({...})`
 
 ## fluttersdk Dev-Tooling (debug-only)
 
-Five vendored packages under `references/fluttersdk_*` + `references/magic_tinker` give an LLM agent eyes-and-hands over the running app via a single Dart MCP server. Replaces the V3 ai-test monolith.
+Four vendored packages under `references/fluttersdk_*` + `references/magic_tinker` give an LLM agent eyes-and-hands over the running app. MCP server now ships INSIDE `fluttersdk_artisan` (no separate `fluttersdk_mcp` package; renamed from that). Single binary `dart run fluttersdk_artisan:mcp` serves stdio JSON-RPC. 11 V1 tools surfaced from registered providers. Filter via `.artisan/mcp.json` + env vars + CLI flags. Replaces the V3 ai-test monolith.
 
 Stack:
-- `fluttersdk_artisan` — pure Dart CLI framework (start/stop/status/logs/restart/doctor/list/help/make:command builtins + ArtisanServiceProvider abstraction + VmServiceClient + StateFile).
+- `fluttersdk_artisan` — pure Dart CLI framework (start/stop/status/logs/restart/doctor/list/help/make:command builtins + ArtisanServiceProvider abstraction + VmServiceClient + StateFile) + integrated MCP server (`dart run fluttersdk_artisan:mcp`, stdio JSON-RPC, 11 V1 tools).
 - `fluttersdk_dusk` — E2E driver (gesture/snap/screenshot/wait/find/modal) over `ext.dusk.*` VM Service extensions.
 - `fluttersdk_telescope` — runtime inspector (HTTP + log + exception + Magic Model + Magic Cache watchers) over `ext.telescope.*`.
-- `fluttersdk_mcp` — single Dart MCP server, stdio JSON-RPC + runtime tool discovery (filters `ext.dusk.*` / `ext.telescope.*` / `ext.tinker.*` per installed packages).
 - `magic_tinker` — connected REPL over `ext.tinker.evaluate` (VM Service evaluate); Magic-aware autocomplete via MagicTinkerIntegration.
 
 Magic-side glue lives in `references/magic/lib/src/cli/`:
@@ -136,9 +135,17 @@ dart run artisan telescope:tail         # live HTTP/log feed
 dart run artisan tinker                 # connected REPL
 ```
 
+MCP server (for LLM agent tool access):
+
+```bash
+dart run fluttersdk_artisan:mcp         # stdio JSON-RPC; 11 V1 tools from registered providers
+```
+
+Configure tool visibility via `.artisan/mcp.json`, env vars, or CLI flags passed to the command above.
+
 State inspection pattern (Magic-stack apps): `tinker_eval("Magic.find<MonitorController>().rxState.value.toString()")` via MCP. Form data lives in the snapshot YAML's `magicFormField:` enrichment.
 
-Plugin source: `references/fluttersdk_artisan/` (Dart CLI framework), `references/fluttersdk_dusk/` (E2E), `references/fluttersdk_telescope/` (inspector), `references/fluttersdk_mcp/` (MCP server), `references/magic_tinker/` (REPL). Adapter glue: `references/magic/lib/src/cli/` + `references/wind/lib/src/dusk_integration.dart`.
+Plugin source: `references/fluttersdk_artisan/` (Dart CLI framework + MCP server), `references/fluttersdk_dusk/` (E2E), `references/fluttersdk_telescope/` (inspector), `references/magic_tinker/` (REPL). Adapter glue: `references/magic/lib/src/cli/` + `references/wind/lib/src/dusk_integration.dart`.
 
 Provider wiring: `lib/config/artisan.dart` exposes `artisanProviders` (9 factories); `bin/artisan.dart` registers builtins + expands the providers list into ArtisanRegistry (fail-fast on collision).
 

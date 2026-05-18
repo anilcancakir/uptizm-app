@@ -27,7 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 API_ROOT="$(cd "$APP_ROOT/../uptizm-api" && pwd)"
 MCP_CLIENT="$SCRIPT_DIR/qa-smoke-mcp-client.mjs"
-MCP_SERVER="$APP_ROOT/references/fluttersdk_mcp/bin/server.dart"
+MCP_SERVER="$APP_ROOT/references/fluttersdk_artisan/bin/mcp.dart"
 STATE_FILE="$HOME/.artisan/state.json"
 
 # ---------------------------------------------------------------------------
