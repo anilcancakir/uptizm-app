@@ -424,6 +424,9 @@
   "dashboard": {
     "title": "Overview",
     "subtitle": "Live status across your monitors.",
+    "errors": {
+      "aggregate": "One or more dashboard sections failed to load. Retry all."
+    },
     "live": {
       "on": "Live",
       "off": "Paused",

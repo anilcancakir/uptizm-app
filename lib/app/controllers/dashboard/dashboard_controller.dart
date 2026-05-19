@@ -43,6 +43,25 @@ class DashboardController extends MagicController {
   /// `lib/routes/app.dart` can wire every page through its controller.
   Widget index() => const DashboardView();
 
+  /// Aggregate error listenable for BUG #2: the dashboard view shows a
+  /// single page-level banner when ANY of the four section loads failed,
+  /// in addition to the per-section banners. Lets the user retry every
+  /// failed section in one tap via [reload].
+  Listenable get anyError => Listenable.merge([
+    statsError,
+    activeIncidentsError,
+    monitorsError,
+    suggestionsError,
+  ]);
+
+  /// Convenience getter consumed by the page-level banner; returns true
+  /// when any section is in error state.
+  bool get hasAnyError =>
+      statsError.value ||
+      activeIncidentsError.value ||
+      monitorsError.value ||
+      suggestionsError.value;
+
   /// Fans out the four dashboard section loads in parallel and flips
   /// `firstLoad` off after the first successful completion so subsequent
   /// refreshes skip the skeleton path.

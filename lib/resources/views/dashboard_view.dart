@@ -123,12 +123,30 @@ class _DashboardViewState extends State<DashboardView>
               ],
             ),
           ),
+          _aggregateErrorBanner(),
           _statsBar(),
           _activeIncidents(),
           _monitors(),
           _aiInbox(),
         ],
       ),
+    );
+  }
+
+  /// BUG #2 fix: page-level aggregate error banner. Surfaces ONE clear
+  /// "Some sections failed to load. Retry all." panel above the four
+  /// per-section ErrorBanners so the user does not have to click through
+  /// every section's retry button when the whole backend is unreachable.
+  Widget _aggregateErrorBanner() {
+    return ListenableBuilder(
+      listenable: _c.anyError,
+      builder: (_, _) {
+        if (!_c.hasAnyError) return const SizedBox.shrink();
+        return ErrorBanner(
+          message: trans('dashboard.errors.aggregate'),
+          onRetry: _manualRefresh,
+        );
+      },
     );
   }
 
