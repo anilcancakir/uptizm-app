@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:app/app/commands/_index.g.dart' as auto;
 import 'package:fluttersdk_artisan/artisan.dart';
 import 'package:fluttersdk_dusk/cli.dart';
-import 'package:fluttersdk_telescope/telescope.dart';
+import 'package:fluttersdk_telescope/cli.dart';
 
 /// uptizm-app consumer-side artisan dispatcher.
 ///
