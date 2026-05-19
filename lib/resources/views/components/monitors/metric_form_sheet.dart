@@ -50,8 +50,11 @@ class MetricFormInitial {
 
 /// Bottom sheet for creating / editing / duplicating a custom metric.
 ///
-/// Design-first mockup: local state only, no persistence. The "save" action
-/// just pops the sheet and shows a toast.
+/// Wired to [MonitorMetricController]: `_handleSave` calls
+/// `controller.store(monitorId, payload)` or `controller.update(monitorId,
+/// metricId, payload)` depending on the open mode, surfaces field-level
+/// 422 errors inline via [FormFieldError], generic failures via toast,
+/// and pops the sheet + emits a success toast on a non-null result.
 class MetricFormSheet extends StatefulWidget {
   const MetricFormSheet({
     super.key,

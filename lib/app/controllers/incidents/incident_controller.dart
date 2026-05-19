@@ -98,6 +98,27 @@ class IncidentController extends MagicController
     refreshUI();
   }
 
+  /// Fetches the similar-incident vector ranking from `/incidents/{id}/similar`
+  /// and merges the result into `_detail.similarIncidents`. The show endpoint
+  /// MAY return the similar list inline, but for large workspaces the
+  /// pgvector cosine query is gated behind a separate call so the show
+  /// response stays small. Safe to call multiple times; later results
+  /// overwrite earlier ones. On 404 (endpoint not yet wired upstream) the
+  /// call is a no-op and the agent keeps whatever the show payload returned.
+  Future<void> fetchSimilar(String id) async {
+    if (_detail == null || _detail!.id != id) return;
+    final response = await Http.get('/incidents/$id/similar');
+    if (!response.successful) return;
+    final raw = response.data?['data'];
+    if (raw is! List) return;
+    final parsed = raw
+        .whereType<Map<String, dynamic>>()
+        .map(SimilarIncident.fromMap)
+        .toList();
+    _detail = _detail!.copyWith(similarIncidents: parsed);
+    refreshUI();
+  }
+
   /// Creates an incident and prepends it to the list on success.
   ///
   /// Expects a payload already produced by [StoreIncidentRequest]; 422 errors
