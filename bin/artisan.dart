@@ -26,8 +26,15 @@ Future<void> main(List<String> args) async {
     registry.registerAll(auto.commands, providerName: 'app');
 
     // Third-party package providers — uncomment as needed.
-    registry.registerProvider(DuskArtisanProvider());
-    registry.registerProvider(TelescopeArtisanProvider());
+    // registerProvider wires CLI commands; registerMcpToolsFor wires MCP
+    // tool descriptors. Both must fire so `mcp:serve` surfaces dusk_* and
+    // telescope_* alongside the artisan_* substrate tools.
+    final duskProvider = DuskArtisanProvider();
+    registry.registerProvider(duskProvider);
+    registry.registerMcpToolsFor(duskProvider);
+    final telescopeProvider = TelescopeArtisanProvider();
+    registry.registerProvider(telescopeProvider);
+    registry.registerMcpToolsFor(telescopeProvider);
     // registry.registerProvider(McpArtisanProvider());
     // registry.registerProvider(MagicArtisanProvider());
     // registry.registerProvider(StarterArtisanProvider());
@@ -47,19 +54,27 @@ Future<void> main(List<String> args) async {
   }
 }
 
-List<ArtisanCommand> _builtinCommands(ArtisanRegistry registry) =>
-    <ArtisanCommand>[
-      StartCommand(),
-      StopCommand(),
-      StatusCommand(),
-      LogsCommand(),
-      RestartCommand(),
-      ReloadCommand(),
-      HotRestartCommand(),
-      DoctorCommand(),
-      ListCommand(registry),
-      HelpCommand(registry),
-      MakeCommandCommand(),
-      CommandsRefreshCommand(),
-      TinkerCommand(),
-    ];
+List<ArtisanCommand> _builtinCommands(
+  ArtisanRegistry registry,
+) => <ArtisanCommand>[
+  StartCommand(),
+  StopCommand(),
+  StatusCommand(),
+  LogsCommand(),
+  RestartCommand(),
+  ReloadCommand(),
+  HotRestartCommand(),
+  DoctorCommand(),
+  ListCommand(registry),
+  HelpCommand(registry),
+  MakeCommandCommand(),
+  CommandsRefreshCommand(),
+  TinkerCommand(),
+  // Consumer-side MCP serve: the framework's `dart run fluttersdk_artisan:mcp`
+  // entry does NOT load consumer providers (V1.x backlog per
+  // fluttersdk_artisan/CLAUDE.local.md). This consumer entry registers
+  // DuskArtisanProvider + TelescopeArtisanProvider before McpServeCommand
+  // runs, so registry.mcpTools surfaces every dusk_* / telescope_* tool.
+  // Wire .mcp.json to `dart run :artisan mcp:serve` to use this entry.
+  McpServeCommand(),
+];

@@ -28,8 +28,8 @@
     "fluttersdk": {
       "command": "dart",
       "args": [
-        "run",
-        "fluttersdk_artisan:mcp"
+        "bin/artisan.dart",
+        "mcp:serve"
       ],
       "cwd": "/Users/anilcan/Code/uptizmv2/uptizm-app"
     }
