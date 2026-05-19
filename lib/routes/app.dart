@@ -8,6 +8,7 @@ import '../app/controllers/metrics/metrics_library_controller.dart';
 import '../app/controllers/monitors/monitor_controller.dart';
 import '../app/controllers/settings/settings_controller.dart';
 import '../app/controllers/status_pages/status_pages_controller.dart';
+import '../resources/views/incidents/incidents_index_view.dart';
 import '../resources/views/settings/settings_appearance_view.dart';
 
 /// Application route definitions.
@@ -28,6 +29,10 @@ void registerAppRoutes() {
       // CRUD resources.
       MagicRoute.resource('monitors', MonitorController.instance);
       MagicRoute.resource('status-pages', StatusPagesController.instance);
+
+      // Workspace-wide incidents list (re-uses IncidentController with no
+      // monitor filter so it surfaces every incident the team can see).
+      MagicRoute.page('/incidents', () => const IncidentsIndexView());
 
       // Settings hub + sub-screens. The hub sits at `/settings` directly;
       // child URLs share the `/settings` prefix via the nested group.

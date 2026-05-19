@@ -94,7 +94,7 @@ class ActiveIncidentsStrip extends StatelessWidget {
           ],
         ),
         WButton(
-          onTap: () => MagicRoute.to('/monitors'),
+          onTap: () => MagicRoute.to('/incidents'),
           className: '''
             px-3 py-2 rounded-lg
             hover:bg-gray-100 dark:hover:bg-gray-900/40

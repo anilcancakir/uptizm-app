@@ -163,6 +163,14 @@
     "otp_placeholder": "123456"
   },
   "incident": {
+    "index": {
+      "title": "Incidents",
+      "subtitle": "Every incident across your workspace."
+    },
+    "empty": {
+      "title": "All clear",
+      "subtitle": "No incidents match the current filter."
+    },
     "tab": {
       "triggered": "Triggered",
       "acknowledged": "Acknowledged",
