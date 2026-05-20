@@ -16,6 +16,27 @@
 [submodule "references/playwright-cli"]
 	path = references/playwright-cli
 	url = https://github.com/microsoft/playwright-cli.git
-[submodule "references/ai-test"]
-	path = references/ai-test
-	url = https://github.com/fluttersdk/ai-test.git
+[submodule "references/magic_deeplink"]
+	path = references/magic_deeplink
+	url = git@github.com:fluttersdk/magic_deeplink.git
+	branch = develop
+[submodule "references/magic_notifications"]
+	path = references/magic_notifications
+	url = git@github.com:fluttersdk/magic_notifications.git
+	branch = develop
+[submodule "references/magic_social_auth"]
+	path = references/magic_social_auth
+	url = git@github.com:fluttersdk/magic_social_auth.git
+	branch = develop
+[submodule "references/fluttersdk_artisan"]
+	path = references/fluttersdk_artisan
+	url = git@github.com:fluttersdk/artisan.git
+	branch = develop
+[submodule "references/fluttersdk_dusk"]
+	path = references/fluttersdk_dusk
+	url = git@github.com:fluttersdk/dusk.git
+	branch = develop
+[submodule "references/fluttersdk_telescope"]
+	path = references/fluttersdk_telescope
+	url = git@github.com:fluttersdk/telescope.git
+	branch = develop
