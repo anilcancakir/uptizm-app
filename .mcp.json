@@ -26,9 +26,8 @@
       "env": {}
     },
     "fluttersdk": {
-      "command": "dart",
+      "command": "./bin/fsa",
       "args": [
-        "bin/artisan.dart",
         "mcp:serve"
       ],
       "cwd": "/Users/anilcan/Code/uptizmv2/uptizm-app"

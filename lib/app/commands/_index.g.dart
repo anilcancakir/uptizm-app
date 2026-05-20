@@ -4,6 +4,4 @@
 
 import 'package:fluttersdk_artisan/artisan.dart';
 
-import 'hello_world.dart';
-
-List<ArtisanCommand> get commands => <ArtisanCommand>[HelloWorldCommand()];
+List<ArtisanCommand> get commands => <ArtisanCommand>[];

@@ -43,7 +43,8 @@ dependencies:
   # build: `grep -c 'AiTestBinding' build/web/main.dart.js` returns 0).
   # NEW fluttersdk ecosystem packages (V1 local-first; pub.dev publish after
   # real-world test pass per /ac:execute --auto local-first variant).
-  fluttersdk_artisan: any
+  fluttersdk_artisan:
+    path: references/fluttersdk_artisan
   fluttersdk_dusk: any
   fluttersdk_telescope: any
 
@@ -57,6 +58,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dependency_overrides:
+  xml: ^7.0.0
   fluttersdk_artisan:
     path: references/fluttersdk_artisan
   fluttersdk_dusk:
@@ -75,9 +77,6 @@ dependency_overrides:
     path: references/magic_deeplink
   magic_social_auth:
     path: references/magic_social_auth
-
-executables:
-  artisan: artisan
 
 dev_dependencies:
   flutter_test:

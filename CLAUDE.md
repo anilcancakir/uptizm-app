@@ -122,32 +122,34 @@ Wind-side: `WindDuskIntegration` enriches Dusk snapshots with W-widget resolved 
 
 All install() gates live under `kDebugMode` at `lib/main.dart`; release builds tree-shake the entire branch on every platform (dart2js for web, dart2native for desktop + mobile AOT).
 
-Launch (consumer-side `bin/artisan.dart`):
+Launch (via `./bin/fsa` native AOT, ~110ms warm):
 
 ```bash
-dart run artisan start                  # web (chrome, default)
-dart run artisan start --device=macos   # desktop
-dart run artisan status                 # JSON status of recorded process
-dart run artisan stop                   # SIGTERM + state.json delete
-dart run artisan list                   # all registered commands (9 builtin + per-provider)
-dart run artisan dusk:snap              # capture Semantics YAML snapshot
-dart run artisan telescope:tail         # live HTTP/log feed
-dart run artisan tinker                 # connected REPL
+./bin/fsa start                  # web (chrome, default)
+./bin/fsa start --device=macos   # desktop
+./bin/fsa status                 # JSON status of recorded process
+./bin/fsa stop                   # SIGTERM + state.json delete
+./bin/fsa list                   # all registered commands (22 substrate + auto-discovered plugin providers)
+./bin/fsa dusk:snap              # capture Semantics YAML snapshot
+./bin/fsa telescope:tail         # live HTTP/log feed
+./bin/fsa tinker                 # connected REPL
 ```
+
+Fallback (slower, no compile cache): `dart run fluttersdk_artisan <cmd>` or `dart run magic:artisan <cmd>`.
 
 MCP server (for LLM agent tool access):
 
 ```bash
-dart run fluttersdk_artisan:mcp         # stdio JSON-RPC; 11 V1 tools from registered providers
+./bin/fsa mcp:serve              # stdio JSON-RPC; auto-discovered plugin tools (dusk_*, telescope_*, magic + substrate artisan_*)
 ```
 
-Configure tool visibility via `.artisan/mcp.json`, env vars, or CLI flags passed to the command above.
+`.mcp.json` wires this entry under `mcpServers.fluttersdk` so Claude Code launches it automatically.
 
 State inspection pattern (Magic-stack apps): `tinker_eval("Magic.find<MonitorController>().rxState.value.toString()")` via MCP. Form data lives in the snapshot YAML's `magicFormField:` enrichment.
 
 Plugin source: `references/fluttersdk_artisan/` (Dart CLI framework + MCP server), `references/fluttersdk_dusk/` (E2E), `references/fluttersdk_telescope/` (inspector), `references/magic_tinker/` (REPL). Adapter glue: `references/magic/lib/src/cli/` + `references/wind/lib/src/dusk_integration.dart`.
 
-Provider wiring: `lib/config/artisan.dart` exposes `artisanProviders` (9 factories); `bin/artisan.dart` registers builtins + expands the providers list into ArtisanRegistry (fail-fast on collision).
+Provider wiring: `lib/app/_plugins.g.dart` (codegen barrel; regenerate via `./bin/fsa plugins:refresh` after `plugin:install <name>`) lists installed plugin providers; `bin/dispatcher.dart` (canonical scaffold from `dart run fluttersdk_artisan install`) wires them via `runArtisan` so substrate + plugin tools surface uniformly.
 
 ## Skills
 
