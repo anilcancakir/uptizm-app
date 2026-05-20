@@ -10,7 +10,7 @@ class DeeplinkArtisanProvider extends ArtisanServiceProvider {
 
   @override
   List<ArtisanCommand> commands() => <ArtisanCommand>[
-    InstallCommand(),
-    GenerateCommand(),
-  ];
+        InstallCommand(),
+        GenerateCommand(),
+      ];
 }
