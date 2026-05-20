@@ -93,6 +93,18 @@ void main() async {
     MagicDuskIntegration.install();
     MagicTelescopeIntegration.install();
     MagicTinkerIntegration.install();
+    // Route dusk_navigate through MagicRoute.to so GoRouter's custom
+    // RouteInformationProvider (wired via MagicRouter) actually picks
+    // up the push. Without this, SystemNavigator.routeInformationUpdated
+    // is silently ignored and the agent sees `navigated:false`.
+    DuskPlugin.registerNavigateAdapter((route) async {
+      try {
+        MagicRoute.to(route);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    });
   }
 
   final sentryDsn = Config.get<String>('sentry.dsn', '') ?? '';
