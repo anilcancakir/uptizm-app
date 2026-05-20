@@ -534,5 +534,183 @@ void main() {
       expect(payload.containsKey('metric_key'), isFalse);
       expect(payload['notify_team'], true);
     });
+
+    group('draftIncidentBundle', () {
+      test(
+        'POSTs to /monitors/<id>/incidents/draft and returns the drafted bundle',
+        () async {
+          driver.response = MagicResponse(
+            data: {
+              'data': {
+                'title': 'Polished title',
+                'description': 'Polished description',
+              },
+            },
+            statusCode: 200,
+          );
+
+          final result = await controller.draftIncidentBundle(
+            monitorId: 'mon_1',
+            severity: 'critical',
+            title: 'raw title',
+            description: 'raw description',
+            metricKey: 'p95',
+          );
+
+          expect(driver.lastMethod, 'POST');
+          expect(driver.lastUrl, '/monitors/mon_1/incidents/draft');
+          final payload = driver.lastData as Map;
+          expect(payload['severity'], 'critical');
+          expect(payload['title'], 'raw title');
+          expect(payload['description'], 'raw description');
+          expect(payload['metric_key'], 'p95');
+          expect(result?.title, 'Polished title');
+          expect(result?.description, 'Polished description');
+        },
+      );
+
+      test('omits metric_key from the payload when null', () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': {'title': 'T', 'description': 'D'},
+          },
+          statusCode: 200,
+        );
+
+        await controller.draftIncidentBundle(
+          monitorId: 'mon_1',
+          severity: 'warning',
+          title: 't',
+          description: 'd',
+        );
+
+        final payload = driver.lastData as Map;
+        expect(payload.containsKey('metric_key'), isFalse);
+      });
+
+      test('returns null on 429 without throwing', () async {
+        driver.response = MagicResponse(
+          data: {'message': 'rate limited'},
+          statusCode: 429,
+        );
+
+        final result = await controller.draftIncidentBundle(
+          monitorId: 'mon_1',
+          severity: 'info',
+          title: 't',
+          description: 'd',
+        );
+
+        expect(result, isNull);
+      });
+
+      test('returns null on non-2xx error', () async {
+        driver.response = MagicResponse(
+          data: {'message': 'boom'},
+          statusCode: 500,
+        );
+
+        final result = await controller.draftIncidentBundle(
+          monitorId: 'mon_1',
+          severity: 'info',
+          title: 't',
+          description: 'd',
+        );
+
+        expect(result, isNull);
+      });
+
+      test('returns null when payload shape is unexpected', () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': {'title': 'only title'},
+          },
+          statusCode: 200,
+        );
+
+        final result = await controller.draftIncidentBundle(
+          monitorId: 'mon_1',
+          severity: 'info',
+          title: 't',
+          description: 'd',
+        );
+
+        expect(result, isNull);
+      });
+    });
+
+    group('draftUpdate', () {
+      test(
+        'POSTs to /incidents/<id>/updates/draft and returns the body',
+        () async {
+          driver.response = MagicResponse(
+            data: {
+              'data': {'body': 'AI-polished body'},
+            },
+            statusCode: 200,
+          );
+
+          final body = await controller.draftUpdate(
+            id: 'inc_1',
+            intent: 'acknowledged',
+            userDraft: 'starting investigation',
+          );
+
+          expect(driver.lastMethod, 'POST');
+          expect(driver.lastUrl, '/incidents/inc_1/updates/draft');
+          final payload = driver.lastData as Map;
+          expect(payload['status'], 'acknowledged');
+          expect(payload['body'], 'starting investigation');
+          expect(body, 'AI-polished body');
+        },
+      );
+
+      test('returns null on 429 without throwing', () async {
+        driver.response = MagicResponse(
+          data: {'message': 'rate limited'},
+          statusCode: 429,
+        );
+
+        final body = await controller.draftUpdate(
+          id: 'inc_1',
+          intent: 'none',
+          userDraft: 'note',
+        );
+
+        expect(body, isNull);
+      });
+
+      test('returns null on non-2xx error', () async {
+        driver.response = MagicResponse(
+          data: {'message': 'boom'},
+          statusCode: 500,
+        );
+
+        final body = await controller.draftUpdate(
+          id: 'inc_1',
+          intent: 'none',
+          userDraft: 'note',
+        );
+
+        expect(body, isNull);
+      });
+
+      test('returns null when body field is missing or non-string', () async {
+        driver.response = MagicResponse(
+          data: {
+            'data': {'body': 42},
+          },
+          statusCode: 200,
+        );
+
+        final body = await controller.draftUpdate(
+          id: 'inc_1',
+          intent: 'none',
+          userDraft: 'note',
+        );
+
+        expect(body, isNull);
+      });
+    });
   });
 }
