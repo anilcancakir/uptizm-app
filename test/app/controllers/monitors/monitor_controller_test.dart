@@ -296,6 +296,40 @@ void main() {
       expect(controller.monitor!.name, 'Renamed');
     });
 
+    test('store client-validates required name + url before POSTing', () async {
+      // Driver should never be hit when client-side preflight catches
+      // the empty submit. Inline errors populate via validationErrors.
+      driver.response = MagicResponse(data: {}, statusCode: 500);
+
+      final blank = MonitorFormValues(
+        name: '   ',
+        url: '',
+        expectedStatus: '200',
+        type: MonitorType.http,
+        method: HttpMethod.get,
+        interval: CheckInterval.m1,
+        regions: const {'eu-west'},
+        sslTracking: true,
+        alertOnDown: true,
+        alertOnWarn: false,
+        timeout: MonitorFormTimeout.s30,
+        headers: const [],
+        authType: HttpAuthType.none,
+        authUsername: '',
+        authPassword: '',
+        authToken: '',
+        authApiKeyName: '',
+        authApiKeyValue: '',
+      );
+
+      final monitor = await controller.store(blank);
+
+      expect(monitor, isNull);
+      expect(driver.lastMethod, isNull, reason: 'should not POST on empty');
+      expect(controller.getError('name'), isNotNull);
+      expect(controller.getError('url'), isNotNull);
+    });
+
     test('update surfaces 422 field errors', () async {
       driver.response = MagicResponse(
         data: {

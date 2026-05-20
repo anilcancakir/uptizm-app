@@ -94,6 +94,25 @@ class MonitorController extends MagicController
     refreshUI();
     clearErrors();
     try {
+      // Client-side preflight so empty submits show inline errors
+      // immediately (no silent no-op). Mirrors the required-field
+      // subset of StoreMonitorRequest on the server; the server still
+      // owns the full rule surface and any 422 from there flows into
+      // validationErrors through handleApiError below.
+      try {
+        validate(
+          <String, dynamic>{
+            'name': values.name.trim(),
+            'url': values.url.trim(),
+          },
+          <String, List<Rule>>{
+            'name': [Required(), Max(255)],
+            'url': [Required(), Max(2048)],
+          },
+        );
+      } on ValidationException catch (_) {
+        return null;
+      }
       final response = await Http.post(
         '/monitors',
         data: _formService.buildPayload(values, forCreate: true),
