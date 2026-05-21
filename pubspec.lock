@@ -403,7 +403,7 @@ packages:
       path: "references/fluttersdk_artisan"
       relative: true
     source: path
-    version: "0.0.1"
+    version: "0.0.3"
   fluttersdk_dusk:
     dependency: "direct main"
     description:
@@ -417,7 +417,7 @@ packages:
       path: "references/fluttersdk_telescope"
       relative: true
     source: path
-    version: "1.0.0-alpha.2"
+    version: "0.0.1"
   fluttersdk_wind:
     dependency: "direct overridden"
     description:
@@ -695,7 +695,7 @@ packages:
       path: "references/magic"
       relative: true
     source: path
-    version: "1.0.0-alpha.14"
+    version: "1.0.0-alpha.15"
   magic_deeplink:
     dependency: "direct main"
     description:

@@ -118,6 +118,8 @@ Magic-side glue lives in `references/magic/lib/src/cli/`:
 - `MagicTelescopeIntegration` — Magic.Http facade adapter + Model lifecycle + Cache watchers.
 - `MagicTinkerIntegration` — 31 Magic facade autocomplete symbols + Eloquent model caster.
 
+Import note: `MagicDuskIntegration` and `MagicTelescopeIntegration` are accessed via opt-in sub-barrels, NOT via the main `package:magic/magic.dart` barrel. Use `import 'package:magic/dusk_integration.dart'` and `import 'package:magic/telescope_integration.dart'` separately. Consumers must add `fluttersdk_dusk` and `fluttersdk_telescope` to their own pubspec; magic ships them as dev-dependencies only, so they are not transitive prod deps.
+
 Wind-side: `WindDuskIntegration` enriches Dusk snapshots with W-widget resolved className metadata (6 fields: breakpoint, brightness, platform, states, bgColor, textColor).
 
 All install() gates live under `kDebugMode` at `lib/main.dart`; release builds tree-shake the entire branch on every platform (dart2js for web, dart2native for desktop + mobile AOT).

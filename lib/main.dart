@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:fluttersdk_dusk/dusk.dart';
 import 'package:fluttersdk_telescope/telescope.dart';
 import 'package:magic/magic.dart';
+import 'package:magic/dusk_integration.dart';
+import 'package:magic/telescope_integration.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'config/app.dart';
