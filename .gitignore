@@ -57,3 +57,6 @@ app.*.map.json
 test.json
 flutter_01.png
 .artisan/
+
+# Playwright session-tmp page snapshots
+.playwright-cli/page-*.yml
