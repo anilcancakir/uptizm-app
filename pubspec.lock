@@ -431,7 +431,7 @@ packages:
       path: "references/fluttersdk_wind_diagnostics_contracts"
       relative: true
     source: path
-    version: "1.0.0-alpha.1"
+    version: "1.0.0"
   glob:
     dependency: transitive
     description:
