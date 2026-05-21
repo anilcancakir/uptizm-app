@@ -34,15 +34,15 @@ Examples: `./bin/fsa list` shows 60 commands (22 substrate + 29 dusk + 9 telesco
 
 `WindDuskIntegration.install()` is removed in wind 1.0.0-alpha.10. The replacement call in `lib/main.dart` is `Wind.installDebugResolver()`. Import path: main barrel only (`package:fluttersdk_wind/fluttersdk_wind.dart`); no sub-barrel import required.
 
-**New transitive dep: `wind_diagnostics_contracts`**
+**New transitive dep: `fluttersdk_wind_diagnostics_contracts`**
 
-Both `wind` (prod dep) and `fluttersdk_dusk` (prod dep) now depend on `wind_diagnostics_contracts: ^1.0.0-alpha.1`. This package is automatically transitive through both paths. The outer `pubspec.yaml` carries an explicit `dependency_overrides: path: references/wind_diagnostics_contracts` while the upstream GitHub repository does not yet exist; the local path override makes `pub get` succeed without a published package.
+Both `wind` (prod dep) and `fluttersdk_dusk` (prod dep) now depend on `fluttersdk_wind_diagnostics_contracts: ^1.0.0-alpha.1`. This package is automatically transitive through both paths. The outer `pubspec.yaml` carries an explicit `dependency_overrides: path: references/fluttersdk_wind_diagnostics_contracts` while the upstream GitHub repository does not yet exist; the local path override makes `pub get` succeed without a published package.
 
 ```yaml
 # pubspec.yaml (outer uptizm-app)
 dependency_overrides:
-  wind_diagnostics_contracts:
-    path: references/wind_diagnostics_contracts
+  fluttersdk_wind_diagnostics_contracts:
+    path: references/fluttersdk_wind_diagnostics_contracts
 ```
 
-**`.gitmodules` entry deferred:** The `.gitmodules` git-submodule entry for `wind_diagnostics_contracts` is intentionally omitted until the upstream `fluttersdk/wind_diagnostics_contracts` GitHub repository is created and published. Until then the local `path:` override in `dependency_overrides` is the only mechanism. Do not add a submodule entry for a repo that does not exist yet.
+**`.gitmodules` entry deferred:** The `.gitmodules` git-submodule entry for `fluttersdk_wind_diagnostics_contracts` is intentionally omitted until the upstream `fluttersdk/fluttersdk_wind_diagnostics_contracts` GitHub repository is created and published. Until then the local `path:` override in `dependency_overrides` is the only mechanism. Do not add a submodule entry for a repo that does not exist yet.
