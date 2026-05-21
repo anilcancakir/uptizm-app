@@ -40,3 +40,6 @@
 	path = references/fluttersdk_telescope
 	url = git@github.com:fluttersdk/telescope.git
 	branch = develop
+[submodule "references/fluttersdk_wind_diagnostics_contracts"]
+	path = references/fluttersdk_wind_diagnostics_contracts
+	url = git@github.com:fluttersdk/wind_diagnostics_contracts.git
