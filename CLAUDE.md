@@ -120,9 +120,9 @@ Magic-side glue lives in `references/magic/lib/src/cli/`:
 
 Import note: `MagicDuskIntegration` and `MagicTelescopeIntegration` are accessed via opt-in sub-barrels, NOT via the main `package:magic/magic.dart` barrel. Use `import 'package:magic/dusk_integration.dart'` and `import 'package:magic/telescope_integration.dart'` separately. Consumers must add `fluttersdk_dusk` and `fluttersdk_telescope` to their own pubspec; magic ships them as dev-dependencies only, so they are not transitive prod deps.
 
-Wind-side: `WindDuskIntegration` enriches Dusk snapshots with W-widget resolved className metadata (6 fields: breakpoint, brightness, platform, states, bgColor, textColor).
+Wind-side (alpha-10): Wind no longer ships a `WindDuskIntegration` class or a `dusk_integration.dart` sub-barrel. Instead, call `Wind.installDebugResolver()` inside `kDebugMode` (main barrel import only: `package:fluttersdk_wind/fluttersdk_wind.dart`). Dusk reads Wind state via the neutral `wind_diagnostics_contracts` bridge (`WindDebugRegistry.current?.resolve(element)`) at snap time. The emitted snapshot YAML still carries the same 6 core fields: breakpoint, brightness, platform, states, bgColor, textColor.
 
-All install() gates live under `kDebugMode` at `lib/main.dart`; release builds tree-shake the entire branch on every platform (dart2js for web, dart2native for desktop + mobile AOT).
+All `kDebugMode`-gated install calls live in `lib/main.dart`; release builds tree-shake the entire branch on every platform (dart2js for web, dart2native for desktop + mobile AOT).
 
 Launch (via `./bin/fsa` native AOT, ~110ms warm):
 
@@ -149,7 +149,7 @@ MCP server (for LLM agent tool access):
 
 State inspection pattern (Magic-stack apps): `tinker_eval("Magic.find<MonitorController>().rxState.value.toString()")` via MCP. Form data lives in the snapshot YAML's `magicFormField:` enrichment.
 
-Plugin source: `references/fluttersdk_artisan/` (Dart CLI framework + MCP server), `references/fluttersdk_dusk/` (E2E), `references/fluttersdk_telescope/` (inspector), `references/magic_tinker/` (REPL). Adapter glue: `references/magic/lib/src/cli/` + `references/wind/lib/src/dusk_integration.dart`.
+Plugin source: `references/fluttersdk_artisan/` (Dart CLI framework + MCP server), `references/fluttersdk_dusk/` (E2E), `references/fluttersdk_telescope/` (inspector), `references/magic_tinker/` (REPL). Adapter glue: `references/magic/lib/src/cli/` + `references/wind/lib/src/wind_facade.dart` (Wind.installDebugResolver) + `references/wind/lib/src/debug_resolver.dart` (WindDebugResolverImpl).
 
 Provider wiring: `lib/app/_plugins.g.dart` (codegen barrel; regenerate via `./bin/fsa plugins:refresh` after `plugin:install <name>`) lists installed plugin providers; `bin/dispatcher.dart` (canonical scaffold from `dart run fluttersdk_artisan install`) wires them via `runArtisan` so substrate + plugin tools surface uniformly.
 

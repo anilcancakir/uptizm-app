@@ -27,3 +27,22 @@ Examples: `./bin/fsa list` shows 60 commands (22 substrate + 29 dusk + 9 telesco
 - After `dart pub upgrade` or pubspec edits, `./bin/fsa` auto-rebuilds the AOT bundle on next invocation (4-condition staleness check).
 - If `./bin/fsa` deadlocks with `fsa: waiting for another fsa invocation to finish...`, the post-deliver lock-staleness fix (PID-aware reclaim) should handle it. If it doesn't, `rm -rf .artisan/.fsa.lock` + retry.
 - After `plugin:install <name>`, the codegen barrel at `lib/app/_plugins.g.dart` is regenerated; force-rebuild via `rm -rf .artisan/cli-bundle .artisan/build.stamp && ./bin/fsa list` if the AOT was compiled before the barrel update.
+
+## Plan: wind-dusk-decouple (2026-05-21)
+
+### Wave 5: wind alpha-10 migration
+
+`WindDuskIntegration.install()` is removed in wind 1.0.0-alpha.10. The replacement call in `lib/main.dart` is `Wind.installDebugResolver()`. Import path: main barrel only (`package:fluttersdk_wind/fluttersdk_wind.dart`); no sub-barrel import required.
+
+**New transitive dep: `wind_diagnostics_contracts`**
+
+Both `wind` (prod dep) and `fluttersdk_dusk` (prod dep) now depend on `wind_diagnostics_contracts: ^1.0.0-alpha.1`. This package is automatically transitive through both paths. The outer `pubspec.yaml` carries an explicit `dependency_overrides: path: references/wind_diagnostics_contracts` while the upstream GitHub repository does not yet exist; the local path override makes `pub get` succeed without a published package.
+
+```yaml
+# pubspec.yaml (outer uptizm-app)
+dependency_overrides:
+  wind_diagnostics_contracts:
+    path: references/wind_diagnostics_contracts
+```
+
+**`.gitmodules` entry deferred:** The `.gitmodules` git-submodule entry for `wind_diagnostics_contracts` is intentionally omitted until the upstream `fluttersdk/wind_diagnostics_contracts` GitHub repository is created and published. Until then the local `path:` override in `dependency_overrides` is the only mechanism. Do not add a submodule entry for a repo that does not exist yet.
