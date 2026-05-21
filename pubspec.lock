@@ -419,12 +419,12 @@ packages:
     source: path
     version: "0.0.1"
   fluttersdk_wind:
-    dependency: "direct overridden"
+    dependency: "direct main"
     description:
       path: "references/wind"
       relative: true
     source: path
-    version: "1.0.0-alpha.8"
+    version: "1.0.0-alpha.9"
   glob:
     dependency: transitive
     description:

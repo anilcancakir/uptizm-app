@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttersdk_dusk/dusk.dart';
 import 'package:fluttersdk_telescope/telescope.dart';
+import 'package:fluttersdk_wind/dusk_integration.dart';
 import 'package:magic/magic.dart';
 import 'package:magic/dusk_integration.dart';
 import 'package:magic/telescope_integration.dart';

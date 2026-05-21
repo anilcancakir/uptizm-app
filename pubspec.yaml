@@ -47,6 +47,7 @@ dependencies:
     path: references/fluttersdk_artisan
   fluttersdk_dusk: any
   fluttersdk_telescope: any
+  fluttersdk_wind: any
 
   fl_chart: ^1.2.0
 
