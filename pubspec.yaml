@@ -48,6 +48,7 @@ dependencies:
   fluttersdk_dusk: any
   fluttersdk_telescope: any
   fluttersdk_wind: any
+  wind_diagnostics_contracts: any
 
   fl_chart: ^1.2.0
 
@@ -68,6 +69,8 @@ dependency_overrides:
     path: references/fluttersdk_telescope
   fluttersdk_wind:
     path: references/wind
+  wind_diagnostics_contracts:
+    path: references/wind_diagnostics_contracts
   magic:
     path: references/magic
   magic_starter:

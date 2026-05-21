@@ -424,7 +424,7 @@ packages:
       path: "references/wind"
       relative: true
     source: path
-    version: "1.0.0-alpha.9"
+    version: "1.0.0-alpha.10"
   glob:
     dependency: transitive
     description:
@@ -1265,6 +1265,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.15.0"
+  wind_diagnostics_contracts:
+    dependency: "direct main"
+    description:
+      path: "references/wind_diagnostics_contracts"
+      relative: true
+    source: path
+    version: "1.0.0-alpha.1"
   window_to_front:
     dependency: transitive
     description:
