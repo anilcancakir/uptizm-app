@@ -43,11 +43,10 @@ dependencies:
   # build: `grep -c 'AiTestBinding' build/web/main.dart.js` returns 0).
   # NEW fluttersdk ecosystem packages (V1 local-first; pub.dev publish after
   # real-world test pass per /ac:execute --auto local-first variant).
-  fluttersdk_artisan:
-    path: references/fluttersdk_artisan
-  fluttersdk_dusk: any
-  fluttersdk_telescope: any
-  fluttersdk_wind: any
+  fluttersdk_artisan: ^0.0.5
+  fluttersdk_dusk: ^0.0.2
+  fluttersdk_telescope: ^0.0.2
+  fluttersdk_wind: ^1.0.0-alpha.6
   fluttersdk_wind_diagnostics_contracts: ^1.0.0
 
   fl_chart: ^1.2.0
@@ -60,15 +59,14 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dependency_overrides:
-  xml: ^7.0.0
-  fluttersdk_artisan:
-    path: references/fluttersdk_artisan
-  fluttersdk_dusk:
-    path: references/fluttersdk_dusk
-  fluttersdk_telescope:
-    path: references/fluttersdk_telescope
+  # magic_starter / magic_deeplink / magic_notifications / magic_social_auth
+  # still declare fluttersdk_artisan ^1.0.0-alpha.1 (magic's old version line).
+  # Force the pub.dev hat until those sibling repos bump their declares.
+  fluttersdk_artisan: ^0.0.5
   fluttersdk_wind:
-    path: references/wind
+    git:
+      url: https://github.com/fluttersdk/wind
+      ref: v1
   magic:
     path: references/magic
   magic_starter:

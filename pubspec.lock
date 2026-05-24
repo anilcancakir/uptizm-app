@@ -400,31 +400,36 @@ packages:
   fluttersdk_artisan:
     dependency: "direct main"
     description:
-      path: "references/fluttersdk_artisan"
-      relative: true
-    source: path
-    version: "0.0.3"
+      name: fluttersdk_artisan
+      sha256: e17b81dc636bec6938e53a17c4e22405751fb87f55d5103748e0d4534794f7e7
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.5"
   fluttersdk_dusk:
     dependency: "direct main"
     description:
-      path: "references/fluttersdk_dusk"
-      relative: true
-    source: path
-    version: "0.0.1"
+      name: fluttersdk_dusk
+      sha256: b4eeed51cd3ad715da27b391c287f32281433c540c25fc5cf006b591f006aac5
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   fluttersdk_telescope:
     dependency: "direct main"
     description:
-      path: "references/fluttersdk_telescope"
-      relative: true
-    source: path
-    version: "0.0.1"
+      name: fluttersdk_telescope
+      sha256: "69a77f4a5427966b70b7bd1807d87a63182150f14e50bdd587f2a69272872bff"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   fluttersdk_wind:
     dependency: "direct main"
     description:
-      path: "references/wind"
-      relative: true
-    source: path
-    version: "1.0.0-alpha.10"
+      path: "."
+      ref: v1
+      resolved-ref: "5f326b0e33f952b3ce470cbe4c36e09876ba0d44"
+      url: "https://github.com/fluttersdk/wind"
+    source: git
+    version: "1.0.0"
   fluttersdk_wind_diagnostics_contracts:
     dependency: "direct main"
     description:
@@ -641,14 +646,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
-  keyboard_actions:
-    dependency: transitive
-    description:
-      name: keyboard_actions
-      sha256: "5155a158c0d22c3a2f4a2192040445fe84977620cf0eeb29f6148a1dcb5835fa"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.2.1"
   leak_tracker:
     dependency: transitive
     description:
@@ -1290,13 +1287,13 @@ packages:
     source: hosted
     version: "1.1.0"
   xml:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: xml
-      sha256: "67f0aff7be013d107995e9b75bf4e7f2c3ef2dfdb2c8e68024bba0a7fd5756a4"
+      sha256: "971043b3a0d3da28727e40ed3e0b5d18b742fa5a68665cca88e74b7876d5e025"
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.1"
+    version: "6.6.1"
   yaml:
     dependency: transitive
     description:
